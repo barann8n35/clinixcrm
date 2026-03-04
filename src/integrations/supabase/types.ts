@@ -14,7 +14,115 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          created_at: string
+          doctor: string
+          id: string
+          patient_id: string
+          scheduled_at: string
+          status: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          doctor: string
+          id?: string
+          patient_id: string
+          scheduled_at: string
+          status?: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          doctor?: string
+          id?: string
+          patient_id?: string
+          scheduled_at?: string
+          status?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          created_at: string
+          id: string
+          patient_id: string
+          platform: string | null
+          sender_type: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          patient_id: string
+          platform?: string | null
+          sender_type: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          patient_id?: string
+          platform?: string | null
+          sender_type?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          complaint: string | null
+          created_at: string
+          id: string
+          location: string | null
+          name: string
+          phone: string | null
+          platform: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          complaint?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          name: string
+          phone?: string | null
+          platform?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          complaint?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          name?: string
+          phone?: string | null
+          platform?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

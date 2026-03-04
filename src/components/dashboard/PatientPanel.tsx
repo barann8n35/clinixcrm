@@ -1,20 +1,47 @@
+import { useEffect, useState } from "react";
 import { Phone, MapPin, AlertCircle, CheckCircle, XCircle, Clock, CalendarDays } from "lucide-react";
 import { MiniSchedule } from "./MiniSchedule";
+import { supabase } from "@/integrations/supabase/client";
 
-export function PatientPanel() {
+interface Patient {
+  id: string;
+  name: string;
+  phone: string | null;
+  complaint: string | null;
+  location: string | null;
+  status: string;
+}
+
+export function PatientPanel({ patientId }: { patientId: string }) {
+  const [patient, setPatient] = useState<Patient | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from("patients")
+        .select("id, name, phone, complaint, location, status")
+        .eq("id", patientId)
+        .single();
+      setPatient(data);
+    }
+    load();
+  }, [patientId]);
+
+  const initials = patient?.name?.split(" ").map(n => n[0]).join("") || "?";
+
   return (
     <div className="flex flex-col h-full bg-card w-80 overflow-y-auto scrollbar-thin">
       {/* Patient Card */}
       <div className="p-5 border-b border-border">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 rounded-full bg-primary/12 flex items-center justify-center">
-            <span className="text-primary font-display font-bold text-base">BZ</span>
+            <span className="text-primary font-display font-bold text-base">{initials}</span>
           </div>
           <div>
-            <h3 className="font-display font-semibold text-[15px] text-foreground">Büşra Zeydan</h3>
+            <h3 className="font-display font-semibold text-[15px] text-foreground">{patient?.name || "Loading..."}</h3>
             <span className="inline-flex items-center gap-1 text-[11px] text-warning font-medium bg-warning/10 px-2 py-0.5 rounded-full mt-0.5">
               <Clock className="w-3 h-3" />
-              Pending
+              {patient?.status || "..."}
             </span>
           </div>
         </div>
@@ -22,19 +49,19 @@ export function PatientPanel() {
         <div className="space-y-2.5">
           <div className="flex items-center gap-2.5 text-[13px]">
             <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-foreground">+90 555 234 ****</span>
+            <span className="text-foreground">{patient?.phone || "—"}</span>
           </div>
           <div className="flex items-center gap-2.5 text-[13px]">
             <AlertCircle className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-foreground">Complaint: Back pain</span>
+            <span className="text-foreground">Complaint: {patient?.complaint || "—"}</span>
           </div>
           <div className="flex items-center gap-2.5 text-[13px]">
             <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-foreground">Istanbul, Turkey</span>
+            <span className="text-foreground">{patient?.location || "—"}</span>
           </div>
         </div>
 
-        <p className="text-[10px] text-muted-foreground/60 mt-3 font-mono">Event ID: #3kq90rv-8f2a-4b1c</p>
+        <p className="text-[10px] text-muted-foreground/60 mt-3 font-mono">Event ID: #{patientId.substring(0, 8)}</p>
       </div>
 
       {/* Quick Actions */}
