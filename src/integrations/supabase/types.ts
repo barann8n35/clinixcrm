@@ -102,7 +102,7 @@ export type Database = {
         Insert: {
           complaint?: string | null
           created_at?: string
-          id?: string
+          id: string
           location?: string | null
           name: string
           phone?: string | null
