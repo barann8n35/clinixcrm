@@ -34,34 +34,39 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
   const [chats, setChats] = useState<ChatItem[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function load() {
       const { data: patients } = await supabase
         .from("patients")
         .select("id, name, platform")
         .order("updated_at", { ascending: false });
 
-      if (!patients) return;
+      if (!patients || !isMounted) return;
 
-      const chatItems: ChatItem[] = [];
+      const latestMessages = await Promise.all(
+        patients.map(async (patient) => {
+          const { data: msgs } = await supabase
+            .from("messages")
+            .select("text, created_at, sender_type")
+            .eq("patient_id", patient.id)
+            .order("created_at", { ascending: false })
+            .limit(1);
 
-      for (const p of patients) {
-        const { data: msgs } = await supabase
-          .from("messages")
-          .select("text, created_at, sender_type")
-          .eq("patient_id", p.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
+          return { patient, lastMsg: msgs?.[0] };
+        })
+      );
 
-        const lastMsg = msgs?.[0];
-        chatItems.push({
-          id: p.id,
-          name: p.name,
-          lastMsg: lastMsg?.text?.substring(0, 40) + (lastMsg?.text && lastMsg.text.length > 40 ? "..." : "") || "No messages",
-          time: lastMsg ? timeAgo(lastMsg.created_at) : "",
-          unread: lastMsg?.sender_type === "patient",
-          platform: p.platform || "whatsapp",
-        });
-      }
+      const chatItems: ChatItem[] = latestMessages.map(({ patient, lastMsg }) => ({
+        id: patient.id,
+        name: patient.name,
+        lastMsg: lastMsg?.text
+          ? `${lastMsg.text.substring(0, 40)}${lastMsg.text.length > 40 ? "..." : ""}`
+          : "No messages",
+        time: lastMsg ? timeAgo(lastMsg.created_at) : "",
+        unread: lastMsg?.sender_type === "patient",
+        platform: patient.platform || "whatsapp",
+      }));
 
       setChats(chatItems);
     }
@@ -69,13 +74,15 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
     load();
 
     const channel = supabase
-      .channel("messages-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
-        load();
-      })
+      .channel("sidebar-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, load)
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (

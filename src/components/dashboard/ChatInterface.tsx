@@ -78,19 +78,27 @@ export function ChatInterface({ patientId }: { patientId: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    async function load() {
-      const { data: p } = await supabase
-        .from("patients")
-        .select("id, name, platform")
-        .eq("id", patientId)
-        .single();
-      setPatient(p);
+    let isMounted = true;
 
-      const { data: msgs } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("patient_id", patientId)
-        .order("created_at", { ascending: true });
+    async function load() {
+      setPatient(null);
+      setMessages([]);
+
+      const [{ data: p }, { data: msgs }] = await Promise.all([
+        supabase
+          .from("patients")
+          .select("id, name, platform")
+          .eq("id", patientId)
+          .maybeSingle(),
+        supabase
+          .from("messages")
+          .select("*")
+          .eq("patient_id", patientId)
+          .order("created_at", { ascending: true }),
+      ]);
+
+      if (!isMounted) return;
+      setPatient(p);
       setMessages((msgs as Message[]) || []);
     }
 
@@ -98,17 +106,24 @@ export function ChatInterface({ patientId }: { patientId: string }) {
 
     const channel = supabase
       .channel(`messages-${patientId}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "messages",
-        filter: `patient_id=eq.${patientId}`,
-      }, (payload) => {
-        setMessages((prev) => [...prev, payload.new as Message]);
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `patient_id=eq.${patientId}`,
+        },
+        () => {
+          load();
+        }
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
   }, [patientId]);
 
   useEffect(() => {
