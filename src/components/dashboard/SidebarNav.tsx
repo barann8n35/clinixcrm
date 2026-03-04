@@ -11,7 +11,12 @@ const navItems = [
   { icon: Settings, label: "Settings", active: false },
 ];
 
-export function SidebarNav() {
+interface Props {
+  selectedPatientId: string;
+  onSelectPatient: (id: string) => void;
+}
+
+export function SidebarNav({ selectedPatientId, onSelectPatient }: Props) {
   return (
     <aside className="flex flex-col h-full bg-card border-r border-border w-72">
       {/* Logo */}
@@ -49,7 +54,6 @@ export function SidebarNav() {
         ))}
       </nav>
 
-      {/* Divider */}
       <div className="px-5 py-2">
         <div className="h-px bg-border" />
       </div>
@@ -59,7 +63,7 @@ export function SidebarNav() {
         <div className="px-5 py-2">
           <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Chats</h3>
         </div>
-        <ActiveChats />
+        <ActiveChats selectedPatientId={selectedPatientId} onSelectPatient={onSelectPatient} />
       </div>
 
       {/* User */}
