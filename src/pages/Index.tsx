@@ -1,12 +1,15 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { SidebarNav } from "@/components/dashboard/SidebarNav";
+import { ChatInterface } from "@/components/dashboard/ChatInterface";
+import { PatientPanel } from "@/components/dashboard/PatientPanel";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      <SidebarNav />
+      <div className="flex-1 min-w-0">
+        <ChatInterface />
       </div>
+      <PatientPanel />
     </div>
   );
 };
