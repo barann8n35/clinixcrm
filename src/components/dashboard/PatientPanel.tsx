@@ -29,7 +29,7 @@ export function PatientPanel({ patientId }: { patientId: string }) {
     load();
   }, [patientId]);
 
-  async function handleAction(newStatus: "approved" | "cancelled") {
+  async function handleAction(newStatus: "approved" | "cancelled" | "rescheduled") {
     if (acting) return;
     setActing(true);
     try {
@@ -38,7 +38,7 @@ export function PatientPanel({ patientId }: { patientId: string }) {
         .from("appointments")
         .select("id")
         .eq("patient_id", patientId)
-        .in("status", ["pending", "upcoming"])
+        .in("status", ["pending", "upcoming", "rescheduled"])
         .order("scheduled_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -50,9 +50,12 @@ export function PatientPanel({ patientId }: { patientId: string }) {
 
       await supabase.from("appointments").update({ status: newStatus }).eq("id", apt.id);
 
-      const msgText = newStatus === "approved"
-        ? "Randevunuz başarıyla onaylanmıştır ✅"
-        : "Randevunuz iptal edilmiştir ❌";
+      const msgText = 
+        newStatus === "approved"
+          ? "Randevunuz başarıyla onaylanmıştır ✅"
+          : newStatus === "cancelled"
+          ? "Randevunuz iptal edilmiştir ❌"
+          : "Randevunuzu yeniden planlamak için hangi gün ve saat sizin için uygun olur? 🗓️";
 
       await supabase.from("messages").insert({
         patient_id: patientId,
@@ -61,7 +64,14 @@ export function PatientPanel({ patientId }: { patientId: string }) {
         platform: null,
       });
 
-      toast.success(newStatus === "approved" ? "Appointment approved" : "Appointment cancelled");
+      const successMsg = 
+        newStatus === "approved"
+          ? "Appointment approved"
+          : newStatus === "cancelled"
+          ? "Appointment cancelled"
+          : "Reschedule request sent";
+      
+      toast.success(successMsg);
     } catch (e) {
       toast.error("Action failed");
     } finally {
