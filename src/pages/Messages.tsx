@@ -67,6 +67,7 @@ const Messages = () => {
       <div className="flex-1 min-w-0">
         <ChatInterface
           patientId={selectedPatientId}
+          onBack={isTablet ? () => {} : undefined}
           onInfoClick={isTablet ? () => setDetailsOpen(true) : undefined}
         />
       </div>

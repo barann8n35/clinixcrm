@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, Paperclip, Sparkles, Bot, User, ToggleLeft, ToggleRight, ArrowLeft, Info } from "lucide-react";
+import { Send, Paperclip, Sparkles, Bot, User, ToggleLeft, ToggleRight, ChevronLeft, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -155,9 +155,13 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
       {/* Header */}
       <div className="px-3 md:px-5 py-3 md:py-3.5 border-b border-border flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
-          {showBackButton && (
-            <button onClick={onBack} className="p-1.5 -ml-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-              <ArrowLeft className="w-5 h-5" />
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="lg:hidden z-10 flex items-center gap-1 px-2.5 py-1.5 -ml-1 rounded-full bg-secondary border border-border text-foreground hover:bg-accent transition-colors shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="text-xs font-medium">Back</span>
             </button>
           )}
           <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
