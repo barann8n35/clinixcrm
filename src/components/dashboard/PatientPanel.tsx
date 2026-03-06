@@ -136,7 +136,11 @@ export function PatientPanel({ patientId }: { patientId: string }) {
             <XCircle className="w-4 h-4" />
             Cancel Appointment
           </button>
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-warning text-warning-foreground font-medium text-[13px] hover:bg-warning/90 transition-all shadow-card hover:shadow-elevated">
+          <button
+            disabled={acting}
+            onClick={() => handleAction("rescheduled")}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-warning text-warning-foreground font-medium text-[13px] hover:bg-warning/90 transition-all shadow-card hover:shadow-elevated disabled:opacity-50"
+          >
             <CalendarDays className="w-4 h-4" />
             Reschedule
           </button>
