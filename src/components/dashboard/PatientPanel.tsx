@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Phone, MapPin, AlertCircle, CheckCircle, XCircle, Clock, CalendarDays } from "lucide-react";
 import { MiniSchedule } from "./MiniSchedule";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Patient {
   id: string;
@@ -14,6 +15,7 @@ interface Patient {
 
 export function PatientPanel({ patientId }: { patientId: string }) {
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [acting, setActing] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -26,6 +28,46 @@ export function PatientPanel({ patientId }: { patientId: string }) {
     }
     load();
   }, [patientId]);
+
+  async function handleAction(newStatus: "approved" | "cancelled") {
+    if (acting) return;
+    setActing(true);
+    try {
+      // Find the latest pending/upcoming appointment for this patient
+      const { data: apt } = await supabase
+        .from("appointments")
+        .select("id")
+        .eq("patient_id", patientId)
+        .in("status", ["pending", "upcoming"])
+        .order("scheduled_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!apt) {
+        toast.error("No pending appointment found for this patient.");
+        return;
+      }
+
+      await supabase.from("appointments").update({ status: newStatus }).eq("id", apt.id);
+
+      const msgText = newStatus === "approved"
+        ? "Randevunuz başarıyla onaylanmıştır ✅"
+        : "Randevunuz iptal edilmiştir ❌";
+
+      await supabase.from("messages").insert({
+        patient_id: patientId,
+        sender_type: "secretary",
+        text: msgText,
+        platform: null,
+      });
+
+      toast.success(newStatus === "approved" ? "Appointment approved" : "Appointment cancelled");
+    } catch (e) {
+      toast.error("Action failed");
+    } finally {
+      setActing(false);
+    }
+  }
 
   const initials = patient?.name?.split(" ").map(n => n[0]).join("") || "?";
 
@@ -68,11 +110,19 @@ export function PatientPanel({ patientId }: { patientId: string }) {
       <div className="p-5 border-b border-border">
         <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h4>
         <div className="space-y-2">
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-success text-success-foreground font-medium text-[13px] hover:bg-success/90 transition-all shadow-card hover:shadow-elevated">
+          <button
+            disabled={acting}
+            onClick={() => handleAction("approved")}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-success text-success-foreground font-medium text-[13px] hover:bg-success/90 transition-all shadow-card hover:shadow-elevated disabled:opacity-50"
+          >
             <CheckCircle className="w-4 h-4" />
             Approve Appointment
           </button>
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground font-medium text-[13px] hover:bg-destructive/90 transition-all shadow-card hover:shadow-elevated">
+          <button
+            disabled={acting}
+            onClick={() => handleAction("cancelled")}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground font-medium text-[13px] hover:bg-destructive/90 transition-all shadow-card hover:shadow-elevated disabled:opacity-50"
+          >
             <XCircle className="w-4 h-4" />
             Cancel Appointment
           </button>
