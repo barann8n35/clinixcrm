@@ -57,9 +57,9 @@ const Auth = () => {
         {/* Brand */}
         <div className="text-center space-y-2">
           <div className="mx-auto w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-xl">M</span>
+            <span className="text-primary-foreground font-display font-bold text-xl">C</span>
           </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">MedFlow</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">Clinix</h1>
           <p className="text-sm text-muted-foreground">
             {isLogin ? "Hesabınıza giriş yapın" : "Yeni hesap oluşturun"}
           </p>

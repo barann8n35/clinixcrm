@@ -32,10 +32,10 @@ export function SidebarNav({ selectedPatientId, onSelectPatient }: Props) {
       <div className="px-5 py-5 border-b border-border">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-sm">M</span>
+            <span className="text-primary-foreground font-display font-bold text-sm">C</span>
           </div>
           <div>
-            <h1 className="font-display font-bold text-base text-foreground leading-none">MedFlow</h1>
+            <h1 className="font-display font-bold text-base text-foreground leading-none">Clinix</h1>
             <p className="text-[11px] text-muted-foreground mt-0.5">Clinical CRM</p>
           </div>
         </div>
