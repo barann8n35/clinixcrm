@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChatInterface } from "@/components/dashboard/ChatInterface";
 import { PatientPanel } from "@/components/dashboard/PatientPanel";
 import { ActiveChats } from "@/components/dashboard/ActiveChats";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type MobileView = "list" | "chat";
@@ -12,7 +12,7 @@ const Messages = () => {
   const [mobileView, setMobileView] = useState<MobileView>("list");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isMobile = useIsMobile();
-  const isTablet = !isMobile && typeof window !== "undefined" && window.innerWidth < 1024;
+  const isTablet = useIsTablet();
 
   const handleSelectPatient = (id: string) => {
     setSelectedPatientId(id);

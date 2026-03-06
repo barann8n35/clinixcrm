@@ -1,17 +1,18 @@
 import { Outlet } from "react-router-dom";
 import { SidebarNav } from "@/components/dashboard/SidebarNav";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 export function DashboardLayout() {
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Desktop/Tablet sidebar */}
-      {!isMobile && <SidebarNav collapsed={typeof window !== "undefined" && window.innerWidth < 1024} />}
+      {!isMobile && <SidebarNav collapsed={isTablet} />}
 
       {/* Mobile hamburger */}
       {isMobile && (
