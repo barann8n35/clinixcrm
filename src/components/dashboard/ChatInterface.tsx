@@ -158,7 +158,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
           {onBack && (
             <button
               onClick={onBack}
-              className="lg:hidden z-10 flex items-center gap-1 px-2.5 py-1.5 -ml-1 rounded-full bg-secondary border border-border text-foreground hover:bg-accent transition-colors shadow-sm"
+              className="lg:hidden z-10 flex items-center gap-1 px-3 py-2 rounded-full bg-secondary border border-border text-foreground hover:bg-accent transition-colors shadow-sm"
             >
               <ChevronLeft className="w-4 h-4" />
               <span className="text-xs font-medium">Back</span>

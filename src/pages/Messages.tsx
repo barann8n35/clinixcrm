@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatInterface } from "@/components/dashboard/ChatInterface";
 import { PatientPanel } from "@/components/dashboard/PatientPanel";
 import { ActiveChats } from "@/components/dashboard/ActiveChats";
 import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useMobileNav } from "@/contexts/MobileNavContext";
 
 type MobileView = "list" | "chat";
 
@@ -13,6 +14,13 @@ const Messages = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
+  const { setHideHamburger } = useMobileNav();
+
+  // Hide hamburger when in chat view on mobile
+  useEffect(() => {
+    setHideHamburger(isMobile && mobileView === "chat");
+    return () => setHideHamburger(false);
+  }, [isMobile, mobileView, setHideHamburger]);
 
   const handleSelectPatient = (id: string) => {
     setSelectedPatientId(id);

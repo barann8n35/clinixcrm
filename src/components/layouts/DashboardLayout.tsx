@@ -3,19 +3,19 @@ import { SidebarNav } from "@/components/dashboard/SidebarNav";
 import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { MobileNavProvider, useMobileNav } from "@/contexts/MobileNavContext";
 
-export function DashboardLayout() {
+function DashboardLayoutInner() {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { hideHamburger } = useMobileNav();
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      {/* Desktop/Tablet sidebar */}
       {!isMobile && <SidebarNav collapsed={isTablet} />}
 
-      {/* Mobile hamburger */}
-      {isMobile && (
+      {isMobile && !hideHamburger && (
         <>
           <button
             onClick={() => setMobileMenuOpen(true)}
@@ -45,5 +45,13 @@ export function DashboardLayout() {
         <Outlet />
       </div>
     </div>
+  );
+}
+
+export function DashboardLayout() {
+  return (
+    <MobileNavProvider>
+      <DashboardLayoutInner />
+    </MobileNavProvider>
   );
 }
