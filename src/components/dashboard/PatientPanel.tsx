@@ -82,7 +82,7 @@ export function PatientPanel({ patientId }: { patientId: string }) {
   const initials = patient?.name?.split(" ").map(n => n[0]).join("") || "?";
 
   return (
-    <div className="flex flex-col h-full bg-card w-80 overflow-y-auto scrollbar-thin">
+    <div className="flex flex-col h-full bg-card w-72 shrink-0 border-l border-border overflow-y-auto scrollbar-thin">
       {/* Patient Card */}
       <div className="p-5 border-b border-border">
         <div className="flex items-center gap-3 mb-4">

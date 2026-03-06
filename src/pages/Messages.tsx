@@ -9,8 +9,8 @@ const Messages = () => {
   return (
     <div className="flex h-full overflow-hidden">
       {/* Chat list */}
-      <div className="w-64 border-r border-border flex flex-col bg-card shrink-0">
-        <div className="px-5 py-3 border-b border-border">
+      <div className="w-56 border-r border-border flex flex-col bg-card shrink-0">
+        <div className="px-4 py-3 border-b border-border">
           <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Chats</h3>
         </div>
         <ActiveChats selectedPatientId={selectedPatientId} onSelectPatient={setSelectedPatientId} />
