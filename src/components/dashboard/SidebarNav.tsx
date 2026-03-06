@@ -1,25 +1,22 @@
 import { LayoutDashboard, Calendar, Users, MessageSquare, Settings, Bell, BarChart3, LogOut } from "lucide-react";
-import { ActiveChats } from "./ActiveChats";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", active: false },
-  { icon: MessageSquare, label: "Messages", active: true },
-  { icon: Calendar, label: "Appointments", active: false },
-  { icon: Users, label: "Patients", active: false },
-  { icon: BarChart3, label: "Analytics", active: false },
-  { icon: Bell, label: "Notifications", active: false, badge: 3 },
-  { icon: Settings, label: "Settings", active: false },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: MessageSquare, label: "Messages", path: "/messages" },
+  { icon: Calendar, label: "Appointments", path: "/appointments" },
+  { icon: Users, label: "Patients", path: "/patients" },
+  { icon: BarChart3, label: "Analytics", path: "/analytics" },
+  { icon: Bell, label: "Notifications", path: "/notifications", badge: 3 },
+  { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
-interface Props {
-  selectedPatientId: string;
-  onSelectPatient: (id: string) => void;
-}
-
-export function SidebarNav({ selectedPatientId, onSelectPatient }: Props) {
+export function SidebarNav() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await signOut();
@@ -27,7 +24,7 @@ export function SidebarNav({ selectedPatientId, onSelectPatient }: Props) {
   };
 
   return (
-    <aside className="flex flex-col h-full bg-card border-r border-border w-72">
+    <aside className="flex flex-col h-full bg-card border-r border-border w-72 shrink-0">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-border">
         <div className="flex items-center gap-2.5">
@@ -42,38 +39,30 @@ export function SidebarNav({ selectedPatientId, onSelectPatient }: Props) {
       </div>
 
       {/* Nav Items */}
-      <nav className="px-3 py-3 space-y-0.5">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150
-              ${item.active
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              }`}
-          >
-            <item.icon className="w-[18px] h-[18px]" />
-            <span className="flex-1 text-left">{item.label}</span>
-            {item.badge && (
-              <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
-                {item.badge}
-              </span>
-            )}
-          </button>
-        ))}
+      <nav className="px-3 py-3 space-y-0.5 flex-1">
+        {navItems.map((item) => {
+          const isActive = location.pathname.startsWith(item.path);
+          return (
+            <button
+              key={item.label}
+              onClick={() => navigate(item.path)}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150
+                ${isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
+            >
+              <item.icon className="w-[18px] h-[18px]" />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge && (
+                <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
-
-      <div className="px-5 py-2">
-        <div className="h-px bg-border" />
-      </div>
-
-      {/* Active Chats */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        <div className="px-5 py-2">
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Chats</h3>
-        </div>
-        <ActiveChats selectedPatientId={selectedPatientId} onSelectPatient={onSelectPatient} />
-      </div>
 
       {/* User */}
       <div className="px-4 py-3 border-t border-border">
