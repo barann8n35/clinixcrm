@@ -54,7 +54,7 @@ function MessageBubble({ msg }: { msg: Message }) {
 
   return (
     <div className={`flex flex-col ${c.align} animate-slide-in-right`}>
-      <div className={`max-w-[85%] ${c.bg} border ${c.border} rounded-2xl px-4 py-3 ${msg.sender_type === "secretary" ? "rounded-br-md" : "rounded-bl-md"}`}>
+      <div className={`max-w-[70%] ${c.bg} border ${c.border} rounded-2xl px-5 py-3.5 ${msg.sender_type === "secretary" ? "rounded-br-md" : "rounded-bl-md"}`}>
         <div className="flex items-center gap-1.5 mb-1">
           {c.icon}
           <span className="text-[11px] font-semibold text-foreground/70">{c.label}</span>
@@ -144,7 +144,7 @@ export function ChatInterface({ patientId }: { patientId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-card border-x border-border">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -181,7 +181,7 @@ export function ChatInterface({ patientId }: { patientId: string }) {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-5 py-4 space-y-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-8 py-5 space-y-4">
         <div className="flex items-center gap-3 py-2">
           <div className="flex-1 h-px bg-border" />
           <span className="text-[11px] text-muted-foreground font-medium">Today</span>
@@ -201,10 +201,10 @@ export function ChatInterface({ patientId }: { patientId: string }) {
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 border-t border-border">
+      <div className="px-6 py-4 border-t border-border">
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="flex items-center gap-2 bg-muted rounded-xl px-3 py-2"
+          className="flex items-center gap-3 bg-muted rounded-2xl px-4 py-3"
         >
           <button type="button" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
             <Paperclip className="w-[18px] h-[18px]" />
