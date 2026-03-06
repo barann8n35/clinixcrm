@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, Paperclip, Sparkles, Bot, User, ToggleLeft, ToggleRight } from "lucide-react";
+import { Send, Paperclip, Sparkles, Bot, User, ToggleLeft, ToggleRight, ArrowLeft, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -54,7 +54,7 @@ function MessageBubble({ msg }: { msg: Message }) {
 
   return (
     <div className={`flex flex-col ${c.align} animate-slide-in-right`}>
-      <div className={`max-w-[70%] ${c.bg} border ${c.border} rounded-2xl px-5 py-3.5 ${msg.sender_type === "secretary" ? "rounded-br-md" : "rounded-bl-md"}`}>
+      <div className={`max-w-[85%] md:max-w-[70%] ${c.bg} border ${c.border} rounded-2xl px-4 md:px-5 py-3 md:py-3.5 ${msg.sender_type === "secretary" ? "rounded-br-md" : "rounded-bl-md"}`}>
         <div className="flex items-center gap-1.5 mb-1">
           {c.icon}
           <span className="text-[11px] font-semibold text-foreground/70">{c.label}</span>
@@ -69,7 +69,14 @@ function MessageBubble({ msg }: { msg: Message }) {
   );
 }
 
-export function ChatInterface({ patientId }: { patientId: string }) {
+interface ChatInterfaceProps {
+  patientId: string;
+  onBack?: () => void;
+  onInfoClick?: () => void;
+  showBackButton?: boolean;
+}
+
+export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }: ChatInterfaceProps) {
   const [aiPaused, setAiPaused] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -146,20 +153,25 @@ export function ChatInterface({ patientId }: { patientId: string }) {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center">
+      <div className="px-3 md:px-5 py-3 md:py-3.5 border-b border-border flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          {showBackButton && (
+            <button onClick={onBack} className="p-1.5 -ml-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
+          <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
             <span className="text-primary font-semibold text-xs">
               {patient?.name?.split(" ").map(n => n[0]).join("") || "?"}
             </span>
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="font-display font-semibold text-[15px] text-foreground">{patient?.name || "Loading..."}</h2>
+              <h2 className="font-display font-semibold text-sm md:text-[15px] text-foreground truncate">{patient?.name || "Loading..."}</h2>
               {patient?.platform && (
                 <>
                   <span className="text-xs">{platformLabels[patient.platform]?.icon}</span>
-                  <span className="text-[11px] text-muted-foreground">{platformLabels[patient.platform]?.label}</span>
+                  <span className="text-[11px] text-muted-foreground hidden sm:inline">{platformLabels[patient.platform]?.label}</span>
                 </>
               )}
             </div>
@@ -167,21 +179,31 @@ export function ChatInterface({ patientId }: { patientId: string }) {
           </div>
         </div>
 
-        <button
-          onClick={() => setAiPaused(!aiPaused)}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-all duration-200 border
-            ${aiPaused
-              ? "bg-warning/10 border-warning/30 text-warning"
-              : "bg-primary/8 border-primary/20 text-primary"
-            }`}
-        >
-          {aiPaused ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
-          {aiPaused ? "AI Paused" : "AI Active"}
-        </button>
+        <div className="flex items-center gap-1.5">
+          {onInfoClick && (
+            <button
+              onClick={onInfoClick}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <Info className="w-4.5 h-4.5" />
+            </button>
+          )}
+          <button
+            onClick={() => setAiPaused(!aiPaused)}
+            className={`flex items-center gap-1.5 px-2.5 md:px-3.5 py-1.5 rounded-full text-[11px] md:text-[12px] font-medium transition-all duration-200 border
+              ${aiPaused
+                ? "bg-warning/10 border-warning/30 text-warning"
+                : "bg-primary/8 border-primary/20 text-primary"
+              }`}
+          >
+            {aiPaused ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
+            <span className="hidden sm:inline">{aiPaused ? "AI Paused" : "AI Active"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-8 py-5 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-4 md:px-8 py-4 md:py-5 space-y-3 md:space-y-4">
         <div className="flex items-center gap-3 py-2">
           <div className="flex-1 h-px bg-border" />
           <span className="text-[11px] text-muted-foreground font-medium">Today</span>
@@ -201,10 +223,10 @@ export function ChatInterface({ patientId }: { patientId: string }) {
       </div>
 
       {/* Input */}
-      <div className="px-6 py-4 border-t border-border">
+      <div className="px-3 md:px-6 py-3 md:py-4 border-t border-border">
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="flex items-center gap-3 bg-muted rounded-2xl px-4 py-3"
+          className="flex items-center gap-2 md:gap-3 bg-muted rounded-2xl px-3 md:px-4 py-2.5 md:py-3"
         >
           <button type="button" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
             <Paperclip className="w-[18px] h-[18px]" />
