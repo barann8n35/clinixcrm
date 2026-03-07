@@ -1,16 +1,17 @@
 import { LayoutDashboard, Calendar, Users, MessageSquare, Settings, Bell, BarChart3, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-const navItems = [
+const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: MessageSquare, label: "Messages", path: "/messages" },
   { icon: Calendar, label: "Appointments", path: "/appointments" },
   { icon: Users, label: "Patients", path: "/patients" },
   { icon: BarChart3, label: "Analytics", path: "/analytics" },
-  { icon: Bell, label: "Notifications", path: "/notifications", badge: 3 },
+  { icon: Bell, label: "Notifications", path: "/notifications", hasBadge: true },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
