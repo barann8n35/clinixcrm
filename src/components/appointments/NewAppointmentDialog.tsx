@@ -120,11 +120,11 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {/* Patient Name */}
-          <div className="space-y-1.5">
-            <Label htmlFor="patientName">Hasta Adı *</Label>
-            <Input
-              id="patientName"
-              placeholder="Hasta adını girin"
+           <div className="space-y-1.5">
+             <Label htmlFor="patientName">Hasta Adı ve Soyadı *</Label>
+             <Input
+               id="patientName"
+               placeholder="Hasta adını ve soyadını girin"
               value={patientName}
               onChange={(e) => setPatientName(e.target.value)}
               maxLength={100}
