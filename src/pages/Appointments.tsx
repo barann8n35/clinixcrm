@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Calendar, Clock, User, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, isToday, isTomorrow, isPast } from "date-fns";
 import { tr } from "date-fns/locale";
+import NewAppointmentDialog from "@/components/appointments/NewAppointmentDialog";
 
 interface Appointment {
   id: string;
@@ -39,30 +40,32 @@ const Appointments = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      const { data } = await supabase
-        .from("appointments")
-        .select("id, patient_id, doctor, type, scheduled_at, status, patients(name)")
-        .order("scheduled_at", { ascending: true });
+  const fetchAppointments = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("appointments")
+      .select("id, patient_id, doctor, type, scheduled_at, status, patients(name)")
+      .order("scheduled_at", { ascending: true });
 
-      if (data) {
-        setAppointments(
-          data.map((a: any) => ({
-            id: a.id,
-            patient_id: a.patient_id,
-            patient_name: a.patients?.name || "Bilinmiyor",
-            doctor: a.doctor,
-            type: a.type,
-            scheduled_at: a.scheduled_at,
-            status: a.status,
-          }))
-        );
-      }
-      setLoading(false);
-    };
-    fetchAppointments();
+    if (data) {
+      setAppointments(
+        data.map((a: any) => ({
+          id: a.id,
+          patient_id: a.patient_id,
+          patient_name: a.patients?.name || "Bilinmiyor",
+          doctor: a.doctor,
+          type: a.type,
+          scheduled_at: a.scheduled_at,
+          status: a.status,
+        }))
+      );
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   const filtered = useMemo(
     () => (filter === "all" ? appointments : appointments.filter((a) => a.status === filter)),
@@ -104,6 +107,7 @@ const Appointments = () => {
             {appointments.length} randevu
           </p>
         </div>
+        <NewAppointmentDialog onCreated={fetchAppointments} />
         <div className="flex items-center gap-1.5 flex-wrap">
           <Filter className="w-4 h-4 text-muted-foreground mr-1" />
           {filters.map((f) => (
