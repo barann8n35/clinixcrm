@@ -22,6 +22,7 @@ interface SidebarNavProps {
 
 export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
   const { user, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -55,8 +56,9 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
 
         {/* Nav Items */}
         <nav className={`py-3 space-y-0.5 flex-1 ${collapsed ? "px-1.5" : "px-3"}`}>
-          {navItems.map((item) => {
+          {baseNavItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path);
+            const badgeCount = item.hasBadge ? unreadCount : 0;
             const btn = (
               <button
                 key={item.label}
@@ -70,12 +72,12 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
               >
                 <item.icon className="w-[18px] h-[18px] shrink-0" />
                 {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
-                {!collapsed && item.badge && (
+                {!collapsed && badgeCount > 0 && (
                   <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
-                    {item.badge}
+                    {badgeCount}
                   </span>
                 )}
-                {collapsed && item.badge && (
+                {collapsed && badgeCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive" />
                 )}
               </button>
