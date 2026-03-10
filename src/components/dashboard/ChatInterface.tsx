@@ -149,24 +149,23 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
     loadInitial();
 
     const channel = supabase
-      .channel(`realtime-messages-${patientId}`)
+      .channel("schema-db-changes")
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `patient_id=eq.${patientId}`,
         },
         (payload) => {
           if (!isMounted) return;
           const newMsg = payload.new as Message;
+          // Only handle messages for this patient
+          if ((payload.new as any).patient_id !== patientId) return;
           setMessages((prev) => {
-            // Avoid duplicates (e.g. optimistic insert)
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
-          // Hide typing when a non-secretary message arrives via realtime
           if (newMsg.sender_type !== "secretary") {
             setShowTyping(false);
           }
