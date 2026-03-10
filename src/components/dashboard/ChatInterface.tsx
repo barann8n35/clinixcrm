@@ -27,7 +27,7 @@ const platformLabels: Record<string, { icon: string; label: string }> = {
 
 const messageVariants = {
   hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
 };
 
 function TypingIndicator() {
