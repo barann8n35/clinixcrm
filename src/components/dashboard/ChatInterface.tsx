@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Paperclip, Sparkles, Bot, User, ToggleLeft, ToggleRight, ChevronLeft, Info } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -23,6 +24,34 @@ const platformLabels: Record<string, { icon: string; label: string }> = {
   whatsapp: { icon: "💬", label: "WhatsApp" },
   telegram: { icon: "✈️", label: "Telegram" },
 };
+
+const messageVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+};
+
+function TypingIndicator() {
+  return (
+    <div className="flex flex-col items-start">
+      <div className="bg-chat-ai border border-chat-ai-border rounded-2xl rounded-bl-md px-5 py-3.5">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <span className="text-[11px] font-semibold text-foreground/70">AI Assistant</span>
+        </div>
+        <div className="flex items-center gap-1 h-5">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50"
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function MessageBubble({ msg }: { msg: Message }) {
   const time = format(new Date(msg.created_at), "HH:mm");
@@ -53,7 +82,12 @@ function MessageBubble({ msg }: { msg: Message }) {
   const c = configs[msg.sender_type];
 
   return (
-    <div className={`flex flex-col ${c.align} animate-slide-in-right`}>
+    <motion.div
+      variants={messageVariants}
+      initial="hidden"
+      animate="visible"
+      className={`flex flex-col ${c.align}`}
+    >
       <div className={`max-w-[85%] md:max-w-[70%] ${c.bg} border ${c.border} rounded-2xl px-4 md:px-5 py-3 md:py-3.5 ${msg.sender_type === "secretary" ? "rounded-br-md" : "rounded-bl-md"}`}>
         <div className="flex items-center gap-1.5 mb-1">
           {c.icon}
@@ -65,7 +99,7 @@ function MessageBubble({ msg }: { msg: Message }) {
         </div>
         <p className="text-[13px] text-foreground leading-relaxed">{msg.text}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -82,7 +116,9 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   const [messages, setMessages] = useState<Message[]>([]);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [sending, setSending] = useState(false);
+  const [showTyping, setShowTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -106,7 +142,17 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
 
       if (!isMounted) return;
       setPatient(p);
-      setMessages((msgs as Message[]) || []);
+      const newMsgs = (msgs as Message[]) || [];
+      setMessages(newMsgs);
+
+      // Hide typing indicator when a new non-secretary message arrives
+      if (newMsgs.length > prevCountRef.current) {
+        const latest = newMsgs[newMsgs.length - 1];
+        if (latest && latest.sender_type !== "secretary") {
+          setShowTyping(false);
+        }
+      }
+      prevCountRef.current = newMsgs.length;
     }
 
     load();
@@ -133,13 +179,17 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
     };
   }, [patientId]);
 
+  // Smooth scroll to bottom on new messages or typing indicator
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    });
+  }, [messages, showTyping]);
 
   async function handleSend() {
     if (!inputValue.trim() || sending) return;
     setSending(true);
+    setShowTyping(true);
     await supabase.from("messages").insert({
       patient_id: patientId,
       sender_type: "secretary",
@@ -214,11 +264,24 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
           <div className="flex-1 h-px bg-border" />
         </div>
 
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} msg={msg} />
-        ))}
+        <AnimatePresence initial={false}>
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} />
+          ))}
+        </AnimatePresence>
 
-        {!aiPaused && (
+        {showTyping && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TypingIndicator />
+          </motion.div>
+        )}
+
+        {!aiPaused && !showTyping && (
           <div className="flex items-center gap-2 px-3 py-2">
             <Bot className="w-3.5 h-3.5 text-primary/60 animate-pulse-soft" />
             <span className="text-[11px] text-muted-foreground italic">AI is monitoring this conversation...</span>
