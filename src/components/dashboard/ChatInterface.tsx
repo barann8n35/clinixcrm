@@ -118,7 +118,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   const [sending, setSending] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const prevCountRef = useRef(0);
+  
 
   useEffect(() => {
     let isMounted = true;
