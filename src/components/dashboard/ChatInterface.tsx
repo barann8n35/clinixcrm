@@ -120,6 +120,9 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   const scrollRef = useRef<HTMLDivElement>(null);
   
 
+  const sortMessages = (msgs: Message[]) =>
+    [...msgs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
   useEffect(() => {
     let isMounted = true;
 
@@ -143,13 +146,13 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
 
       if (!isMounted) return;
       setPatient(p);
-      setMessages((msgs as Message[]) || []);
+      setMessages(sortMessages((msgs as Message[]) || []));
     }
 
     loadInitial();
 
     const channel = supabase
-      .channel("schema-db-changes")
+      .channel(`messages-realtime-${patientId}`)
       .on(
         "postgres_changes",
         {
@@ -159,13 +162,15 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
         },
         (payload) => {
           if (!isMounted) return;
-          const newMsg = payload.new as Message;
-          // Only handle messages for this patient
-          if ((payload.new as any).patient_id !== patientId) return;
+          const newMsg = payload.new as Message & { patient_id: string };
+          if (newMsg.patient_id !== patientId) return;
+
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
+            return sortMessages([...prev, newMsg]);
           });
+
+          // Hide typing when a non-secretary message arrives (bot/AI reply)
           if (newMsg.sender_type !== "secretary") {
             setShowTyping(false);
           }
