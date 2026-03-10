@@ -118,14 +118,15 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   const [sending, setSending] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const prevCountRef = useRef(0);
+  
 
   useEffect(() => {
     let isMounted = true;
 
-    async function load() {
+    async function loadInitial() {
       setPatient(null);
       setMessages([]);
+      setShowTyping(false);
 
       const [{ data: p }, { data: msgs }] = await Promise.all([
         supabase
@@ -142,33 +143,33 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
 
       if (!isMounted) return;
       setPatient(p);
-      const newMsgs = (msgs as Message[]) || [];
-      setMessages(newMsgs);
-
-      // Hide typing indicator when a new non-secretary message arrives
-      if (newMsgs.length > prevCountRef.current) {
-        const latest = newMsgs[newMsgs.length - 1];
-        if (latest && latest.sender_type !== "secretary") {
-          setShowTyping(false);
-        }
-      }
-      prevCountRef.current = newMsgs.length;
+      setMessages((msgs as Message[]) || []);
     }
 
-    load();
+    loadInitial();
 
     const channel = supabase
-      .channel(`messages-${patientId}`)
+      .channel(`realtime-messages-${patientId}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "messages",
           filter: `patient_id=eq.${patientId}`,
         },
-        () => {
-          load();
+        (payload) => {
+          if (!isMounted) return;
+          const newMsg = payload.new as Message;
+          setMessages((prev) => {
+            // Avoid duplicates (e.g. optimistic insert)
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+          // Hide typing when a non-secretary message arrives via realtime
+          if (newMsg.sender_type !== "secretary") {
+            setShowTyping(false);
+          }
         }
       )
       .subscribe();
