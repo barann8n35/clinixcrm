@@ -133,7 +133,14 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
                 <span className="text-[11px] text-muted-foreground flex-shrink-0">{chat.time}</span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[11px]">{platformIcon[chat.platform] || "🌐"}</span>
+                {(() => {
+                  const cfg = platformConfig[chat.platform];
+                  if (cfg) {
+                    const Icon = cfg.icon;
+                    return <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cfg.color }} />;
+                  }
+                  return <span className="text-[11px]">🌐</span>;
+                })()}
                 <span className={`text-[12px] truncate ${chat.unread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>
                   {chat.lastMsg}
                 </span>
