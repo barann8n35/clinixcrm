@@ -12,6 +12,15 @@ const platformConfig: Record<string, { icon: IconType; color: string }> = {
   telegram: { icon: FaTelegramPlane, color: "#0088cc" },
 };
 
+interface ChatItem {
+  id: string;
+  name: string;
+  lastMsg: string;
+  time: string;
+  unread: boolean;
+  platform: string;
+}
+
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime();
   const mins = Math.floor(diff / 60000);
