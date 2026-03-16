@@ -5,18 +5,20 @@ import { ActiveChats } from "@/components/dashboard/ActiveChats";
 import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMobileNav } from "@/contexts/MobileNavContext";
+import { useTranslation } from "react-i18next";
+import { MessageSquare } from "lucide-react";
 
 type MobileView = "list" | "chat";
 
 const Messages = () => {
-  const [selectedPatientId, setSelectedPatientId] = useState<string>("a1b2c3d4-1111-4a7b-b2e1-9c3f4d5a6e7b");
+  const { t } = useTranslation();
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<MobileView>("list");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const { setHideHamburger } = useMobileNav();
 
-  // Hide hamburger when in chat view on mobile
   useEffect(() => {
     setHideHamburger(isMobile && mobileView === "chat");
     return () => setHideHamburger(false);
@@ -34,24 +36,26 @@ const Messages = () => {
         {mobileView === "list" ? (
           <div className="flex flex-col h-full">
             <div className="px-4 py-3 border-b border-border pl-14">
-              <h3 className="text-sm font-semibold text-foreground">Messages</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("inbox.title")}</h3>
             </div>
             <ActiveChats selectedPatientId={selectedPatientId} onSelectPatient={handleSelectPatient} />
           </div>
         ) : (
           <div className="flex flex-col h-full">
-            <ChatInterface
-              patientId={selectedPatientId}
-              onBack={() => setMobileView("list")}
-              onInfoClick={() => setDetailsOpen(true)}
-              showBackButton
-            />
+            {selectedPatientId && (
+              <ChatInterface
+                patientId={selectedPatientId}
+                onBack={() => setMobileView("list")}
+                onInfoClick={() => setDetailsOpen(true)}
+                showBackButton
+              />
+            )}
             <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
               <SheetContent side="right" className="w-[85vw] sm:w-80 p-0">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Patient Details</SheetTitle>
                 </SheetHeader>
-                <PatientPanel patientId={selectedPatientId} />
+                {selectedPatientId && <PatientPanel patientId={selectedPatientId} />}
               </SheetContent>
             </Sheet>
           </div>
@@ -63,35 +67,45 @@ const Messages = () => {
   // Tablet & Desktop
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Chat list */}
-      <div className="w-56 border-r border-border flex flex-col bg-card shrink-0">
-        <div className="px-4 py-3 border-b border-border">
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Chats</h3>
+      {/* Left: Header + Chat list */}
+      <div className="w-72 border-r border-border flex flex-col bg-card shrink-0">
+        <div className="px-5 py-5 border-b border-border">
+          <h2 className="text-xl font-display font-bold text-foreground">{t("inbox.title")}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("inbox.subtitle")}</p>
         </div>
         <ActiveChats selectedPatientId={selectedPatientId} onSelectPatient={handleSelectPatient} />
       </div>
 
-      {/* Chat */}
+      {/* Chat or empty state */}
       <div className="flex-1 min-w-0">
-        <ChatInterface
-          patientId={selectedPatientId}
-          onBack={isTablet ? () => {} : undefined}
-          onInfoClick={isTablet ? () => setDetailsOpen(true) : undefined}
-        />
+        {selectedPatientId ? (
+          <ChatInterface
+            patientId={selectedPatientId}
+            onBack={isTablet ? () => {} : undefined}
+            onInfoClick={isTablet ? () => setDetailsOpen(true) : undefined}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
+            <MessageSquare className="w-12 h-12 opacity-30" />
+            <p className="text-sm">{t("inbox.selectConversation")}</p>
+          </div>
+        )}
       </div>
 
-      {/* Right panel: visible on desktop, sheet on tablet */}
-      {isTablet ? (
-        <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <SheetContent side="right" className="w-80 p-0">
-            <SheetHeader className="sr-only">
-              <SheetTitle>Patient Details</SheetTitle>
-            </SheetHeader>
-            <PatientPanel patientId={selectedPatientId} />
-          </SheetContent>
-        </Sheet>
-      ) : (
-        <PatientPanel patientId={selectedPatientId} />
+      {/* Right panel */}
+      {selectedPatientId && (
+        isTablet ? (
+          <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+            <SheetContent side="right" className="w-80 p-0">
+              <SheetHeader className="sr-only">
+                <SheetTitle>Patient Details</SheetTitle>
+              </SheetHeader>
+              <PatientPanel patientId={selectedPatientId} />
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <PatientPanel patientId={selectedPatientId} />
+        )
       )}
     </div>
   );

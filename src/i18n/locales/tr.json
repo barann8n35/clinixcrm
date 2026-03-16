@@ -1,0 +1,102 @@
+{
+  "sidebar": {
+    "dashboard": "Gösterge Paneli",
+    "inbox": "Gelen Kutusu",
+    "pipeline": "Pipeline",
+    "patients": "Hastalar",
+    "appointments": "Randevular",
+    "knowledgeBase": "Bilgi Bankası",
+    "settings": "Ayarlar",
+    "mainMenu": "ANA MENÜ",
+    "management": "YÖNETİM",
+    "logout": "Çıkış Yap",
+    "notLoggedIn": "Giriş yapılmadı"
+  },
+  "dashboard": {
+    "title": "Gösterge Paneli",
+    "subtitle": "Hoş geldiniz — günlük özet",
+    "todayAppointments": "BUGÜNKÜ RANDEVULAR",
+    "totalPatients": "TOPLAM HASTALAR",
+    "totalValue": "TOPLAM DEĞER",
+    "criticalCandidates": "KRİTİK ADAYLAR",
+    "pendingApproval": "onay bekliyor",
+    "urgentIntervention": "Acil müdahale gerekiyor",
+    "todaySchedule": "Bugünkü Randevular",
+    "noAppointments": "Bugün randevu yok",
+    "appointments": "randevu",
+    "criticalList": "Kritik Adaylar",
+    "sourceDistribution": "Kaynak Dağılımı"
+  },
+  "inbox": {
+    "title": "Gelen Kutusu",
+    "subtitle": "Tüm kanallardan gelen mesajlar",
+    "searchPlaceholder": "Hasta ara...",
+    "selectConversation": "Bir görüşme seçin",
+    "typeMessage": "Mesaj yazın...",
+    "aiActive": "AI Aktif",
+    "aiPaused": "AI Duraklatıldı",
+    "today": "Bugün",
+    "online": "Çevrimiçi",
+    "lastSeen": "Son görülme",
+    "patient": "Hasta",
+    "aiAssistant": "AI Asistan",
+    "you": "Siz",
+    "aiMonitoring": "AI bu görüşmeyi izliyor...",
+    "back": "Geri"
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "subtitle": "Lead'leri aşamalar arasında sürükleyerek yönetin.",
+    "incoming": "Gelen",
+    "aiScan": "AI Taraması",
+    "awaitingApproval": "Onay Bekliyor",
+    "appointmentBooked": "Randevu Alındı",
+    "lead": "lead",
+    "urgent": "Acil",
+    "medium": "Orta",
+    "low": "Düşük"
+  },
+  "patients": {
+    "title": "Hastalar",
+    "recordCount": "hasta kaydı",
+    "searchPlaceholder": "İsme göre ara...",
+    "noMatch": "Aramanızla eşleşen hasta bulunamadı.",
+    "noRecords": "Henüz hasta kaydı yok."
+  },
+  "appointments": {
+    "title": "Randevular",
+    "count": "randevu",
+    "all": "Tümü",
+    "upcoming": "Yaklaşan",
+    "approved": "Onaylı",
+    "cancelled": "İptal",
+    "rescheduled": "Ertelendi",
+    "completed": "Tamamlandı",
+    "noFilter": "Bu filtreyle eşleşen randevu yok.",
+    "noRecords": "Henüz randevu kaydı yok.",
+    "today": "Bugün",
+    "tomorrow": "Yarın"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "subtitle": "Uygulama ayarlarını yönetin",
+    "profile": "Profil",
+    "clinic": "Klinik",
+    "integrations": "Entegrasyonlar",
+    "save": "Kaydet",
+    "saved": "Kaydedildi",
+    "savedDesc": "Ayarlarınız başarıyla güncellendi."
+  },
+  "analytics": {
+    "title": "Analitik",
+    "subtitle": "Performans ve istatistikler"
+  },
+  "common": {
+    "loading": "Yükleniyor...",
+    "noData": "Veri yok"
+  },
+  "lang": {
+    "tr": "TR",
+    "en": "EN"
+  }
+}
