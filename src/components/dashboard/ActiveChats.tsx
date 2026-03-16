@@ -3,6 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { IconType } from "react-icons";
+
+const platformConfig: Record<string, { icon: IconType; color: string }> = {
+  whatsapp: { icon: FaWhatsapp, color: "#25D366" },
+  instagram: { icon: FaInstagram, color: "#E1306C" },
+  telegram: { icon: FaTelegramPlane, color: "#0088cc" },
+};
 
 interface ChatItem {
   id: string;
@@ -12,12 +20,6 @@ interface ChatItem {
   unread: boolean;
   platform: string;
 }
-
-const platformIcon: Record<string, string> = {
-  whatsapp: "🟢",
-  telegram: "✈️",
-  instagram: "🟣",
-};
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime();
@@ -140,7 +142,14 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
                 <span className="text-[11px] text-muted-foreground flex-shrink-0">{chat.time}</span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[11px]">{platformIcon[chat.platform] || "🌐"}</span>
+                {(() => {
+                  const cfg = platformConfig[chat.platform];
+                  if (cfg) {
+                    const Icon = cfg.icon;
+                    return <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cfg.color }} />;
+                  }
+                  return <span className="text-[11px]">🌐</span>;
+                })()}
                 <span className={`text-[12px] truncate ${chat.unread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>
                   {chat.lastMsg}
                 </span>
