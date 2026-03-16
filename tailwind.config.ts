@@ -68,6 +68,8 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+          muted: "hsl(var(--sidebar-muted))",
+          "group-label": "hsl(var(--sidebar-group-label))",
         },
         chat: {
           patient: "hsl(var(--chat-patient))",
@@ -98,7 +100,7 @@ export default {
           "50%": { opacity: "0.5" },
         },
         "slide-in-right": {
-          from: { transform: "translateX(10px)", opacity: "0" },
+          from: { transform: "translateX(-10px)", opacity: "0" },
           to: { transform: "translateX(0)", opacity: "1" },
         },
       },

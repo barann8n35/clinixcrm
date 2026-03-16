@@ -16,6 +16,8 @@ import Patients from "./pages/Patients";
 import Analytics from "./pages/Analytics";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
+import Pipeline from "./pages/Pipeline";
+import "@/i18n";
 
 const queryClient = new QueryClient();
 
@@ -30,9 +32,10 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-              <Route index element={<Navigate to="/messages" replace />} />
+              <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="messages" element={<Messages />} />
+              <Route path="pipeline" element={<Pipeline />} />
               <Route path="appointments" element={<Appointments />} />
               <Route path="patients" element={<Patients />} />
               <Route path="analytics" element={<Analytics />} />
