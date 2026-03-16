@@ -126,7 +126,14 @@ const Pipeline = () => {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-semibold text-foreground">{card.name}</span>
-                        <span className="text-sm">{card.platform ? platformIcon[card.platform] || "🌐" : "🌐"}</span>
+                        {(() => {
+                          const cfg = card.platform ? platformConfig[card.platform] : null;
+                          if (cfg) {
+                            const Icon = cfg.icon;
+                            return <Icon className="w-4 h-4" style={{ color: cfg.color }} />;
+                          }
+                          return <span className="text-sm">🌐</span>;
+                        })()}
                       </div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm font-bold text-primary">{card.value.toLocaleString("tr-TR")} ₺</span>
