@@ -201,7 +201,8 @@ const Pipeline = () => {
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                className={`bg-card rounded-xl border border-border p-4 shadow-card transition-shadow ${
+                                {...provided.dragHandleProps}
+                                className={`bg-card rounded-xl border border-border p-4 shadow-card transition-shadow cursor-grab active:cursor-grabbing ${
                                   snapshot.isDragging
                                     ? "shadow-elevated ring-2 ring-primary/30 rotate-1"
                                     : "hover:shadow-elevated"
@@ -209,12 +210,6 @@ const Pipeline = () => {
                               >
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
-                                    <span
-                                      {...provided.dragHandleProps}
-                                      className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors"
-                                    >
-                                      <GripVertical className="w-4 h-4" />
-                                    </span>
                                     <span className="text-sm font-semibold text-foreground">
                                       {card.name}
                                     </span>
