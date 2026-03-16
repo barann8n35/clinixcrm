@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Calendar, Users, TrendingUp, AlertTriangle, Clock } from "lucide-react";
+import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { IconType } from "react-icons";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
