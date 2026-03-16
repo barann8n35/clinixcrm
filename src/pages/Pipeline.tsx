@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
-import { GripVertical } from "lucide-react";
+
 import { IconType } from "react-icons";
 import {
   DragDropContext,
