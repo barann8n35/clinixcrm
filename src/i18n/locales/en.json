@@ -1,0 +1,102 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "inbox": "Inbox",
+    "pipeline": "Pipeline",
+    "patients": "Patients",
+    "appointments": "Appointments",
+    "knowledgeBase": "Knowledge Base",
+    "settings": "Settings",
+    "mainMenu": "MAIN MENU",
+    "management": "MANAGEMENT",
+    "logout": "Log Out",
+    "notLoggedIn": "Not logged in"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Welcome — daily summary",
+    "todayAppointments": "TODAY'S APPOINTMENTS",
+    "totalPatients": "TOTAL PATIENTS",
+    "totalValue": "TOTAL VALUE",
+    "criticalCandidates": "CRITICAL CANDIDATES",
+    "pendingApproval": "pending approval",
+    "urgentIntervention": "Urgent intervention needed",
+    "todaySchedule": "Today's Appointments",
+    "noAppointments": "No appointments today",
+    "appointments": "appointments",
+    "criticalList": "Critical Candidates",
+    "sourceDistribution": "Source Distribution"
+  },
+  "inbox": {
+    "title": "Inbox",
+    "subtitle": "Messages from all channels",
+    "searchPlaceholder": "Search patient...",
+    "selectConversation": "Select a conversation",
+    "typeMessage": "Type a message...",
+    "aiActive": "AI Active",
+    "aiPaused": "AI Paused",
+    "today": "Today",
+    "online": "Online",
+    "lastSeen": "Last seen",
+    "patient": "Patient",
+    "aiAssistant": "AI Assistant",
+    "you": "You",
+    "aiMonitoring": "AI is monitoring this conversation...",
+    "back": "Back"
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "subtitle": "Manage leads by dragging between stages.",
+    "incoming": "Incoming",
+    "aiScan": "AI Qualification",
+    "awaitingApproval": "Awaiting Approval",
+    "appointmentBooked": "Appointment Booked",
+    "lead": "lead",
+    "urgent": "Urgent",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "patients": {
+    "title": "Patients",
+    "recordCount": "patient records",
+    "searchPlaceholder": "Search by name...",
+    "noMatch": "No patients match your search.",
+    "noRecords": "No patient records yet."
+  },
+  "appointments": {
+    "title": "Appointments",
+    "count": "appointments",
+    "all": "All",
+    "upcoming": "Upcoming",
+    "approved": "Approved",
+    "cancelled": "Cancelled",
+    "rescheduled": "Rescheduled",
+    "completed": "Completed",
+    "noFilter": "No appointments match this filter.",
+    "noRecords": "No appointments yet.",
+    "today": "Today",
+    "tomorrow": "Tomorrow"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage application settings",
+    "profile": "Profile",
+    "clinic": "Clinic",
+    "integrations": "Integrations",
+    "save": "Save",
+    "saved": "Saved",
+    "savedDesc": "Your settings were updated successfully."
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Performance and statistics"
+  },
+  "common": {
+    "loading": "Loading...",
+    "noData": "No data"
+  },
+  "lang": {
+    "tr": "TR",
+    "en": "EN"
+  }
+}
