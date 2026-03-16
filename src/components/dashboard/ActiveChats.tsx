@@ -130,7 +130,7 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
                 {chat.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
               </div>
               {chat.unread && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-unread border-2 border-card" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary border-2 border-card" />
               )}
             </div>
 

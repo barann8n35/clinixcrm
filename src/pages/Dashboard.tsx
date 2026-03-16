@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Calendar, Users, TrendingUp, AlertTriangle, Clock } from "lucide-react";
+import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { IconType } from "react-icons";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
@@ -35,10 +37,10 @@ interface TodayAppointment {
   status: string;
 }
 
-const platformIcon: Record<string, string> = {
-  whatsapp: "🟢",
-  telegram: "✈️",
-  instagram: "🟣",
+const platformConfig: Record<string, { icon: IconType; color: string }> = {
+  whatsapp: { icon: FaWhatsapp, color: "#25D366" },
+  instagram: { icon: FaInstagram, color: "#E1306C" },
+  telegram: { icon: FaTelegramPlane, color: "#0088cc" },
 };
 
 const pieData = [
@@ -229,18 +231,28 @@ const Dashboard = () => {
                 </span>
               )}
             </div>
-            <div className="p-3">
-              {criticalPatients.map((p) => (
-                <div key={p.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-sm">{p.platform ? platformIcon[p.platform] || "🌐" : "🌐"}</span>
-                    <span className="text-sm font-medium text-foreground">{p.name}</span>
+            <div className="divide-y divide-border/60">
+              {criticalPatients.map((p, idx) => {
+                const cfg = p.platform ? platformConfig[p.platform] : null;
+                return (
+                  <div
+                    key={p.id}
+                    className={`flex items-center justify-between px-5 py-3 transition-colors hover:bg-accent/40 ${idx % 2 === 1 ? "bg-muted/30" : ""}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {cfg ? (
+                        <cfg.icon className="w-4 h-4 flex-shrink-0" style={{ color: cfg.color }} />
+                      ) : (
+                        <span className="text-sm flex-shrink-0">🌐</span>
+                      )}
+                      <span className="text-sm font-medium text-foreground truncate">{p.name}</span>
+                    </div>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-destructive/10 text-destructive flex-shrink-0 ml-3">
+                      {p.score}/10
+                    </span>
                   </div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-destructive/10 text-destructive">
-                    {p.score}/10
-                  </span>
-                </div>
-              ))}
+                );
+              })}
               {criticalPatients.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">{t("common.noData")}</p>
               )}

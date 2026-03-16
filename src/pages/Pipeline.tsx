@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
+import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { IconType } from "react-icons";
 
 interface Patient {
   id: string;
@@ -21,10 +23,10 @@ interface PipelineCard {
   date: string;
 }
 
-const platformIcon: Record<string, string> = {
-  whatsapp: "🟢",
-  telegram: "✈️",
-  instagram: "🟣",
+const platformConfig: Record<string, { icon: IconType; color: string }> = {
+  whatsapp: { icon: FaWhatsapp, color: "#25D366" },
+  instagram: { icon: FaInstagram, color: "#E1306C" },
+  telegram: { icon: FaTelegramPlane, color: "#0088cc" },
 };
 
 const priorityStyles: Record<string, { bg: string; text: string }> = {
@@ -124,7 +126,14 @@ const Pipeline = () => {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-semibold text-foreground">{card.name}</span>
-                        <span className="text-sm">{card.platform ? platformIcon[card.platform] || "🌐" : "🌐"}</span>
+                        {(() => {
+                          const cfg = card.platform ? platformConfig[card.platform] : null;
+                          if (cfg) {
+                            const Icon = cfg.icon;
+                            return <Icon className="w-4 h-4" style={{ color: cfg.color }} />;
+                          }
+                          return <span className="text-sm">🌐</span>;
+                        })()}
                       </div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm font-bold text-primary">{card.value.toLocaleString("tr-TR")} ₺</span>
