@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
+import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { IconType } from "react-icons";
 
 interface Patient {
   id: string;
@@ -21,10 +23,10 @@ interface PipelineCard {
   date: string;
 }
 
-const platformIcon: Record<string, string> = {
-  whatsapp: "🟢",
-  telegram: "✈️",
-  instagram: "🟣",
+const platformConfig: Record<string, { icon: IconType; color: string }> = {
+  whatsapp: { icon: FaWhatsapp, color: "#25D366" },
+  instagram: { icon: FaInstagram, color: "#E1306C" },
+  telegram: { icon: FaTelegramPlane, color: "#0088cc" },
 };
 
 const priorityStyles: Record<string, { bg: string; text: string }> = {
