@@ -37,10 +37,10 @@ interface TodayAppointment {
   status: string;
 }
 
-const platformIcon: Record<string, string> = {
-  whatsapp: "🟢",
-  telegram: "✈️",
-  instagram: "🟣",
+const platformConfig: Record<string, { icon: IconType; color: string }> = {
+  whatsapp: { icon: FaWhatsapp, color: "#25D366" },
+  instagram: { icon: FaInstagram, color: "#E1306C" },
+  telegram: { icon: FaTelegramPlane, color: "#0088cc" },
 };
 
 const pieData = [
