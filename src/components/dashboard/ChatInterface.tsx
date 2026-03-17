@@ -269,7 +269,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
 
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} t={t} />
+            <MessageBubble key={msg.id} msg={msg} t={t} patientName={patient?.name} />
           ))}
         </AnimatePresence>
 
