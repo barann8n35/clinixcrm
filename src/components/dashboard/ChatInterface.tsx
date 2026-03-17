@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 
-type MessageType = "patient" | "ai" | "secretary";
+type MessageType = "patient" | "ai" | "secretary" | "admin" | "doctor";
 
 interface Message {
   id: string;
@@ -55,33 +55,53 @@ function TypingIndicator() {
   );
 }
 
-function MessageBubble({ msg, t }: { msg: Message; t: (key: string) => string }) {
+function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string) => string; patientName?: string }) {
   const time = format(new Date(msg.created_at), "HH:mm");
-  const configs: Record<MessageType, { bg: string; border: string; label: string; icon: React.ReactNode; align: string }> = {
-    patient: {
-      bg: "bg-chat-patient",
-      border: "border-chat-patient-border",
-      label: t("inbox.patient"),
-      icon: msg.platform ? <span className="text-xs">{platformLabels[msg.platform]?.icon}</span> : null,
-      align: "items-start",
-    },
-    ai: {
-      bg: "bg-chat-ai",
-      border: "border-chat-ai-border",
-      label: t("inbox.aiAssistant"),
-      icon: <Sparkles className="w-3.5 h-3.5 text-primary" />,
-      align: "items-start",
-    },
-    secretary: {
-      bg: "bg-chat-secretary",
-      border: "border-chat-secretary-border",
-      label: t("inbox.you"),
-      icon: <User className="w-3.5 h-3.5 text-success" />,
-      align: "items-end",
-    },
+  const isOutgoing = msg.sender_type === "admin" || msg.sender_type === "doctor";
+
+  const getConfig = () => {
+    switch (msg.sender_type) {
+      case "patient":
+        return {
+          bg: "bg-chat-patient",
+          border: "border-chat-patient-border",
+          label: patientName || "Bilinmeyen Hasta",
+          icon: msg.platform ? <span className="text-xs">{platformLabels[msg.platform]?.icon}</span> : null,
+          align: "items-start",
+          rounded: "rounded-bl-md",
+        };
+      case "secretary":
+        return {
+          bg: "bg-chat-ai",
+          border: "border-chat-ai-border",
+          label: "AI Asistan 🤖",
+          icon: <Sparkles className="w-3.5 h-3.5 text-primary" />,
+          align: "items-start",
+          rounded: "rounded-bl-md",
+        };
+      case "admin":
+      case "doctor":
+        return {
+          bg: "bg-chat-secretary",
+          border: "border-chat-secretary-border",
+          label: "Siz (Dr. Ercan)",
+          icon: <User className="w-3.5 h-3.5 text-success" />,
+          align: "items-end",
+          rounded: "rounded-br-md",
+        };
+      default:
+        return {
+          bg: "bg-chat-ai",
+          border: "border-chat-ai-border",
+          label: msg.sender_type,
+          icon: <Sparkles className="w-3.5 h-3.5 text-primary" />,
+          align: "items-start",
+          rounded: "rounded-bl-md",
+        };
+    }
   };
 
-  const c = configs[msg.sender_type];
+  const c = getConfig();
 
   return (
     <motion.div
@@ -90,7 +110,7 @@ function MessageBubble({ msg, t }: { msg: Message; t: (key: string) => string })
       animate="visible"
       className={`flex flex-col ${c.align}`}
     >
-      <div className={`max-w-[85%] md:max-w-[70%] ${c.bg} border ${c.border} rounded-2xl px-4 md:px-5 py-3 md:py-3.5 ${msg.sender_type === "secretary" ? "rounded-br-md" : "rounded-bl-md"}`}>
+      <div className={`max-w-[85%] md:max-w-[70%] ${c.bg} border ${c.border} rounded-2xl px-4 md:px-5 py-3 md:py-3.5 ${c.rounded}`}>
         <div className="flex items-center gap-1.5 mb-1">
           {c.icon}
           <span className="text-[11px] font-semibold text-foreground/70">{c.label}</span>
@@ -249,7 +269,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
 
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} t={t} />
+            <MessageBubble key={msg.id} msg={msg} t={t} patientName={patient?.name} />
           ))}
         </AnimatePresence>
 
