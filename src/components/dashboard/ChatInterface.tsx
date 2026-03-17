@@ -201,7 +201,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
     setShowTyping(true);
     await supabase.from("messages").insert({
       patient_id: patientId,
-      sender_type: "admin",
+      sender_type: "secretary",
       text: inputValue.trim(),
       platform: null,
     });
