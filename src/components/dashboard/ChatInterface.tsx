@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 
-type MessageType = "patient" | "ai" | "secretary";
+type MessageType = "patient" | "ai" | "secretary" | "admin" | "doctor";
 
 interface Message {
   id: string;
