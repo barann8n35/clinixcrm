@@ -1,0 +1,2 @@
+ALTER TABLE public.messages DROP CONSTRAINT messages_sender_type_check;
+ALTER TABLE public.messages ADD CONSTRAINT messages_sender_type_check CHECK (sender_type = ANY (ARRAY['patient'::text, 'ai'::text, 'secretary'::text, 'admin'::text, 'doctor'::text]));
