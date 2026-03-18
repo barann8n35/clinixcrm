@@ -154,12 +154,13 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
       setShowTyping(false);
 
       const [{ data: p }, { data: msgs }] = await Promise.all([
-        supabase.from("patients").select("id, name, platform").eq("id", patientId).maybeSingle(),
+        supabase.from("patients").select("id, name, platform, is_ai_active").eq("id", patientId).maybeSingle(),
         supabase.from("messages").select("*").eq("patient_id", patientId).order("created_at", { ascending: true }),
       ]);
 
       if (!isMounted) return;
       setPatient(p);
+      setAiPaused(p?.is_ai_active === false);
       setMessages(sortMessages((msgs as Message[]) || []));
     }
 
