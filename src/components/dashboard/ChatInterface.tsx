@@ -137,7 +137,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   const [aiPaused, setAiPaused] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [patient, setPatient] = useState<Patient | null>(null);
+  const [patient, setPatient] = useState<Patient & { is_ai_active?: boolean | null } | null>(null);
   const [sending, setSending] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -154,12 +154,13 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
       setShowTyping(false);
 
       const [{ data: p }, { data: msgs }] = await Promise.all([
-        supabase.from("patients").select("id, name, platform").eq("id", patientId).maybeSingle(),
+        supabase.from("patients").select("id, name, platform, is_ai_active").eq("id", patientId).maybeSingle(),
         supabase.from("messages").select("*").eq("patient_id", patientId).order("created_at", { ascending: true }),
       ]);
 
       if (!isMounted) return;
       setPatient(p);
+      setAiPaused(p?.is_ai_active === false);
       setMessages(sortMessages((msgs as Message[]) || []));
     }
 
@@ -195,16 +196,26 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
     });
   }, [messages, showTyping]);
 
+  async function handleToggleAi() {
+    const newValue = !aiPaused;
+    setAiPaused(newValue);
+    await supabase.from("patients").update({ is_ai_active: !newValue }).eq("id", patientId);
+  }
+
   async function handleSend() {
     if (!inputValue.trim() || sending) return;
     setSending(true);
     setShowTyping(true);
-    await supabase.from("messages").insert({
-      patient_id: patientId,
-      sender_type: "admin",
-      text: inputValue.trim(),
-      platform: null,
-    });
+    await Promise.all([
+      supabase.from("messages").insert({
+        patient_id: patientId,
+        sender_type: "admin",
+        text: inputValue.trim(),
+        platform: null,
+      }),
+      supabase.from("patients").update({ is_ai_active: false }).eq("id", patientId),
+    ]);
+    setAiPaused(true);
     setInputValue("");
     setSending(false);
   }
@@ -246,7 +257,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
             </button>
           )}
           <button
-            onClick={() => setAiPaused(!aiPaused)}
+            onClick={handleToggleAi}
             className={`flex items-center gap-1.5 px-2.5 md:px-3.5 py-1.5 rounded-full text-[11px] md:text-[12px] font-medium transition-all duration-200 border
               ${aiPaused
                 ? "bg-warning/10 border-warning/30 text-warning"
