@@ -137,7 +137,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   const [aiPaused, setAiPaused] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [patient, setPatient] = useState<Patient | null>(null);
+  const [patient, setPatient] = useState<Patient & { is_ai_active?: boolean | null } | null>(null);
   const [sending, setSending] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
