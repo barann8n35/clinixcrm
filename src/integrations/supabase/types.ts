@@ -92,6 +92,7 @@ export type Database = {
           complaint: string | null
           created_at: string
           id: string
+          is_ai_active: boolean | null
           location: string | null
           name: string
           phone: string | null
@@ -103,6 +104,7 @@ export type Database = {
           complaint?: string | null
           created_at?: string
           id: string
+          is_ai_active?: boolean | null
           location?: string | null
           name: string
           phone?: string | null
@@ -114,6 +116,7 @@ export type Database = {
           complaint?: string | null
           created_at?: string
           id?: string
+          is_ai_active?: boolean | null
           location?: string | null
           name?: string
           phone?: string | null
