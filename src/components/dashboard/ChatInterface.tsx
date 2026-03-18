@@ -257,7 +257,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
             </button>
           )}
           <button
-            onClick={() => setAiPaused(!aiPaused)}
+            onClick={handleToggleAi}
             className={`flex items-center gap-1.5 px-2.5 md:px-3.5 py-1.5 rounded-full text-[11px] md:text-[12px] font-medium transition-all duration-200 border
               ${aiPaused
                 ? "bg-warning/10 border-warning/30 text-warning"
