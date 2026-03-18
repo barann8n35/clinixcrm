@@ -84,7 +84,7 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
         return {
           bg: "bg-chat-secretary",
           border: "border-chat-secretary-border",
-          label: "Siz 👨‍⚕️",
+          label: "Siz (Dr. Ercan)",
           icon: <User className="w-3.5 h-3.5 text-success" />,
           align: "items-end",
           rounded: "rounded-br-md",
@@ -201,7 +201,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
     setShowTyping(true);
     await supabase.from("messages").insert({
       patient_id: patientId,
-      sender_type: "admin",
+      sender_type: "secretary",
       text: inputValue.trim(),
       platform: null,
     });
