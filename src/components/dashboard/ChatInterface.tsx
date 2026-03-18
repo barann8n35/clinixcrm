@@ -196,16 +196,26 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
     });
   }, [messages, showTyping]);
 
+  async function handleToggleAi() {
+    const newValue = !aiPaused;
+    setAiPaused(newValue);
+    await supabase.from("patients").update({ is_ai_active: !newValue }).eq("id", patientId);
+  }
+
   async function handleSend() {
     if (!inputValue.trim() || sending) return;
     setSending(true);
     setShowTyping(true);
-    await supabase.from("messages").insert({
-      patient_id: patientId,
-      sender_type: "admin",
-      text: inputValue.trim(),
-      platform: null,
-    });
+    await Promise.all([
+      supabase.from("messages").insert({
+        patient_id: patientId,
+        sender_type: "admin",
+        text: inputValue.trim(),
+        platform: null,
+      }),
+      supabase.from("patients").update({ is_ai_active: false }).eq("id", patientId),
+    ]);
+    setAiPaused(true);
     setInputValue("");
     setSending(false);
   }
