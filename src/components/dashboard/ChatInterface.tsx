@@ -84,7 +84,7 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
         return {
           bg: "bg-chat-secretary",
           border: "border-chat-secretary-border",
-          label: "Siz (Dr. Ercan)",
+          label: "Siz 👨‍⚕️",
           icon: <User className="w-3.5 h-3.5 text-success" />,
           align: "items-end",
           rounded: "rounded-br-md",
