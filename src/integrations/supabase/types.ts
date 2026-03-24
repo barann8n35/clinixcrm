@@ -52,10 +52,35 @@ export type Database = {
           },
         ]
       }
+      learning_logs: {
+        Row: {
+          created_at: string | null
+          id: number
+          patient_id: string | null
+          patient_name: string | null
+          unknown_question: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          patient_id?: string | null
+          patient_name?: string | null
+          unknown_question?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          patient_id?: string | null
+          patient_name?: string | null
+          unknown_question?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
           id: string
+          is_processed: boolean | null
           patient_id: string
           platform: string | null
           sender_type: string
@@ -64,6 +89,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_processed?: boolean | null
           patient_id: string
           platform?: string | null
           sender_type: string
@@ -72,6 +98,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_processed?: boolean | null
           patient_id?: string
           platform?: string | null
           sender_type?: string
@@ -89,39 +116,51 @@ export type Database = {
       }
       patients: {
         Row: {
+          age: string | null
           complaint: string | null
           created_at: string
+          gender: string | null
           id: string
           is_ai_active: boolean | null
           location: string | null
           name: string
+          notes: string | null
           phone: string | null
           platform: string | null
           status: string
+          surname: string | null
           updated_at: string
         }
         Insert: {
+          age?: string | null
           complaint?: string | null
           created_at?: string
+          gender?: string | null
           id: string
           is_ai_active?: boolean | null
           location?: string | null
           name: string
+          notes?: string | null
           phone?: string | null
           platform?: string | null
           status?: string
+          surname?: string | null
           updated_at?: string
         }
         Update: {
+          age?: string | null
           complaint?: string | null
           created_at?: string
+          gender?: string | null
           id?: string
           is_ai_active?: boolean | null
           location?: string | null
           name?: string
+          notes?: string | null
           phone?: string | null
           platform?: string | null
           status?: string
+          surname?: string | null
           updated_at?: string
         }
         Relationships: []

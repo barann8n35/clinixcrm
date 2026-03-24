@@ -33,7 +33,15 @@ export function PatientPanel({ patientId }: { patientId: string }) {
     if (acting) return;
     setActing(true);
     try {
-      // Find the latest pending/upcoming appointment for this patient
+      // Update patient status
+      const { error } = await supabase
+        .from("patients")
+        .update({ status: newStatus })
+        .eq("id", patientId);
+
+      if (error) throw error;
+
+      // Also update appointment if one exists
       const { data: apt } = await supabase
         .from("appointments")
         .select("id")
@@ -43,12 +51,9 @@ export function PatientPanel({ patientId }: { patientId: string }) {
         .limit(1)
         .maybeSingle();
 
-      if (!apt) {
-        toast.error("No pending appointment found for this patient.");
-        return;
+      if (apt) {
+        await supabase.from("appointments").update({ status: newStatus }).eq("id", apt.id);
       }
-
-      await supabase.from("appointments").update({ status: newStatus }).eq("id", apt.id);
 
       const msgText = 
         newStatus === "approved"
@@ -64,16 +69,19 @@ export function PatientPanel({ patientId }: { patientId: string }) {
         platform: null,
       });
 
+      // Update local state
+      setPatient(prev => prev ? { ...prev, status: newStatus } : null);
+
       const successMsg = 
         newStatus === "approved"
-          ? "Appointment approved"
+          ? "Randevu Onaylandı ✅"
           : newStatus === "cancelled"
-          ? "Appointment cancelled"
-          : "Reschedule request sent";
+          ? "Randevu İptal Edildi"
+          : "Yeniden planlama talebi gönderildi";
       
       toast.success(successMsg);
     } catch (e) {
-      toast.error("Action failed");
+      toast.error("İşlem başarısız oldu");
     } finally {
       setActing(false);
     }
