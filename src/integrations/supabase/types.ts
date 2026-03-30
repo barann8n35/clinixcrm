@@ -54,6 +54,7 @@ export type Database = {
       }
       learning_logs: {
         Row: {
+          answer: string | null
           created_at: string | null
           id: number
           patient_id: string | null
@@ -61,6 +62,7 @@ export type Database = {
           unknown_question: string | null
         }
         Insert: {
+          answer?: string | null
           created_at?: string | null
           id?: number
           patient_id?: string | null
@@ -68,6 +70,7 @@ export type Database = {
           unknown_question?: string | null
         }
         Update: {
+          answer?: string | null
           created_at?: string | null
           id?: number
           patient_id?: string | null

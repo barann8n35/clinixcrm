@@ -1,0 +1,1 @@
+ALTER TABLE public.learning_logs ADD COLUMN IF NOT EXISTS answer text DEFAULT NULL;

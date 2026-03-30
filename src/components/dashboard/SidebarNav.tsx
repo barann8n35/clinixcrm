@@ -13,7 +13,7 @@ const mainNavItems = [
 ];
 
 const managementNavItems = [
-  { icon: BookOpen, labelKey: "sidebar.knowledgeBase", path: "/analytics" },
+  { icon: BookOpen, labelKey: "sidebar.knowledgeBase", path: "/knowledge-base" },
   { icon: Settings, labelKey: "sidebar.settings", path: "/settings" },
 ];
 
