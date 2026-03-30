@@ -330,19 +330,25 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
             <div className="px-3 py-2 border-b border-border">
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Hızlı Yanıtlar</span>
             </div>
-            {QUICK_REPLIES.map((qr, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setInputValue(qr.text);
-                  setShowQuickReplies(false);
-                }}
-                className="w-full text-left px-3 py-2.5 hover:bg-accent/50 transition-colors border-b border-border last:border-b-0"
-              >
-                <span className="text-[12px] font-medium text-foreground">{qr.label}</span>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{qr.text}</p>
-              </button>
-            ))}
+            {loadingReplies ? (
+              <div className="px-3 py-4 text-center text-[12px] text-muted-foreground">Yükleniyor...</div>
+            ) : quickReplies.length === 0 ? (
+              <div className="px-3 py-4 text-center text-[12px] text-muted-foreground">Şablon bulunamadı</div>
+            ) : (
+              quickReplies.map((qr) => (
+                <button
+                  key={qr.id}
+                  onClick={() => {
+                    setInputValue(qr.content);
+                    setShowQuickReplies(false);
+                  }}
+                  className="w-full text-left px-3 py-2.5 hover:bg-accent/50 transition-colors border-b border-border last:border-b-0"
+                >
+                  <span className="text-[12px] font-medium text-foreground">{qr.title}</span>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{qr.content}</p>
+                </button>
+              ))
+            )}
           </div>
         )}
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2 md:gap-3 bg-muted/50 rounded-2xl px-3 md:px-4 py-2.5 md:py-3">
