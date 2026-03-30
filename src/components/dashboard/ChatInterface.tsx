@@ -140,6 +140,7 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }: ChatInterfaceProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [aiPaused, setAiPaused] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
