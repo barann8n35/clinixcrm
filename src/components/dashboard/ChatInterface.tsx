@@ -248,9 +248,11 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="font-display font-semibold text-sm md:text-[15px] text-foreground truncate">{patient?.name || t("common.loading")}</h2>
-              {patient?.platform && (
-                <span className="text-xs">{platformLabels[patient.platform]?.icon}</span>
-              )}
+              {patient?.platform && (() => {
+                const cfg = platformConfig[patient.platform!];
+                if (cfg) { const PIcon = cfg.icon; return <PIcon className="w-4 h-4" style={{ color: cfg.color }} />; }
+                return null;
+              })()}
             </div>
             <p className="text-[11px] text-muted-foreground">{t("inbox.online")}</p>
           </div>
