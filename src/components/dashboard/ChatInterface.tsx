@@ -354,7 +354,16 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2 md:gap-3 bg-muted/50 rounded-2xl px-3 md:px-4 py-2.5 md:py-3">
           <button
             type="button"
-            onClick={() => setShowQuickReplies(!showQuickReplies)}
+            onClick={async () => {
+              const next = !showQuickReplies;
+              setShowQuickReplies(next);
+              if (next && quickReplies.length === 0) {
+                setLoadingReplies(true);
+                const { data } = await supabase.from('quick_replies').select('id, title, content').order('created_at');
+                setQuickReplies((data as QuickReply[]) || []);
+                setLoadingReplies(false);
+              }
+            }}
             className={`p-1.5 rounded-lg transition-colors ${showQuickReplies ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
           >
             <Zap className="w-[18px] h-[18px]" />
