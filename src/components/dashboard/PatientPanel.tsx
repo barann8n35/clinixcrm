@@ -154,14 +154,73 @@ export function PatientPanel({ patientId }: { patientId: string }) {
             <XCircle className="w-4 h-4" />
             Cancel Appointment
           </button>
-          <button
-            disabled={acting}
-            onClick={() => handleAction("rescheduled")}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-warning text-warning-foreground font-medium text-[13px] hover:bg-warning/90 transition-all shadow-card hover:shadow-elevated disabled:opacity-50"
-          >
-            <CalendarDays className="w-4 h-4" />
-            Reschedule
-          </button>
+          <Popover open={showReschedule} onOpenChange={setShowReschedule}>
+            <PopoverTrigger asChild>
+              <button
+                disabled={acting}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-warning text-warning-foreground font-medium text-[13px] hover:bg-warning/90 transition-all shadow-card hover:shadow-elevated disabled:opacity-50"
+              >
+                <CalendarDays className="w-4 h-4" />
+                Reschedule
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center" side="top">
+              <div className="p-3 space-y-3">
+                <Calendar
+                  mode="single"
+                  selected={rescheduleDate}
+                  onSelect={setRescheduleDate}
+                  disabled={(date) => date < new Date()}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+                <div className="flex items-center gap-2 px-3">
+                  <label className="text-xs font-medium text-muted-foreground">Saat:</label>
+                  <Input
+                    type="time"
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    className="w-28 text-sm h-8"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  disabled={!rescheduleDate || rescheduleSaving}
+                  onClick={async () => {
+                    if (!rescheduleDate) return;
+                    setRescheduleSaving(true);
+                    const [h, m] = rescheduleTime.split(":").map(Number);
+                    const dt = new Date(rescheduleDate);
+                    dt.setHours(h, m, 0, 0);
+                    const iso = dt.toISOString();
+
+                    const { error } = await supabase
+                      .from("patients")
+                      .update({ status: "rescheduled", appointment_date: iso })
+                      .eq("id", patientId);
+
+                    if (error) {
+                      toast.error("Kaydetme başarısız oldu");
+                    } else {
+                      await supabase.from("messages").insert({
+                        patient_id: patientId,
+                        sender_type: "secretary",
+                        text: `Randevunuz ${format(dt, "dd.MM.yyyy HH:mm")} tarihine yeniden planlanmıştır 🗓️`,
+                        platform: null,
+                      });
+                      setPatient((prev) => prev ? { ...prev, status: "rescheduled" } : null);
+                      toast.success("Randevu yeniden planlandı 🗓️");
+                      setShowReschedule(false);
+                      setRescheduleDate(undefined);
+                    }
+                    setRescheduleSaving(false);
+                  }}
+                >
+                  {rescheduleSaving ? "Kaydediliyor..." : "Tarihi Kaydet"}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
