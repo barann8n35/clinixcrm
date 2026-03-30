@@ -23,10 +23,10 @@ interface Patient {
   platform: string | null;
 }
 
-const platformLabels: Record<string, { icon: string; label: string }> = {
-  whatsapp: { icon: "🟢", label: "WhatsApp" },
-  telegram: { icon: "✈️", label: "Telegram" },
-  instagram: { icon: "🟣", label: "Instagram" },
+const platformConfig: Record<string, { icon: React.ComponentType<any>; color: string; label: string }> = {
+  whatsapp: { icon: FaWhatsapp, color: "#25D366", label: "WhatsApp" },
+  telegram: { icon: FaTelegramPlane, color: "#0088cc", label: "Telegram" },
+  instagram: { icon: FaInstagram, color: "#E1306C", label: "Instagram" },
 };
 
 const messageVariants = {
