@@ -121,7 +121,7 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
           {c.icon}
           <span className="text-[11px] font-semibold text-foreground/70">{c.label}</span>
           {msg.platform && (
-            <span className="text-[10px] text-muted-foreground">via {platformLabels[msg.platform]?.label}</span>
+            <span className="text-[10px] text-muted-foreground">via {platformConfig[msg.platform]?.label}</span>
           )}
           <span className="text-[10px] text-muted-foreground ml-auto">{time}</span>
         </div>
