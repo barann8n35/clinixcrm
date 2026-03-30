@@ -126,6 +126,7 @@ export type Database = {
           event_id: string | null
           gender: string | null
           id: string
+          internal_notes: string | null
           is_ai_active: boolean | null
           location: string | null
           name: string
@@ -134,6 +135,7 @@ export type Database = {
           platform: string | null
           status: string
           surname: string | null
+          tags: string[] | null
           updated_at: string
         }
         Insert: {
@@ -144,6 +146,7 @@ export type Database = {
           event_id?: string | null
           gender?: string | null
           id: string
+          internal_notes?: string | null
           is_ai_active?: boolean | null
           location?: string | null
           name: string
@@ -152,6 +155,7 @@ export type Database = {
           platform?: string | null
           status?: string
           surname?: string | null
+          tags?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -162,6 +166,7 @@ export type Database = {
           event_id?: string | null
           gender?: string | null
           id?: string
+          internal_notes?: string | null
           is_ai_active?: boolean | null
           location?: string | null
           name?: string
@@ -170,6 +175,7 @@ export type Database = {
           platform?: string | null
           status?: string
           surname?: string | null
+          tags?: string[] | null
           updated_at?: string
         }
         Relationships: []
