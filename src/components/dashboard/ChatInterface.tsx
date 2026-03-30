@@ -131,11 +131,11 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
   );
 }
 
-const QUICK_REPLIES = [
-  { label: "📍 Klinik Konum Bilgisi", text: "Kliniğimizin adresi: [Adres bilgisi]. Google Maps linki: [link]. Otopark mevcuttur." },
-  { label: "🍽️ Açlık Uyarısı", text: "Lütfen işlem öncesi en az 8 saat boyunca bir şey yememeniz gerekmektedir. Su içebilirsiniz." },
-  { label: "✅ Randevu Teyit", text: "Randevunuz [tarih] günü saat [saat]'te onaylanmıştır. Lütfen 15 dakika önce klinikte olunuz." },
-];
+interface QuickReply {
+  id: string;
+  title: string;
+  content: string;
+}
 
 interface ChatInterfaceProps {
   patientId: string;
@@ -153,6 +153,8 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   const [patient, setPatient] = useState<Patient & { is_ai_active?: boolean | null } | null>(null);
   const [sending, setSending] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
+  const [loadingReplies, setLoadingReplies] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -328,25 +330,40 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
             <div className="px-3 py-2 border-b border-border">
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Hızlı Yanıtlar</span>
             </div>
-            {QUICK_REPLIES.map((qr, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setInputValue(qr.text);
-                  setShowQuickReplies(false);
-                }}
-                className="w-full text-left px-3 py-2.5 hover:bg-accent/50 transition-colors border-b border-border last:border-b-0"
-              >
-                <span className="text-[12px] font-medium text-foreground">{qr.label}</span>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{qr.text}</p>
-              </button>
-            ))}
+            {loadingReplies ? (
+              <div className="px-3 py-4 text-center text-[12px] text-muted-foreground">Yükleniyor...</div>
+            ) : quickReplies.length === 0 ? (
+              <div className="px-3 py-4 text-center text-[12px] text-muted-foreground">Şablon bulunamadı</div>
+            ) : (
+              quickReplies.map((qr) => (
+                <button
+                  key={qr.id}
+                  onClick={() => {
+                    setInputValue(qr.content);
+                    setShowQuickReplies(false);
+                  }}
+                  className="w-full text-left px-3 py-2.5 hover:bg-accent/50 transition-colors border-b border-border last:border-b-0"
+                >
+                  <span className="text-[12px] font-medium text-foreground">{qr.title}</span>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{qr.content}</p>
+                </button>
+              ))
+            )}
           </div>
         )}
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2 md:gap-3 bg-muted/50 rounded-2xl px-3 md:px-4 py-2.5 md:py-3">
           <button
             type="button"
-            onClick={() => setShowQuickReplies(!showQuickReplies)}
+            onClick={async () => {
+              const next = !showQuickReplies;
+              setShowQuickReplies(next);
+              if (next && quickReplies.length === 0) {
+                setLoadingReplies(true);
+                const { data } = await supabase.from('quick_replies').select('id, title, content').order('created_at');
+                setQuickReplies((data as QuickReply[]) || []);
+                setLoadingReplies(false);
+              }
+            }}
             className={`p-1.5 rounded-lg transition-colors ${showQuickReplies ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
           >
             <Zap className="w-[18px] h-[18px]" />
