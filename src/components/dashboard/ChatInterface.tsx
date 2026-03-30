@@ -131,11 +131,11 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
   );
 }
 
-const QUICK_REPLIES = [
-  { label: "📍 Klinik Konum Bilgisi", text: "Kliniğimizin adresi: [Adres bilgisi]. Google Maps linki: [link]. Otopark mevcuttur." },
-  { label: "🍽️ Açlık Uyarısı", text: "Lütfen işlem öncesi en az 8 saat boyunca bir şey yememeniz gerekmektedir. Su içebilirsiniz." },
-  { label: "✅ Randevu Teyit", text: "Randevunuz [tarih] günü saat [saat]'te onaylanmıştır. Lütfen 15 dakika önce klinikte olunuz." },
-];
+interface QuickReply {
+  id: string;
+  title: string;
+  content: string;
+}
 
 interface ChatInterfaceProps {
   patientId: string;
