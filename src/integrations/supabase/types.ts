@@ -117,6 +117,7 @@ export type Database = {
       patients: {
         Row: {
           age: string | null
+          appointment_date: string | null
           complaint: string | null
           created_at: string
           gender: string | null
@@ -133,6 +134,7 @@ export type Database = {
         }
         Insert: {
           age?: string | null
+          appointment_date?: string | null
           complaint?: string | null
           created_at?: string
           gender?: string | null
@@ -149,6 +151,7 @@ export type Database = {
         }
         Update: {
           age?: string | null
+          appointment_date?: string | null
           complaint?: string | null
           created_at?: string
           gender?: string | null
