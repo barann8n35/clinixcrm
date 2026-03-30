@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { useToast } from "@/hooks/use-toast";
 
 type MessageType = "patient" | "ai" | "secretary" | "admin" | "doctor";
 
@@ -21,10 +23,10 @@ interface Patient {
   platform: string | null;
 }
 
-const platformLabels: Record<string, { icon: string; label: string }> = {
-  whatsapp: { icon: "🟢", label: "WhatsApp" },
-  telegram: { icon: "✈️", label: "Telegram" },
-  instagram: { icon: "🟣", label: "Instagram" },
+const platformConfig: Record<string, { icon: React.ComponentType<any>; color: string; label: string }> = {
+  whatsapp: { icon: FaWhatsapp, color: "#25D366", label: "WhatsApp" },
+  telegram: { icon: FaTelegramPlane, color: "#0088cc", label: "Telegram" },
+  instagram: { icon: FaInstagram, color: "#E1306C", label: "Instagram" },
 };
 
 const messageVariants = {
@@ -66,7 +68,11 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
           bg: "bg-chat-patient",
           border: "border-chat-patient-border",
           label: patientName || "Bilinmeyen Hasta",
-          icon: msg.platform ? <span className="text-xs">{platformLabels[msg.platform]?.icon}</span> : null,
+          icon: (() => {
+            const cfg = msg.platform ? platformConfig[msg.platform] : null;
+            if (cfg) { const PIcon = cfg.icon; return <PIcon className="w-3.5 h-3.5" style={{ color: cfg.color }} />; }
+            return null;
+          })(),
           align: "items-start",
           rounded: "rounded-bl-md",
         };
@@ -115,7 +121,7 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
           {c.icon}
           <span className="text-[11px] font-semibold text-foreground/70">{c.label}</span>
           {msg.platform && (
-            <span className="text-[10px] text-muted-foreground">via {platformLabels[msg.platform]?.label}</span>
+            <span className="text-[10px] text-muted-foreground">via {platformConfig[msg.platform]?.label}</span>
           )}
           <span className="text-[10px] text-muted-foreground ml-auto">{time}</span>
         </div>
@@ -134,6 +140,7 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }: ChatInterfaceProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [aiPaused, setAiPaused] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -199,7 +206,13 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   async function handleToggleAi() {
     const newValue = !aiPaused;
     setAiPaused(newValue);
-    await supabase.from("patients").update({ is_ai_active: !newValue }).eq("id", patientId);
+    const { error } = await supabase.from("patients").update({ is_ai_active: !newValue }).eq("id", patientId);
+    if (error) {
+      setAiPaused(!newValue);
+      toast({ title: "Hata", description: "Güncelleme başarısız oldu.", variant: "destructive" });
+    } else {
+      toast({ title: newValue ? "AI Duraklatıldı" : "AI Aktif", description: "Başarıyla güncellendi." });
+    }
   }
 
   async function handleSend() {
@@ -242,9 +255,11 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="font-display font-semibold text-sm md:text-[15px] text-foreground truncate">{patient?.name || t("common.loading")}</h2>
-              {patient?.platform && (
-                <span className="text-xs">{platformLabels[patient.platform]?.icon}</span>
-              )}
+              {patient?.platform && (() => {
+                const cfg = platformConfig[patient.platform!];
+                if (cfg) { const PIcon = cfg.icon; return <PIcon className="w-4 h-4" style={{ color: cfg.color }} />; }
+                return null;
+              })()}
             </div>
             <p className="text-[11px] text-muted-foreground">{t("inbox.online")}</p>
           </div>

@@ -123,6 +123,7 @@ export type Database = {
           appointment_date: string | null
           complaint: string | null
           created_at: string
+          event_id: string | null
           gender: string | null
           id: string
           is_ai_active: boolean | null
@@ -140,6 +141,7 @@ export type Database = {
           appointment_date?: string | null
           complaint?: string | null
           created_at?: string
+          event_id?: string | null
           gender?: string | null
           id: string
           is_ai_active?: boolean | null
@@ -157,6 +159,7 @@ export type Database = {
           appointment_date?: string | null
           complaint?: string | null
           created_at?: string
+          event_id?: string | null
           gender?: string | null
           id?: string
           is_ai_active?: boolean | null
