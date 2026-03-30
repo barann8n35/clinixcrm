@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { useToast } from "@/hooks/use-toast";
 
 type MessageType = "patient" | "ai" | "secretary" | "admin" | "doctor";
 
