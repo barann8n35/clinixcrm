@@ -18,9 +18,6 @@ export function PatientPanel({ patientId }: { patientId: string }) {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [acting, setActing] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
-  const [rescheduleDate, setRescheduleDate] = useState<Date | undefined>();
-  const [rescheduleTime, setRescheduleTime] = useState("10:00");
-  const [rescheduleSaving, setRescheduleSaving] = useState(false);
 
   useEffect(() => {
     async function load() {
