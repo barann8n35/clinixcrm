@@ -14,6 +14,7 @@ import Messages from "./pages/Messages";
 import Appointments from "./pages/Appointments";
 import Patients from "./pages/Patients";
 import Analytics from "./pages/Analytics";
+import KnowledgeBase from "./pages/KnowledgeBase";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Pipeline from "./pages/Pipeline";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="appointments" element={<Appointments />} />
               <Route path="patients" element={<Patients />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="settings" element={<Settings />} />
             </Route>
