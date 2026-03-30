@@ -206,7 +206,13 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   async function handleToggleAi() {
     const newValue = !aiPaused;
     setAiPaused(newValue);
-    await supabase.from("patients").update({ is_ai_active: !newValue }).eq("id", patientId);
+    const { error } = await supabase.from("patients").update({ is_ai_active: !newValue }).eq("id", patientId);
+    if (error) {
+      setAiPaused(!newValue);
+      toast({ title: "Hata", description: "Güncelleme başarısız oldu.", variant: "destructive" });
+    } else {
+      toast({ title: newValue ? "AI Duraklatıldı" : "AI Aktif", description: "Başarıyla güncellendi." });
+    }
   }
 
   async function handleSend() {
