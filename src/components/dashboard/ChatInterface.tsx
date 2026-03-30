@@ -68,7 +68,11 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
           bg: "bg-chat-patient",
           border: "border-chat-patient-border",
           label: patientName || "Bilinmeyen Hasta",
-          icon: msg.platform ? <span className="text-xs">{platformLabels[msg.platform]?.icon}</span> : null,
+          icon: (() => {
+            const cfg = msg.platform ? platformConfig[msg.platform] : null;
+            if (cfg) { const PIcon = cfg.icon; return <PIcon className="w-3.5 h-3.5" style={{ color: cfg.color }} />; }
+            return null;
+          })(),
           align: "items-start",
           rounded: "rounded-bl-md",
         };
