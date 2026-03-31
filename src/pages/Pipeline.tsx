@@ -12,15 +12,6 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 
-interface Patient {
-  id: string;
-  name: string;
-  platform: string | null;
-  status: string;
-  complaint: string | null;
-  created_at: string;
-}
-
 interface PipelineCard {
   id: string;
   name: string;

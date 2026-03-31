@@ -272,7 +272,7 @@ const Dashboard = () => {
               )}
             </div>
             <div className="divide-y divide-border/40">
-              {criticalPatients.map((p, idx) => {
+              {criticalPatients.map((p) => {
                 const cfg = p.platform ? platformConfig[p.platform] : null;
                 return (
                   <div

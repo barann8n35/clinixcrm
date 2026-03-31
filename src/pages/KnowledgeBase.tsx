@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BookOpen, Send, Loader2, CheckCircle, Sparkles } from "lucide-react";
+import { BookOpen, Send, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
