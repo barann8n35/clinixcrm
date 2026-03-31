@@ -10,7 +10,8 @@
     "mainMenu": "ANA MENÜ",
     "management": "YÖNETİM",
     "logout": "Çıkış Yap",
-    "notLoggedIn": "Giriş yapılmadı"
+    "notLoggedIn": "Giriş yapılmadı",
+    "campaigns": "Kampanyalar"
   },
   "dashboard": {
     "title": "Gösterge Paneli",

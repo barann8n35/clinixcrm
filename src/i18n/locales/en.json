@@ -10,7 +10,8 @@
     "mainMenu": "MAIN MENU",
     "management": "MANAGEMENT",
     "logout": "Log Out",
-    "notLoggedIn": "Not logged in"
+    "notLoggedIn": "Not logged in",
+    "campaigns": "Campaigns"
   },
   "dashboard": {
     "title": "Dashboard",
