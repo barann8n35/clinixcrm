@@ -115,7 +115,7 @@ const Campaigns = () => {
             transition={{ duration: 0.3 }}
             className="lg:col-span-2 space-y-4"
           >
-            <div className="rounded-2xl border border-border bg-card p-5 space-y-5">
+            <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-5 shadow-card">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-primary" />
                 <h2 className="text-sm font-display font-bold text-foreground">Hedef Kitle Filtreleme</h2>
