@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
-import { Inbox } from "lucide-react";
+import { Inbox, Sparkles } from "lucide-react";
 import { IconType } from "react-icons";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   DragDropContext,
   Droppable,
@@ -57,6 +57,34 @@ const columnColors: Record<ColumnKey, string> = {
   appointmentBooked: "from-muted to-transparent",
 };
 
+const successColumns: ColumnKey[] = ["awaitingApproval", "appointmentBooked"];
+
+/* ── Reusable card inner ── */
+const CardContent = ({ card, pStyle, t }: { card: PipelineCard; pStyle: { bg: string; text: string }; t: (k: string) => string }) => {
+  const cfg = card.platform ? platformConfig[card.platform] : null;
+  return (
+    <>
+      <div className="flex items-center justify-between mb-2 min-w-0">
+        <span className="text-sm font-semibold text-foreground truncate mr-2">{card.name}</span>
+        {cfg ? (
+          <cfg.icon className="w-4 h-4 shrink-0" style={{ color: cfg.color }} />
+        ) : (
+          <span className="text-sm shrink-0">🌐</span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm font-extrabold text-primary whitespace-nowrap">
+          {card.value.toLocaleString("tr-TR")} ₺
+        </span>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${pStyle.bg} ${pStyle.text}`}>
+          {t(`pipeline.${card.priority}`)}
+        </span>
+      </div>
+      <p className="text-[11px] text-muted-foreground">{card.date}</p>
+    </>
+  );
+};
+
 const Pipeline = () => {
   const { t } = useTranslation();
   const [columns, setColumns] = useState<Record<ColumnKey, PipelineCard[]>>({
@@ -66,6 +94,7 @@ const Pipeline = () => {
     appointmentBooked: [],
   });
   const valuesRef = useRef<Record<string, number>>({});
+  const [celebrateId, setCelebrateId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -127,6 +156,12 @@ const Pipeline = () => {
 
         const dstCards = [...prev[dstKey]];
         dstCards.splice(destination.index, 0, moved);
+
+        // Dopamine celebration for success columns
+        if (successColumns.includes(dstKey)) {
+          setCelebrateId(moved.id);
+          setTimeout(() => setCelebrateId(null), 1200);
+        }
 
         supabase
           .from("patients")
@@ -193,8 +228,10 @@ const Pipeline = () => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-2.5 min-h-[60px] rounded-xl transition-all duration-200 ${
-                        snapshot.isDraggingOver ? "bg-primary/5 ring-2 ring-primary/20 scale-[1.01]" : ""
+                      className={`space-y-2.5 min-h-[60px] rounded-xl transition-all duration-200 p-1 ${
+                        snapshot.isDraggingOver
+                          ? "bg-primary/5 ring-2 ring-primary/20"
+                          : ""
                       }`}
                     >
                       {cards.length === 0 && !snapshot.isDraggingOver && (
@@ -202,11 +239,14 @@ const Pipeline = () => {
                           <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-2">
                             <Inbox className="w-5 h-5 text-muted-foreground/30" />
                           </div>
-                          <p className="text-[11px] text-muted-foreground/60">Bu aşamada lead yok</p>
+                          <p className="text-[11px] text-muted-foreground/60">
+                            {t("pipeline.empty", "Bu aşamada lead yok")}
+                          </p>
                         </div>
                       )}
                       {cards.map((card, index) => {
                         const pStyle = priorityStyles[card.priority];
+                        const isCelebrating = celebrateId === card.id;
                         return (
                           <Draggable key={card.id} draggableId={card.id} index={index}>
                             {(provided, snapshot) => (
@@ -214,32 +254,46 @@ const Pipeline = () => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`bg-card rounded-2xl border border-border/60 p-4 shadow-card transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                                style={{
+                                  ...provided.draggableProps.style,
+                                  // Lock width during drag to prevent layout collapse
+                                  ...(snapshot.isDragging
+                                    ? { width: (provided.draggableProps.style as any)?.width || "auto" }
+                                    : {}),
+                                }}
+                                className={`relative overflow-hidden bg-card rounded-2xl border border-border/60 p-4 cursor-grab active:cursor-grabbing transition-shadow duration-200 ${
                                   snapshot.isDragging
-                                    ? "shadow-float ring-2 ring-primary/30 rotate-1 scale-[1.02]"
-                                    : "card-interactive"
+                                    ? "shadow-float ring-2 ring-primary/30 rotate-[2deg] scale-[1.03] z-50"
+                                    : "shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-300"
                                 }`}
                               >
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm font-semibold text-foreground">{card.name}</span>
-                                  {(() => {
-                                    const cfg = card.platform ? platformConfig[card.platform] : null;
-                                    if (cfg) {
-                                      const Icon = cfg.icon;
-                                      return <Icon className="w-4 h-4 shrink-0" style={{ color: cfg.color }} />;
-                                    }
-                                    return <span className="text-sm">🌐</span>;
-                                  })()}
-                                </div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-sm font-extrabold text-primary">
-                                    {card.value.toLocaleString("tr-TR")} ₺
-                                  </span>
-                                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${pStyle.bg} ${pStyle.text}`}>
-                                    {t(`pipeline.${card.priority}`)}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-muted-foreground">{card.date}</p>
+                                {/* Dopamine ripple overlay */}
+                                <AnimatePresence>
+                                  {isCelebrating && (
+                                    <motion.div
+                                      initial={{ scale: 0, opacity: 0.7 }}
+                                      animate={{ scale: 3, opacity: 0 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={{ duration: 1, ease: "easeOut" }}
+                                      className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-success/40 pointer-events-none"
+                                    />
+                                  )}
+                                </AnimatePresence>
+                                <AnimatePresence>
+                                  {isCelebrating && (
+                                    <motion.div
+                                      initial={{ opacity: 0, y: 4 }}
+                                      animate={{ opacity: 1, y: -2 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={{ duration: 0.5 }}
+                                      className="absolute top-1 right-2 pointer-events-none"
+                                    >
+                                      <Sparkles className="w-4 h-4 text-success" />
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+
+                                <CardContent card={card} pStyle={pStyle} t={t} />
                               </div>
                             )}
                           </Draggable>
