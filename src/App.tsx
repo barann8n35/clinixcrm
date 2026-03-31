@@ -18,6 +18,7 @@ import KnowledgeBase from "./pages/KnowledgeBase";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Pipeline from "./pages/Pipeline";
+import Campaigns from "./pages/Campaigns";
 import "@/i18n";
 
 const queryClient = new QueryClient();
