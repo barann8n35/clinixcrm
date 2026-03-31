@@ -26,7 +26,7 @@ function DashboardLayoutInner() {
 
           {mobileMenuOpen && (
             <div className="fixed inset-0 z-50 flex">
-              <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+              <div className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
               <div className="relative z-10 w-72 h-full animate-slide-in-right">
                 <SidebarNav collapsed={false} onNavigate={() => setMobileMenuOpen(false)} />
                 <button

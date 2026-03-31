@@ -132,7 +132,7 @@ const Settings = () => {
 
         {/* Profil Tab */}
         <TabsContent value="profil">
-          <Card className="border-border">
+          <Card className="border-border/60 shadow-card rounded-2xl">
             <CardHeader>
               <CardTitle className="text-lg font-display">Profil Bilgileri</CardTitle>
               <CardDescription>Kişisel bilgilerinizi güncelleyin</CardDescription>
