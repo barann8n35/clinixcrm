@@ -166,7 +166,7 @@ const Settings = () => {
 
         {/* Klinik Tab */}
         <TabsContent value="klinik">
-          <Card className="border-border">
+          <Card className="border-border/60 shadow-card rounded-2xl">
             <CardHeader>
               <CardTitle className="text-lg font-display">Klinik Bilgileri</CardTitle>
               <CardDescription>Klinik detaylarını düzenleyin</CardDescription>
@@ -201,7 +201,7 @@ const Settings = () => {
         {/* Entegrasyonlar Tab */}
         <TabsContent value="entegrasyonlar">
           <div className="space-y-4">
-            <Card className="border-border">
+            <Card className="border-border/60 shadow-card rounded-2xl">
               <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -222,7 +222,7 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-border">
+            <Card className="border-border/60 shadow-card rounded-2xl">
               <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -248,7 +248,7 @@ const Settings = () => {
 
         {/* Hazır Yanıtlar Tab */}
         <TabsContent value="hazir-yanitlar">
-          <Card className="border-border">
+          <Card className="border-border/60 shadow-card rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <div>
                 <CardTitle className="text-lg font-display">Hazır Yanıt Şablonları</CardTitle>
