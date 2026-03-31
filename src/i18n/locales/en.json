@@ -55,7 +55,9 @@
     "lead": "lead",
     "urgent": "Urgent",
     "medium": "Medium",
-    "low": "Low"
+    "low": "Low",
+    "postOp": "Post-Op Follow-up",
+    "empty": "No leads in this stage"
   },
   "patients": {
     "title": "Patients",
