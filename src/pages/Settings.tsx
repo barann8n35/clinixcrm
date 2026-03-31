@@ -123,7 +123,7 @@ const Settings = () => {
       </motion.div>
 
       <Tabs defaultValue="profil" className="space-y-6">
-        <TabsList className="bg-muted w-full sm:w-auto">
+        <TabsList className="bg-muted/50 w-full sm:w-auto rounded-xl">
           <TabsTrigger value="profil" className="gap-2"><User className="h-4 w-4 hidden sm:block" />Profil</TabsTrigger>
           <TabsTrigger value="klinik" className="gap-2"><Building2 className="h-4 w-4 hidden sm:block" />Klinik</TabsTrigger>
           <TabsTrigger value="entegrasyonlar" className="gap-2"><Plug className="h-4 w-4 hidden sm:block" />Entegrasyonlar</TabsTrigger>
