@@ -19,7 +19,7 @@ function DashboardLayoutInner() {
         <>
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="fixed top-3 left-3 z-50 p-2 rounded-lg bg-card border border-border shadow-card"
+            className="fixed top-3 left-3 z-50 p-2 rounded-xl bg-card/90 backdrop-blur-md border border-border/60 shadow-elevated"
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
