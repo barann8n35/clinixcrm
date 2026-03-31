@@ -55,7 +55,9 @@
     "lead": "lead",
     "urgent": "Acil",
     "medium": "Orta",
-    "low": "Düşük"
+    "low": "Düşük",
+    "postOp": "Post-Op Takip",
+    "empty": "Bu aşamada lead yok"
   },
   "patients": {
     "title": "Hastalar",

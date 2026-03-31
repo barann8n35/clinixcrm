@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { Search, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
 import { IconType } from "react-icons";
@@ -148,7 +148,7 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
                     const Icon = cfg.icon;
                     return <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: cfg.color }} />;
                   }
-                  return <span className="text-[11px]">🌐</span>;
+                  return <Globe className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />;
                 })()}
                 <span className={`text-[12px] truncate ${chat.unread ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>
                   {chat.lastMsg}
