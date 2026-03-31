@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Clock, CheckCircle, XCircle, CalendarDays, X } from "lucide-react";
+import { Clock, CheckCircle, XCircle, CalendarDays, Link2, Check, Copy } from "lucide-react";
 import { MiniSchedule } from "./MiniSchedule";
 import { RescheduleDrawer } from "./RescheduleDrawer";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PatientOverviewTab } from "./patient-card/PatientOverviewTab";
 import { PatientTimelineTab } from "./patient-card/PatientTimelineTab";
 import { PatientFilesTab } from "./patient-card/PatientFilesTab";
-import { motion } from "framer-motion";
+import { PatientTasksTab } from "./patient-card/PatientTasksTab";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Patient {
   id: string;
@@ -32,6 +33,7 @@ export function PatientPanel({ patientId }: { patientId: string }) {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [acting, setActing] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -90,6 +92,17 @@ export function PatientPanel({ patientId }: { patientId: string }) {
     }
   }
 
+  function handleGenerateIntakeLink() {
+    const fakeLink = `https://clinix.app/intake/${patientId.substring(0, 8)}`;
+    navigator.clipboard.writeText(fakeLink).then(() => {
+      setLinkCopied(true);
+      toast.success("Ön kayıt linki panoya kopyalandı!");
+      setTimeout(() => setLinkCopied(false), 2000);
+    }).catch(() => {
+      toast.error("Kopyalama başarısız");
+    });
+  }
+
   const initials = patient?.name?.split(" ").map(n => n[0]).join("") || "?";
   const statusInfo = STATUS_BADGE[patient?.status || ""] || STATUS_BADGE.pending;
 
@@ -114,15 +127,18 @@ export function PatientPanel({ patientId }: { patientId: string }) {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-3 pt-3 bg-card border-b border-border">
+        <div className="px-2 pt-3 bg-card border-b border-border">
           <TabsList className="w-full bg-muted/50 rounded-xl h-9">
-            <TabsTrigger value="overview" className="flex-1 text-[11px] font-semibold rounded-lg data-[state=active]:shadow-sm">
-              Genel Bakış
+            <TabsTrigger value="overview" className="flex-1 text-[10px] font-semibold rounded-lg data-[state=active]:shadow-sm">
+              Genel
             </TabsTrigger>
-            <TabsTrigger value="timeline" className="flex-1 text-[11px] font-semibold rounded-lg data-[state=active]:shadow-sm">
-              Zaman Çizelgesi
+            <TabsTrigger value="timeline" className="flex-1 text-[10px] font-semibold rounded-lg data-[state=active]:shadow-sm">
+              Zaman Çizgisi
             </TabsTrigger>
-            <TabsTrigger value="files" className="flex-1 text-[11px] font-semibold rounded-lg data-[state=active]:shadow-sm">
+            <TabsTrigger value="tasks" className="flex-1 text-[10px] font-semibold rounded-lg data-[state=active]:shadow-sm">
+              Görevler
+            </TabsTrigger>
+            <TabsTrigger value="files" className="flex-1 text-[10px] font-semibold rounded-lg data-[state=active]:shadow-sm">
               Dosyalar
             </TabsTrigger>
           </TabsList>
@@ -141,13 +157,17 @@ export function PatientPanel({ patientId }: { patientId: string }) {
             <PatientTimelineTab />
           </TabsContent>
 
+          <TabsContent value="tasks" className="p-4 mt-0">
+            <PatientTasksTab />
+          </TabsContent>
+
           <TabsContent value="files" className="p-4 mt-0">
             <PatientFilesTab />
           </TabsContent>
         </div>
       </Tabs>
 
-      {/* Quick Actions - always visible at bottom */}
+      {/* Quick Actions */}
       <div className="p-4 border-t border-border bg-card space-y-2">
         <button
           disabled={acting}
@@ -175,6 +195,41 @@ export function PatientPanel({ patientId }: { patientId: string }) {
             Yeniden Planla
           </button>
         </div>
+
+        {/* Intake Link Button */}
+        <motion.button
+          onClick={handleGenerateIntakeLink}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold text-[12px] shadow-card hover:shadow-elevated transition-all duration-300 border border-primary/20"
+        >
+          <AnimatePresence mode="wait">
+            {linkCopied ? (
+              <motion.span
+                key="copied"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                className="flex items-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Kopyalandı!
+              </motion.span>
+            ) : (
+              <motion.span
+                key="default"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                className="flex items-center gap-2"
+              >
+                <Link2 className="w-4 h-4" />
+                Ön Kayıt Linki Oluştur
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+
         <RescheduleDrawer
           open={showReschedule}
           onOpenChange={setShowReschedule}

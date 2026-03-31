@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
-import { Inbox, Sparkles } from "lucide-react";
+import { Inbox, Sparkles, Globe, Timer } from "lucide-react";
 import { IconType } from "react-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,9 +19,10 @@ interface PipelineCard {
   priority: "urgent" | "medium" | "low";
   platform: string | null;
   date: string;
+  postOpDays?: number;
 }
 
-const platformConfig: Record<string, { icon: IconType; color: string }> = {
+const platformConfig: Record<string, { icon: IconType | React.FC<any>; color: string }> = {
   whatsapp: { icon: FaWhatsapp, color: "#25D366" },
   instagram: { icon: FaInstagram, color: "#E1306C" },
   telegram: { icon: FaTelegramPlane, color: "#0088cc" },
@@ -33,7 +34,7 @@ const priorityStyles: Record<string, { bg: string; text: string }> = {
   low: { bg: "bg-primary/10", text: "text-primary" },
 };
 
-const columnKeys = ["incoming", "aiScan", "awaitingApproval", "appointmentBooked"] as const;
+const columnKeys = ["incoming", "aiScan", "awaitingApproval", "appointmentBooked", "postOp"] as const;
 type ColumnKey = (typeof columnKeys)[number];
 
 const statusForColumn: Record<ColumnKey, string> = {
@@ -41,12 +42,14 @@ const statusForColumn: Record<ColumnKey, string> = {
   aiScan: "active",
   awaitingApproval: "approved",
   appointmentBooked: "completed",
+  postOp: "post_op",
 };
 
 const columnForStatus = (status: string): ColumnKey => {
   if (status === "pending") return "incoming";
   if (status === "active") return "aiScan";
   if (status === "approved" || status === "rescheduled") return "awaitingApproval";
+  if (status === "post_op") return "postOp";
   return "appointmentBooked";
 };
 
@@ -55,35 +58,59 @@ const columnColors: Record<ColumnKey, string> = {
   aiScan: "from-warning/5 to-transparent",
   awaitingApproval: "from-success/5 to-transparent",
   appointmentBooked: "from-muted to-transparent",
+  postOp: "from-primary/8 to-success/3",
 };
 
 const successColumns: ColumnKey[] = ["awaitingApproval", "appointmentBooked"];
 
-/* ── Reusable card inner ── */
-const CardContent = ({ card, pStyle, t }: { card: PipelineCard; pStyle: { bg: string; text: string }; t: (k: string) => string }) => {
-  const cfg = card.platform ? platformConfig[card.platform] : null;
+/* ── Platform Icon ── */
+const PlatformIcon = ({ platform }: { platform: string | null }) => {
+  const cfg = platform ? platformConfig[platform] : null;
+  if (cfg) {
+    const Icon = cfg.icon;
+    return <Icon className="w-4 h-4 shrink-0" style={{ color: cfg.color }} />;
+  }
+  return <Globe className="w-4 h-4 shrink-0 text-muted-foreground" />;
+};
+
+/* ── Post-Op Badge ── */
+const PostOpBadge = ({ days }: { days: number }) => {
+  const isUrgent = days <= 1;
   return (
-    <>
-      <div className="flex items-center justify-between mb-2 min-w-0">
-        <span className="text-sm font-semibold text-foreground truncate mr-2">{card.name}</span>
-        {cfg ? (
-          <cfg.icon className="w-4 h-4 shrink-0" style={{ color: cfg.color }} />
-        ) : (
-          <span className="text-sm shrink-0">🌐</span>
-        )}
-      </div>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm font-extrabold text-primary whitespace-nowrap">
-          {card.value.toLocaleString("tr-TR")} ₺
-        </span>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${pStyle.bg} ${pStyle.text}`}>
-          {t(`pipeline.${card.priority}`)}
-        </span>
-      </div>
-      <p className="text-[11px] text-muted-foreground">{card.date}</p>
-    </>
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold mt-2 ${
+        isUrgent
+          ? "bg-destructive/10 text-destructive border border-destructive/20"
+          : "bg-primary/10 text-primary border border-primary/20"
+      }`}
+    >
+      <Timer className="w-3 h-3" />
+      {days <= 0 ? "Bugün mesaj at!" : `${days} Gün Sonra Mesaj`}
+    </motion.div>
   );
 };
+
+/* ── Reusable card inner ── */
+const CardContent = ({ card, pStyle, t, showPostOp }: { card: PipelineCard; pStyle: { bg: string; text: string }; t: (k: string) => string; showPostOp?: boolean }) => (
+  <>
+    <div className="flex items-center justify-between mb-2 min-w-0">
+      <span className="text-sm font-semibold text-foreground truncate mr-2">{card.name}</span>
+      <PlatformIcon platform={card.platform} />
+    </div>
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-sm font-extrabold text-primary whitespace-nowrap">
+        {card.value.toLocaleString("tr-TR")} ₺
+      </span>
+      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${pStyle.bg} ${pStyle.text}`}>
+        {t(`pipeline.${card.priority}`)}
+      </span>
+    </div>
+    <p className="text-[11px] text-muted-foreground">{card.date}</p>
+    {showPostOp && card.postOpDays !== undefined && <PostOpBadge days={card.postOpDays} />}
+  </>
+);
 
 const Pipeline = () => {
   const { t } = useTranslation();
@@ -92,6 +119,7 @@ const Pipeline = () => {
     aiScan: [],
     awaitingApproval: [],
     appointmentBooked: [],
+    postOp: [],
   });
   const valuesRef = useRef<Record<string, number>>({});
   const [celebrateId, setCelebrateId] = useState<string | null>(null);
@@ -109,12 +137,14 @@ const Pipeline = () => {
         aiScan: [],
         awaitingApproval: [],
         appointmentBooked: [],
+        postOp: [],
       };
 
       data.forEach((p, i) => {
         if (!valuesRef.current[p.id]) {
           valuesRef.current[p.id] = Math.floor(Math.random() * 20000) + 3000;
         }
+        const col = columnForStatus(p.status);
         const card: PipelineCard = {
           id: p.id,
           name: p.name,
@@ -126,8 +156,8 @@ const Pipeline = () => {
             month: "short",
             year: "numeric",
           }),
+          postOpDays: col === "postOp" ? Math.floor(Math.random() * 7) + 1 : undefined,
         };
-        const col = columnForStatus(p.status);
         stages[col].push(card);
       });
 
@@ -154,11 +184,17 @@ const Pipeline = () => {
           return { ...prev, [srcKey]: srcCards };
         }
 
+        // Add postOp days when dropping to postOp column
+        if (dstKey === "postOp") {
+          moved.postOpDays = 3;
+        } else {
+          moved.postOpDays = undefined;
+        }
+
         const dstCards = [...prev[dstKey]];
         dstCards.splice(destination.index, 0, moved);
 
-        // Dopamine celebration for success columns
-        if (successColumns.includes(dstKey)) {
+        if (successColumns.includes(dstKey) || dstKey === "postOp") {
           setCelebrateId(moved.id);
           setTimeout(() => setCelebrateId(null), 1200);
         }
@@ -180,6 +216,7 @@ const Pipeline = () => {
     { key: "aiScan", labelKey: "pipeline.aiScan" },
     { key: "awaitingApproval", labelKey: "pipeline.awaitingApproval" },
     { key: "appointmentBooked", labelKey: "pipeline.appointmentBooked" },
+    { key: "postOp", labelKey: "pipeline.postOp" },
   ];
 
   const totalValue = (cards: PipelineCard[]) =>
@@ -195,21 +232,24 @@ const Pipeline = () => {
       </motion.div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           {columnDefs.map((col, colIdx) => {
             const cards = columns[col.key] || [];
+            const isPostOp = col.key === "postOp";
             return (
               <motion.div
                 key={col.key}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: colIdx * 0.08 }}
-                className={`bg-gradient-to-b ${columnColors[col.key]} rounded-2xl p-3 min-h-[400px] border border-border/40`}
+                className={`bg-gradient-to-b ${columnColors[col.key]} rounded-2xl p-3 min-h-[400px] border ${
+                  isPostOp ? "border-primary/20" : "border-border/40"
+                }`}
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div>
-                    <h3 className="text-sm font-bold text-foreground">
+                    <h3 className={`text-sm font-bold ${isPostOp ? "text-primary" : "text-foreground"}`}>
                       {t(col.labelKey)}
                     </h3>
                     <p className="text-[11px] text-muted-foreground">
@@ -217,7 +257,11 @@ const Pipeline = () => {
                     </p>
                   </div>
                   {cards.length > 0 && (
-                    <span className="min-w-[22px] h-[22px] flex items-center justify-center rounded-full bg-card text-foreground text-[11px] font-bold shadow-sm border border-border/40">
+                    <span className={`min-w-[22px] h-[22px] flex items-center justify-center rounded-full text-[11px] font-bold shadow-sm border ${
+                      isPostOp
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-card text-foreground border-border/40"
+                    }`}>
                       {cards.length}
                     </span>
                   )}
@@ -237,10 +281,16 @@ const Pipeline = () => {
                       {cards.length === 0 && !snapshot.isDraggingOver && (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                           <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-2">
-                            <Inbox className="w-5 h-5 text-muted-foreground/30" />
+                            {isPostOp ? (
+                              <Timer className="w-5 h-5 text-muted-foreground/30" />
+                            ) : (
+                              <Inbox className="w-5 h-5 text-muted-foreground/30" />
+                            )}
                           </div>
                           <p className="text-[11px] text-muted-foreground/60">
-                            {t("pipeline.empty", "Bu aşamada lead yok")}
+                            {isPostOp
+                              ? "Post-op takip bekleyen hasta yok"
+                              : t("pipeline.empty", "Bu aşamada lead yok")}
                           </p>
                         </div>
                       )}
@@ -256,7 +306,6 @@ const Pipeline = () => {
                                 {...provided.dragHandleProps}
                                 style={{
                                   ...provided.draggableProps.style,
-                                  // Lock width during drag to prevent layout collapse
                                   ...(snapshot.isDragging
                                     ? { width: (provided.draggableProps.style as any)?.width || "auto" }
                                     : {}),
@@ -267,7 +316,6 @@ const Pipeline = () => {
                                     : "shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-300"
                                 }`}
                               >
-                                {/* Dopamine ripple overlay */}
                                 <AnimatePresence>
                                   {isCelebrating && (
                                     <motion.div
@@ -293,7 +341,7 @@ const Pipeline = () => {
                                   )}
                                 </AnimatePresence>
 
-                                <CardContent card={card} pStyle={pStyle} t={t} />
+                                <CardContent card={card} pStyle={pStyle} t={t} showPostOp={isPostOp} />
                               </div>
                             )}
                           </Draggable>
