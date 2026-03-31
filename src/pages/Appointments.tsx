@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Calendar, Clock, User, Filter } from "lucide-react";
+import { Calendar, Clock, User, Filter, CalendarPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, isToday, isTomorrow, isPast } from "date-fns";
 import { tr } from "date-fns/locale";
+import { motion } from "framer-motion";
 import NewAppointmentDialog from "@/components/appointments/NewAppointmentDialog";
 
 interface Appointment {
@@ -18,10 +19,10 @@ interface Appointment {
 }
 
 const statusStyles: Record<string, string> = {
-  upcoming: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  approved: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  cancelled: "bg-red-500/10 text-red-600 border-red-500/20",
-  rescheduled: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  upcoming: "bg-primary/10 text-primary border-primary/20",
+  approved: "bg-success/10 text-success border-success/20",
+  cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+  rescheduled: "bg-warning/10 text-warning border-warning/20",
   completed: "bg-muted text-muted-foreground border-border",
 };
 
@@ -72,7 +73,6 @@ const Appointments = () => {
     [appointments, filter]
   );
 
-  // Group by date
   const grouped = useMemo(() => {
     const map = new Map<string, Appointment[]>();
     for (const a of filtered) {
@@ -98,11 +98,15 @@ const Appointments = () => {
   ];
 
   return (
-    <div className="p-4 md:p-8 space-y-5 h-full overflow-auto">
+    <div className="p-4 md:p-8 space-y-5 h-full overflow-auto gradient-mesh">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+      >
         <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Randevular</h1>
+          <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Randevular</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {appointments.length} randevu
           </p>
@@ -114,63 +118,73 @@ const Appointments = () => {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
                 filter === f.key
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-muted-foreground border-border hover:bg-accent"
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-card text-muted-foreground border-border/60 hover:bg-accent hover:border-primary/30"
               }`}
             >
               {f.label}
             </button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Loading */}
       {loading && (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            <Skeleton key={i} className="h-20 w-full rounded-2xl" />
           ))}
         </div>
       )}
 
       {/* Empty */}
       {!loading && filtered.length === 0 && (
-        <div className="rounded-xl border border-border bg-card p-12 flex flex-col items-center justify-center min-h-[300px] gap-4">
-          <Calendar className="w-12 h-12 text-muted-foreground/40" />
-          <p className="text-muted-foreground text-sm">
-            {filter !== "all" ? "Bu filtreyle eşleşen randevu yok." : "Henüz randevu kaydı yok."}
-          </p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-2xl border border-border/60 bg-card p-12 flex flex-col items-center justify-center min-h-[300px] gap-4 shadow-card"
+        >
+          <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center">
+            <CalendarPlus className="w-9 h-9 text-muted-foreground/30" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-foreground">
+              {filter !== "all" ? "Bu filtreyle eşleşen randevu yok" : "Henüz randevu kaydı yok"}
+            </p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Yeni randevu eklemek için sağ üstteki butonu kullanın</p>
+          </div>
+        </motion.div>
       )}
 
       {/* Grouped list */}
       {!loading &&
         grouped.map(([dateKey, items]) => (
           <div key={dateKey} className="space-y-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 sticky top-0 bg-background py-1 z-10">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 sticky top-0 bg-background/80 backdrop-blur-sm py-1.5 z-10">
               <Calendar className="w-3.5 h-3.5" />
               {formatDateLabel(dateKey)}
             </h2>
             <div className="grid gap-2">
-              {items.map((apt) => {
+              {items.map((apt, i) => {
                 const time = format(parseISO(apt.scheduled_at), "HH:mm");
                 const past = isPast(parseISO(apt.scheduled_at)) && apt.status !== "completed";
                 return (
-                  <div
+                  <motion.div
                     key={apt.id}
-                    className={`rounded-xl border border-border bg-card p-4 flex items-center gap-4 hover:bg-accent/30 transition-colors ${past ? "opacity-60" : ""}`}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className={`rounded-2xl border border-border/60 bg-card p-4 flex items-center gap-4 shadow-card card-interactive ${past ? "opacity-60" : ""}`}
                   >
-                    {/* Time */}
                     <div className="text-center shrink-0 w-14">
-                      <div className="text-lg font-bold text-foreground leading-tight">{time.split(":")[0]}</div>
+                      <div className="text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
                       <div className="text-xs text-muted-foreground">:{time.split(":")[1]}</div>
                     </div>
 
-                    <div className="w-px h-10 bg-border shrink-0" />
+                    <div className="w-px h-10 bg-border/40 shrink-0" />
 
-                    {/* Details */}
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-sm text-foreground truncate">
@@ -192,7 +206,7 @@ const Appointments = () => {
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

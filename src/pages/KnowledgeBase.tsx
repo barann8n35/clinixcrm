@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BookOpen, Send, Loader2, CheckCircle } from "lucide-react";
+import { BookOpen, Send, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 
 interface LogEntry {
   id: number;
@@ -69,38 +70,49 @@ const KnowledgeBase = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-6 h-full overflow-auto">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
-          <BookOpen className="w-6 h-6 text-primary" />
+    <div className="p-4 md:p-8 space-y-6 h-full overflow-auto gradient-mesh">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-2xl font-display font-extrabold text-foreground flex items-center gap-2.5 tracking-tight">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-primary" />
+          </div>
           Bilgi Bankası
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           AI'ın cevaplayamadığı sorular — cevap ekleyerek AI'ı eğitin.
         </p>
-      </div>
+      </motion.div>
 
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            <Skeleton key={i} className="h-28 w-full rounded-2xl" />
           ))}
         </div>
       ) : logs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <CheckCircle className="w-12 h-12 text-success mb-4" />
-          <h3 className="text-lg font-semibold text-foreground">Tüm sorular cevaplandı!</h3>
-          <p className="text-sm text-muted-foreground mt-1">Cevaplanmamış soru kalmadı.</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center py-24 text-center"
+        >
+          <div className="w-20 h-20 rounded-3xl bg-success/10 flex items-center justify-center mb-5">
+            <Sparkles className="w-9 h-9 text-success" />
+          </div>
+          <h3 className="text-lg font-bold font-display text-foreground">Tüm sorular cevaplandı!</h3>
+          <p className="text-sm text-muted-foreground mt-1.5 max-w-xs">Cevaplanmamış soru kalmadı. AI asistanınız her soruya yanıt verebilir durumda.</p>
+        </motion.div>
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground font-medium">
             {logs.length} cevaplanmamış soru
           </p>
-          {logs.map((log) => (
-            <div
+          {logs.map((log, i) => (
+            <motion.div
               key={log.id}
-              className="bg-card border border-border rounded-xl p-4 space-y-3 shadow-card"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="bg-card border border-border/60 rounded-2xl p-5 space-y-3 shadow-card card-interactive"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
@@ -109,7 +121,7 @@ const KnowledgeBase = () => {
                   </p>
                   <div className="flex items-center gap-2 mt-1.5">
                     {log.patient_name && (
-                      <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full font-medium">
                         {log.patient_name}
                       </span>
                     )}
@@ -137,13 +149,13 @@ const KnowledgeBase = () => {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSave(log.id);
                   }}
-                  className="flex-1 text-sm"
+                  className="flex-1 text-sm rounded-xl"
                 />
                 <Button
                   size="sm"
                   onClick={() => handleSave(log.id)}
                   disabled={saving === log.id || !answers[log.id]?.trim()}
-                  className="shrink-0"
+                  className="shrink-0 rounded-xl"
                 >
                   {saving === log.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -152,7 +164,7 @@ const KnowledgeBase = () => {
                   )}
                 </Button>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}

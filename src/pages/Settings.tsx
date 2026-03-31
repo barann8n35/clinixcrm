@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -115,14 +116,14 @@ const Settings = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground">Ayarlar</h1>
+    <div className="p-4 md:p-8 space-y-6 gradient-mesh">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Ayarlar</h1>
         <p className="text-sm text-muted-foreground mt-1">Uygulama ayarlarını yönetin</p>
-      </div>
+      </motion.div>
 
       <Tabs defaultValue="profil" className="space-y-6">
-        <TabsList className="bg-muted w-full sm:w-auto">
+        <TabsList className="bg-muted/50 w-full sm:w-auto rounded-xl">
           <TabsTrigger value="profil" className="gap-2"><User className="h-4 w-4 hidden sm:block" />Profil</TabsTrigger>
           <TabsTrigger value="klinik" className="gap-2"><Building2 className="h-4 w-4 hidden sm:block" />Klinik</TabsTrigger>
           <TabsTrigger value="entegrasyonlar" className="gap-2"><Plug className="h-4 w-4 hidden sm:block" />Entegrasyonlar</TabsTrigger>
@@ -131,7 +132,7 @@ const Settings = () => {
 
         {/* Profil Tab */}
         <TabsContent value="profil">
-          <Card className="border-border">
+          <Card className="border-border/60 shadow-card rounded-2xl">
             <CardHeader>
               <CardTitle className="text-lg font-display">Profil Bilgileri</CardTitle>
               <CardDescription>Kişisel bilgilerinizi güncelleyin</CardDescription>
@@ -165,7 +166,7 @@ const Settings = () => {
 
         {/* Klinik Tab */}
         <TabsContent value="klinik">
-          <Card className="border-border">
+          <Card className="border-border/60 shadow-card rounded-2xl">
             <CardHeader>
               <CardTitle className="text-lg font-display">Klinik Bilgileri</CardTitle>
               <CardDescription>Klinik detaylarını düzenleyin</CardDescription>
@@ -200,7 +201,7 @@ const Settings = () => {
         {/* Entegrasyonlar Tab */}
         <TabsContent value="entegrasyonlar">
           <div className="space-y-4">
-            <Card className="border-border">
+            <Card className="border-border/60 shadow-card rounded-2xl">
               <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -221,7 +222,7 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-border">
+            <Card className="border-border/60 shadow-card rounded-2xl">
               <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -247,7 +248,7 @@ const Settings = () => {
 
         {/* Hazır Yanıtlar Tab */}
         <TabsContent value="hazir-yanitlar">
-          <Card className="border-border">
+          <Card className="border-border/60 shadow-card rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <div>
                 <CardTitle className="text-lg font-display">Hazır Yanıt Şablonları</CardTitle>

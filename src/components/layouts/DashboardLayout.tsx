@@ -19,14 +19,14 @@ function DashboardLayoutInner() {
         <>
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="fixed top-3 left-3 z-50 p-2 rounded-lg bg-card border border-border shadow-card"
+            className="fixed top-3 left-3 z-50 p-2 rounded-xl bg-card/90 backdrop-blur-md border border-border/60 shadow-elevated"
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
 
           {mobileMenuOpen && (
             <div className="fixed inset-0 z-50 flex">
-              <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+              <div className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
               <div className="relative z-10 w-72 h-full animate-slide-in-right">
                 <SidebarNav collapsed={false} onNavigate={() => setMobileMenuOpen(false)} />
                 <button
