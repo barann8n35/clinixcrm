@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { Search, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
 import { IconType } from "react-icons";
