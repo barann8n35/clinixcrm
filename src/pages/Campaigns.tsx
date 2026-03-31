@@ -206,7 +206,7 @@ const Campaigns = () => {
               key={filtered.length}
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="rounded-2xl border border-border bg-card p-4"
+              className="rounded-2xl border border-border/60 bg-card shadow-card p-4"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
@@ -221,7 +221,7 @@ const Campaigns = () => {
 
             {/* Filtered list preview */}
             {filtered.length > 0 && (
-              <div className="rounded-2xl border border-border bg-card p-4 max-h-48 overflow-y-auto scrollbar-thin">
+              <div className="rounded-2xl border border-border/60 bg-card shadow-card p-4 max-h-48 overflow-y-auto scrollbar-thin">
                 <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-2">Önizleme</p>
                 <div className="space-y-1.5">
                   {filtered.slice(0, 10).map(p => (
@@ -248,7 +248,7 @@ const Campaigns = () => {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="lg:col-span-3 space-y-4"
           >
-            <div className="rounded-2xl border border-border bg-card p-5 space-y-5">
+            <div className="rounded-2xl border border-border/60 bg-card shadow-card p-5 space-y-5">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <h2 className="text-sm font-display font-bold text-foreground">Mesaj Editörü</h2>
@@ -264,7 +264,7 @@ const Campaigns = () => {
                     <button
                       key={tpl.title}
                       onClick={() => setMessage(tpl.content)}
-                      className="px-3.5 py-2 rounded-xl text-[11px] font-medium border border-border bg-muted/30 text-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all duration-150"
+                      className="px-3.5 py-2 rounded-xl text-[11px] font-medium border border-border/60 bg-muted/30 text-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all duration-150"
                     >
                       {tpl.title}
                     </button>
@@ -316,7 +316,7 @@ const Campaigns = () => {
             </AnimatePresence>
 
             {/* Info */}
-            <div className="rounded-2xl border border-border bg-muted/20 p-4">
+            <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 <strong className="text-foreground">💡 Bilgi:</strong> Kampanya mesajları WhatsApp Business API üzerinden sıraya alınır. 
                 Gönderim süresi hasta sayısına bağlı olarak değişebilir. Mesajlar ortalama 1-5 dakika içinde tüm alıcılara ulaşır.
