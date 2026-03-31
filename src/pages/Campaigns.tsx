@@ -105,7 +105,7 @@ const Campaigns = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-thin gradient-mesh">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 p-6">
 
           {/* LEFT: Audience Filter */}
