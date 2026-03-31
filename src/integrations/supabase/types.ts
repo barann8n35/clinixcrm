@@ -135,7 +135,7 @@ export type Database = {
           platform: string | null
           status: string
           surname: string | null
-          tags: string[] | null
+          tags: Json | null
           updated_at: string
         }
         Insert: {
@@ -155,7 +155,7 @@ export type Database = {
           platform?: string | null
           status?: string
           surname?: string | null
-          tags?: string[] | null
+          tags?: Json | null
           updated_at?: string
         }
         Update: {
@@ -175,7 +175,7 @@ export type Database = {
           platform?: string | null
           status?: string
           surname?: string | null
-          tags?: string[] | null
+          tags?: Json | null
           updated_at?: string
         }
         Relationships: []
