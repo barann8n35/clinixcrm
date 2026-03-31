@@ -86,7 +86,8 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
     onPatientUpdate(prev => prev ? { ...prev, tags: updated } : null);
   }
 
-  const tags = patient?.tags || [];
+  const rawTags = patient?.tags;
+  const tags: string[] = Array.isArray(rawTags) ? rawTags : [];
   const status = STATUS_MAP[patient?.status || ""] || STATUS_MAP.pending;
 
   return (
