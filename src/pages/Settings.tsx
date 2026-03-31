@@ -115,11 +115,11 @@ const Settings = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground">Ayarlar</h1>
+    <div className="p-4 md:p-8 space-y-6 gradient-mesh">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Ayarlar</h1>
         <p className="text-sm text-muted-foreground mt-1">Uygulama ayarlarını yönetin</p>
-      </div>
+      </motion.div>
 
       <Tabs defaultValue="profil" className="space-y-6">
         <TabsList className="bg-muted w-full sm:w-auto">
