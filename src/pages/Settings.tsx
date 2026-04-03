@@ -355,9 +355,13 @@ const Settings = () => {
               <CardContent className="p-4 md:p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${permission === "granted" ? "bg-success/10" : "bg-warning/10"}`}>
-                      {permission === "granted" ? (
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      connectionStatus === "connected" ? "bg-success/10" : connectionStatus === "pending" ? "bg-yellow-500/10" : "bg-warning/10"
+                    }`}>
+                      {connectionStatus === "connected" ? (
                         <BellRing className="h-6 w-6 text-success" />
+                      ) : connectionStatus === "pending" ? (
+                        <Clock className="h-6 w-6 text-yellow-500" />
                       ) : (
                         <Bell className="h-6 w-6 text-warning" />
                       )}
@@ -366,27 +370,37 @@ const Settings = () => {
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-semibold text-foreground">Anlık Bildirimler</h3>
                         <Badge
-                          variant={permission === "granted" ? "default" : permission === "denied" ? "destructive" : "secondary"}
-                          className={permission === "granted" ? "bg-success text-success-foreground" : ""}
+                          variant={connectionStatus === "connected" ? "default" : connectionStatus === "pending" ? "secondary" : "destructive"}
+                          className={
+                            connectionStatus === "connected"
+                              ? "bg-success text-success-foreground"
+                              : connectionStatus === "pending"
+                                ? "bg-yellow-500/20 text-yellow-700 border-yellow-500/30"
+                                : ""
+                          }
                         >
-                          {permission === "granted" ? "Aktif ✓" : permission === "denied" ? "Engellendi" : "Kapalı"}
+                          {connectionStatus === "connected" ? (
+                            <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Aktif</span>
+                          ) : connectionStatus === "pending" ? (
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Bağlantı Bekleniyor</span>
+                          ) : (
+                            "Engellendi"
+                          )}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-0.5">
-                        {permission === "granted"
+                        {connectionStatus === "connected"
                           ? "Randevu hatırlatıcıları ve yeni mesaj bildirimleri telefonunuza anlık olarak ulaşacak."
-                          : permission === "denied"
-                            ? "Bildirimler tarayıcı ayarlarından engellendi. Lütfen site ayarlarından izin verin."
+                          : connectionStatus === "pending"
+                            ? "İzin verildi ancak cihaz token'ı henüz kaydedilmedi. Tekrar deneyin."
                             : "Bildirimleri etkinleştirin — yeni mesajlar ve randevu hatırlatmaları için anlık uyarı alın."}
                       </p>
                     </div>
                   </div>
-                  {permission !== "granted" && permission !== "denied" && (
-                    <Button onClick={requestPermission} disabled={notifLoading} className="gap-2 shrink-0">
-                      {notifLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
-                      Etkinleştir
-                    </Button>
-                  )}
+                  <Button onClick={requestPermission} disabled={notifLoading} className="gap-2 shrink-0" variant={connectionStatus === "connected" ? "outline" : "default"}>
+                    {notifLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
+                    {connectionStatus === "connected" ? "Yeniden Kontrol Et" : "Etkinleştir"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
