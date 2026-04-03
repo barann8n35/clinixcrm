@@ -10,7 +10,8 @@ function getCurrentPermission(): PermissionState {
 }
 
 export function usePushNotifications() {
-  const [permission, setPermission] = useState<PermissionState>(getCurrentPermission);
+  const [permission, setPermission] = useState<PermissionState>(() => getCurrentPermission());
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const sync = () => setPermission(getCurrentPermission());
@@ -18,7 +19,6 @@ export function usePushNotifications() {
     window.addEventListener("focus", sync);
     document.addEventListener("visibilitychange", sync);
 
-    // Poll every 2s as a fallback (permission changes aren't observable via events)
     const interval = setInterval(sync, 2000);
 
     return () => {
@@ -27,7 +27,6 @@ export function usePushNotifications() {
       clearInterval(interval);
     };
   }, []);
-  const [loading, setLoading] = useState(false);
 
   const requestPermission = useCallback(async () => {
     if (typeof Notification === "undefined") {
