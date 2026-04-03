@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   ChartContainer,
   ChartTooltip,
@@ -69,6 +70,7 @@ const cardVariants = {
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     todayAppointments: 0,
     pendingCount: 0,
@@ -277,6 +279,7 @@ const Dashboard = () => {
                 return (
                   <div
                     key={p.id}
+                    onClick={() => navigate(`/messages?patient=${p.id}`)}
                     className="flex items-center justify-between px-5 py-3 transition-all duration-200 hover:bg-accent/40 cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">

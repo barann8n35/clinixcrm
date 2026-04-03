@@ -19,6 +19,7 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Pipeline from "./pages/Pipeline";
 import Campaigns from "./pages/Campaigns";
+import CalendarPage from "./pages/CalendarPage";
 import "@/i18n";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="appointments" element={<Appointments />} />
               <Route path="patients" element={<Patients />} />
               <Route path="campaigns" element={<Campaigns />} />
+              <Route path="calendar" element={<CalendarPage />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route path="notifications" element={<Notifications />} />

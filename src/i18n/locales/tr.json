@@ -11,7 +11,8 @@
     "management": "YÖNETİM",
     "logout": "Çıkış Yap",
     "notLoggedIn": "Giriş yapılmadı",
-    "campaigns": "Kampanyalar"
+    "campaigns": "Kampanyalar",
+    "calendar": "Takvim"
   },
   "dashboard": {
     "title": "Gösterge Paneli",

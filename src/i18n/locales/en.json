@@ -11,7 +11,8 @@
     "management": "MANAGEMENT",
     "logout": "Log Out",
     "notLoggedIn": "Not logged in",
-    "campaigns": "Campaigns"
+    "campaigns": "Campaigns",
+    "calendar": "Calendar"
   },
   "dashboard": {
     "title": "Dashboard",

@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
-import { Inbox, Sparkles, Globe, Timer } from "lucide-react";
+import { Inbox, Sparkles, Globe, Timer, MessageCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { IconType } from "react-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -73,22 +74,46 @@ const PlatformIcon = ({ platform }: { platform: string | null }) => {
   return <Globe className="w-4 h-4 shrink-0 text-muted-foreground" />;
 };
 
-/* ── Post-Op Badge ── */
-const PostOpBadge = ({ days }: { days: number }) => {
+/* ── Post-Op Badge with Popover ── */
+const PostOpBadge = ({ days, patientName }: { days: number; patientName: string }) => {
   const isUrgent = days <= 1;
+  const draftMessage = days <= 0
+    ? `Merhaba ${patientName}, geçmiş olsun 🙏 Ameliyat sonrası durumunuz nasıl? Herhangi bir ağrınız veya şikayetiniz var mı?`
+    : `Merhaba ${patientName}, ameliyatınızın üzerinden birkaç gün geçti. Kendinizi nasıl hissediyorsunuz? Herhangi bir sorunuz varsa bize ulaşabilirsiniz 😊`;
+
   return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold mt-2 ${
-        isUrgent
-          ? "bg-destructive/10 text-destructive border border-destructive/20"
-          : "bg-primary/10 text-primary border border-primary/20"
-      }`}
-    >
-      <Timer className="w-3 h-3" />
-      {days <= 0 ? "Bugün mesaj at!" : `${days} Gün Sonra Mesaj`}
-    </motion.div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <motion.button
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold mt-2 cursor-pointer hover:scale-105 transition-transform ${
+            isUrgent
+              ? "bg-destructive/10 text-destructive border border-destructive/20"
+              : "bg-primary/10 text-primary border border-primary/20"
+          }`}
+        >
+          <Timer className="w-3 h-3" />
+          {days <= 0 ? "Bugün mesaj at!" : `${days} Gün Sonra Mesaj`}
+        </motion.button>
+      </PopoverTrigger>
+      <PopoverContent side="top" align="center" className="w-72 p-0 rounded-2xl shadow-elevated border-border/60">
+        <div className="px-4 py-3 border-b border-border/60">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 text-primary" />
+            <span className="text-[12px] font-bold text-foreground">Otomatik Mesaj Taslağı</span>
+          </div>
+        </div>
+        <div className="p-4">
+          <p className="text-[12px] text-foreground leading-relaxed bg-muted/50 rounded-xl p-3 border border-border/40">
+            {draftMessage}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-2 text-center">
+            Bu mesaj zamanı geldiğinde otomatik gönderilecek
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 
@@ -108,7 +133,7 @@ const CardContent = ({ card, pStyle, t, showPostOp }: { card: PipelineCard; pSty
       </span>
     </div>
     <p className="text-[11px] text-muted-foreground">{card.date}</p>
-    {showPostOp && card.postOpDays !== undefined && <PostOpBadge days={card.postOpDays} />}
+    {showPostOp && card.postOpDays !== undefined && <PostOpBadge days={card.postOpDays} patientName={card.name} />}
   </>
 );
 

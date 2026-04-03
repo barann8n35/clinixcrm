@@ -32,7 +32,6 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   rescheduled: { label: "Yeniden Planlandı", color: "bg-primary/10 text-primary" },
 };
 
-// Mock financial data
 const MOCK_FINANCE = {
   totalSpent: 12450,
   pendingPayment: 3200,
@@ -122,11 +121,34 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
         </div>
       </motion.div>
 
-      {/* Tags */}
+      {/* Internal Notes - ABOVE tags for doctor priority */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
+        className="rounded-2xl border border-border bg-card p-4"
+      >
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-1.5">
+            <StickyNote className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">İç Notlar</span>
+          </div>
+          {savingNotes && <span className="text-[10px] text-muted-foreground animate-pulse">Kaydediliyor...</span>}
+        </div>
+        <textarea
+          value={internalNotes}
+          onChange={(e) => handleNotesChange(e.target.value)}
+          placeholder="Sadece ekip için gizli notlar..."
+          rows={3}
+          className="w-full text-[12px] leading-relaxed bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+        />
+      </motion.div>
+
+      {/* Tags */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
         className="rounded-2xl border border-border bg-card p-4"
       >
         <div className="flex items-center gap-1.5 mb-3">
@@ -172,7 +194,7 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
+        transition={{ delay: 0.2 }}
         className="space-y-2.5"
       >
         <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Finansal Durum</h4>
@@ -196,29 +218,6 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
             <p className="text-lg font-bold font-display text-warning">₺{MOCK_FINANCE.pendingPayment.toLocaleString("tr-TR")}</p>
           </div>
         </div>
-      </motion.div>
-
-      {/* Internal Notes */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-2xl border border-border bg-card p-4"
-      >
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-1.5">
-            <StickyNote className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">İç Notlar</span>
-          </div>
-          {savingNotes && <span className="text-[10px] text-muted-foreground animate-pulse">Kaydediliyor...</span>}
-        </div>
-        <textarea
-          value={internalNotes}
-          onChange={(e) => handleNotesChange(e.target.value)}
-          placeholder="Sadece ekip için gizli notlar..."
-          rows={3}
-          className="w-full text-[12px] leading-relaxed bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-1 focus:ring-primary/30 resize-none"
-        />
       </motion.div>
     </div>
   );
