@@ -38,6 +38,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <NotificationProvider>
+      <OneSignalInit />
       <TooltipProvider>
         <Toaster />
         <Sonner />
