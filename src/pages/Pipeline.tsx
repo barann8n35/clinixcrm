@@ -74,12 +74,29 @@ const PlatformIcon = ({ platform }: { platform: string | null }) => {
   return <Globe className="w-4 h-4 shrink-0 text-muted-foreground" />;
 };
 
-/* ── Post-Op Badge with Popover ── */
+/* ── Post-Op Badge with Interactive Popover ── */
 const PostOpBadge = ({ days, patientName }: { days: number; patientName: string }) => {
   const isUrgent = days <= 1;
-  const draftMessage = days <= 0
+  const defaultMessage = days <= 0
     ? `Merhaba ${patientName}, geçmiş olsun 🙏 Ameliyat sonrası durumunuz nasıl? Herhangi bir ağrınız veya şikayetiniz var mı?`
     : `Merhaba ${patientName}, ameliyatınızın üzerinden birkaç gün geçti. Kendinizi nasıl hissediyorsunuz? Herhangi bir sorunuz varsa bize ulaşabilirsiniz 😊`;
+
+  const [draft, setDraft] = useState(defaultMessage);
+  const [sending, setSending] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSend = async () => {
+    setSending(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    setSending(false);
+    toast.success("Mesaj başarıyla gönderildi ✅");
+  };
+
+  const handleSave = () => {
+    setSaved(true);
+    toast.success("Taslak kaydedildi 💾");
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <Popover>
@@ -97,20 +114,44 @@ const PostOpBadge = ({ days, patientName }: { days: number; patientName: string 
           {days <= 0 ? "Bugün mesaj at!" : `${days} Gün Sonra Mesaj`}
         </motion.button>
       </PopoverTrigger>
-      <PopoverContent side="top" align="center" className="w-72 p-0 rounded-2xl shadow-elevated border-border/60">
+      <PopoverContent side="top" align="center" className="w-80 p-0 rounded-2xl shadow-elevated border-border/60">
         <div className="px-4 py-3 border-b border-border/60">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-4 h-4 text-primary" />
             <span className="text-[12px] font-bold text-foreground">Otomatik Mesaj Taslağı</span>
           </div>
         </div>
-        <div className="p-4">
-          <p className="text-[12px] text-foreground leading-relaxed bg-muted/50 rounded-xl p-3 border border-border/40">
-            {draftMessage}
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-2 text-center">
-            Bu mesaj zamanı geldiğinde otomatik gönderilecek
-          </p>
+        <div className="p-4 space-y-3">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="w-full text-[12px] text-foreground leading-relaxed bg-muted/50 rounded-xl p-3 border border-border/40 focus:ring-2 focus:ring-primary/30 focus:outline-none resize-none min-h-[90px] transition-all"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-white bg-success hover:bg-success/90 transition-all disabled:opacity-60"
+            >
+              {sending ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }} className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              {sending ? "Gönderiliyor..." : "Şimdi Gönder"}
+            </button>
+            <button
+              onClick={handleSave}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold border transition-all ${
+                saved
+                  ? "bg-primary/10 text-primary border-primary/30"
+                  : "bg-card text-foreground border-border/60 hover:bg-muted/50"
+              }`}
+            >
+              <Save className="w-3.5 h-3.5" />
+              {saved ? "Kaydedildi ✓" : "Değişiklikleri Kaydet"}
+            </button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
