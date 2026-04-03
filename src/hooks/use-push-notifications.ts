@@ -10,7 +10,7 @@ function getCurrentPermission(): PermissionState {
 }
 
 export function usePushNotifications() {
-  const [permission, setPermission] = useState<PermissionState>(getCurrentPermission);
+  const [permission, setPermission] = useState<PermissionState>(() => getCurrentPermission());
 
   useEffect(() => {
     const sync = () => setPermission(getCurrentPermission());
