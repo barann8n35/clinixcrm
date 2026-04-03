@@ -138,12 +138,12 @@ export function usePushNotifications() {
       }
 
       // Step 4: Wait for Subscription ID with polling
-      const subId = await waitForOneSignalSubscriptionId(10000, 1000, (snapshot, attempt) => {
+      const subId = await waitForOneSignalSubscriptionId(15000, 1000, (snapshot, attempt) => {
         logSnapshot(snapshot, attempt);
       });
 
       if (!subId) {
-        toast.warning("OneSignal sunucusu yanıt vermiyor, lütfen sayfayı yenileyip tekrar 'Etkinleştir'e basın");
+        toast.warning("Hizmet başlatılamadı, lütfen sayfayı yenileyin.");
         setConnectionStatus("pending");
         return false;
       }
