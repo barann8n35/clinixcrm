@@ -4,6 +4,46 @@ import { toast } from "sonner";
 
 type PermissionState = "default" | "granted" | "denied";
 type ConnectionStatus = "disconnected" | "pending" | "connected";
+type DebugLevel = "info" | "warning" | "error";
+
+const DEBUG_TOAST_ID = "push-debug-toast";
+
+function logDebug(message: string, level: DebugLevel = "info") {
+  const prefixedMessage = `[Push] ${message}`;
+
+  if (level === "error") {
+    console.error(prefixedMessage);
+    toast.error(message);
+    return;
+  }
+
+  if (level === "warning") {
+    console.warn(prefixedMessage);
+    toast.warning(message, { id: DEBUG_TOAST_ID, duration: 10000 });
+    return;
+  }
+
+  console.info(prefixedMessage);
+  toast.info(message, { id: DEBUG_TOAST_ID, duration: 10000 });
+}
+
+function logSnapshot(
+  snapshot: { permission: NotificationPermission | "unsupported"; userId: string | null; subscriptionId: string | null },
+  attempt?: number,
+) {
+  const prefix = attempt ? `Kontrol ${attempt}/10 • ` : "";
+  const permissionMessage = `Permission status: ${snapshot.permission}`;
+  const userIdMessage = `OneSignal User ID: ${snapshot.userId ?? "null"}`;
+  const subscriptionIdMessage = `Subscription ID: ${snapshot.subscriptionId ?? "null"}`;
+
+  console.info(`[Push] ${permissionMessage}`);
+  console.info(`[Push] ${userIdMessage}`);
+  console.info(`[Push] ${subscriptionIdMessage}`);
+  toast.info(`${prefix}${permissionMessage} • ${userIdMessage} • ${subscriptionIdMessage}`, {
+    id: DEBUG_TOAST_ID,
+    duration: 10000,
+  });
+}
 
 function getCurrentPermission(): PermissionState {
   if (typeof window === "undefined" || typeof Notification === "undefined") return "default";
@@ -57,9 +97,15 @@ export function usePushNotifications() {
     setConnectionStatus("pending");
 
     try {
+      logDebug(`Permission status: ${Notification.permission}`);
+
       // Step 1: Native browser permission first
-      const nativeResult = await Notification.requestPermission();
+      const nativeResult = Notification.permission === "granted"
+        ? Notification.permission
+        : await Notification.requestPermission();
+
       setPermission(nativeResult as PermissionState);
+      logDebug(`Permission status: ${nativeResult}`);
 
       if (nativeResult !== "granted") {
         toast.error(
@@ -71,57 +117,79 @@ export function usePushNotifications() {
         return false;
       }
 
-      toast.info("Tarayıcı izni alındı. OneSignal başlatılıyor...");
+      toast.info("Tarayıcı izni alındı. OneSignal başlatılıyor...", { id: DEBUG_TOAST_ID, duration: 10000 });
 
       // Step 2: Initialize OneSignal
-      const { initOneSignal, OneSignal } = await import("@/lib/onesignal");
+      const {
+        initOneSignal,
+        OneSignal,
+        getOneSignalDebugSnapshot,
+        waitForOneSignalSubscriptionId,
+      } = await import("@/lib/onesignal");
+
       await initOneSignal();
+      logSnapshot(getOneSignalDebugSnapshot());
 
       // Step 3: Opt-in via OneSignal
       try {
         await OneSignal.User.PushSubscription.optIn();
       } catch (optInErr: any) {
-        console.warn("[Push] optIn failed, continuing:", optInErr?.message);
+        logDebug(`OneSignal optIn warning: ${optInErr?.message || String(optInErr)}`, "warning");
       }
 
-      // Step 4: Wait for Subscription ID with retries
-      let subId: string | null | undefined = null;
-      for (let i = 0; i < 5; i++) {
-        await new Promise((r) => setTimeout(r, 2000));
-        subId = OneSignal.User.PushSubscription.id;
-        if (subId) break;
-      }
+      // Step 4: Wait for Subscription ID with polling
+      const subId = await waitForOneSignalSubscriptionId(10000, 1000, (snapshot, attempt) => {
+        logSnapshot(snapshot, attempt);
+      });
 
       if (!subId) {
-        toast.warning("OneSignal henüz bir Subscription ID üretmedi. Birkaç saniye bekleyip tekrar deneyin.");
+        toast.warning("OneSignal sunucusu yanıt vermiyor, lütfen sayfayı yenileyip tekrar 'Etkinleştir'e basın");
         setConnectionStatus("pending");
         return false;
       }
 
-      toast.success(`OneSignal ID Alındı: ${subId.substring(0, 12)}... — Supabase'e yazılıyor...`);
+      toast.dismiss(DEBUG_TOAST_ID);
+      console.info(`[Push] Subscription ID resolved: ${subId}`);
+      toast.success("OneSignal ID Alındı, Supabase'e yazılıyor...");
 
       // Step 5: Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) {
-        toast.error("Kullanıcı oturumu bulunamadı. Lütfen giriş yapın ve tekrar deneyin.");
+        logDebug("Kullanıcı oturumu bulunamadı. Subscription ID Supabase'e yazılamadı.", "error");
+        setConnectionStatus("disconnected");
+        return false;
+      }
+
+      const { data: existingSubscriptions, error: readError } = await supabase
+        .from("push_subscriptions")
+        .select("id, endpoint")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (readError) {
+        logDebug(`Supabase okuma hatası: ${readError.message}`, "error");
         setConnectionStatus("pending");
         return false;
       }
 
+      const matchedSubscription = existingSubscriptions?.find((subscription) => subscription.endpoint === subId);
+      const recordId = matchedSubscription?.id ?? existingSubscriptions?.[0]?.id ?? crypto.randomUUID();
+
       // Step 6: Upsert to Supabase
       const { error: dbError } = await supabase.from("push_subscriptions").upsert(
         {
+          id: recordId,
           user_id: user.id,
           endpoint: subId,
           p256dh_key: null,
           auth_key: null,
         } as any,
-        { onConflict: "user_id,endpoint" }
+        { onConflict: "id" }
       );
 
       if (dbError) {
-        console.error("[Push] Supabase error:", dbError);
-        toast.error(`Supabase hatası: ${dbError.message} (Code: ${dbError.code})`);
+        console.error("[Push] Supabase upsert error:", dbError);
+        toast.error(`Supabase hatası: ${dbError.message}`);
         setConnectionStatus("pending");
         return false;
       }
@@ -137,6 +205,7 @@ export function usePushNotifications() {
       setConnectionStatus("disconnected");
       return false;
     } finally {
+      toast.dismiss(DEBUG_TOAST_ID);
       setLoading(false);
     }
   }, []);
