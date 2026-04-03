@@ -15,7 +15,6 @@ export function usePushNotifications() {
   const [loading, setLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
 
-  // Sync permission state on focus/visibility
   useEffect(() => {
     const sync = () => setPermission(getCurrentPermission());
     window.addEventListener("focus", sync);
@@ -28,7 +27,7 @@ export function usePushNotifications() {
     };
   }, []);
 
-  // Check if token exists in Supabase on mount
+  // Check existing token on mount
   useEffect(() => {
     async function checkConnection() {
       try {
@@ -57,55 +56,127 @@ export function usePushNotifications() {
 
     setLoading(true);
     setConnectionStatus("pending");
+
     try {
-      // Dynamically import OneSignal to avoid dual-React bundle issues
+      // Step 1: Dynamically import OneSignal
       const { OneSignal } = await import("@/lib/onesignal");
 
-      await OneSignal.Slidedown.promptPush();
+      // Step 2: Prompt push
+      try {
+        await OneSignal.Slidedown.promptPush();
+      } catch (promptErr: any) {
+        console.error("[Push] OneSignal prompt error:", promptErr);
+        toast({
+          title: "OneSignal Hatası",
+          description: `Bildirim penceresi açılamadı: ${promptErr?.message || String(promptErr)}`,
+          variant: "destructive",
+        });
+        setConnectionStatus("disconnected");
+        setLoading(false);
+        return false;
+      }
 
+      // Step 3: Check browser permission
       const result = Notification.permission as PermissionState;
       setPermission(result);
 
-      if (result === "granted") {
-        await new Promise((r) => setTimeout(r, 1500));
-        const subId = await OneSignal.User.PushSubscription.id;
-
-        if (subId) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { error } = await supabase.from("push_subscriptions").upsert(
-              {
-                user_id: user.id,
-                endpoint: subId,
-                p256dh_key: null,
-                auth_key: null,
-              } as any,
-              { onConflict: "user_id,endpoint" }
-            );
-            if (!error) {
-              setConnectionStatus("connected");
-            } else {
-              setConnectionStatus("pending");
-            }
-          }
-        } else {
-          setConnectionStatus("pending");
-        }
-
-        toast({ title: "Başarılı", description: "Bildirimler etkinleştirildi! 🔔" });
-        return true;
-      } else if (result === "denied") {
+      if (result !== "granted") {
         setConnectionStatus("disconnected");
-        toast({ title: "Engellendi", description: "Bildirim izni reddedildi. Tarayıcı ayarlarından etkinleştirebilirsiniz.", variant: "destructive" });
+        toast({
+          title: "İzin Verilmedi",
+          description: result === "denied"
+            ? "Bildirimler tarayıcı ayarlarından engellendi. Site ayarlarından izin verin."
+            : "Bildirim izni verilmedi.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return false;
       }
-      return false;
-    } catch (err) {
-      console.error("Push notification error:", err);
-      setConnectionStatus("disconnected");
-      toast({ title: "Hata", description: "Bildirim izni alınamadı.", variant: "destructive" });
-      return false;
-    } finally {
+
+      // Step 4: Wait for OneSignal to register, then get ID
+      await new Promise((r) => setTimeout(r, 2000));
+
+      let subId: string | null | undefined = null;
+      try {
+        subId = await OneSignal.User.PushSubscription.id;
+      } catch (idErr: any) {
+        console.error("[Push] Failed to get OneSignal Subscription ID:", idErr);
+      }
+
+      if (!subId) {
+        toast({
+          title: "⚠️ Player ID Alınamadı",
+          description: "OneSignal henüz bir Subscription ID üretmedi. Lütfen birkaç saniye bekleyip tekrar deneyin.",
+          variant: "destructive",
+        });
+        setConnectionStatus("pending");
+        setLoading(false);
+        return false;
+      }
+
+      // Step 5: Player ID received — green toast
+      toast({
+        title: "✅ OneSignal ID Alındı",
+        description: `Player ID: ${subId.substring(0, 12)}... — Supabase'e yazılıyor...`,
+      });
+
+      // Step 6: Get current user (may be null for anon)
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+
+      if (!userId) {
+        toast({
+          title: "Oturum Hatası",
+          description: "Kullanıcı oturumu bulunamadı. Lütfen giriş yapın ve tekrar deneyin.",
+          variant: "destructive",
+        });
+        setConnectionStatus("pending");
+        setLoading(false);
+        return false;
+      }
+
+      // Step 7: Insert/upsert to Supabase with full error handling
+      const { error: dbError } = await supabase.from("push_subscriptions").upsert(
+        {
+          user_id: userId,
+          endpoint: subId,
+          p256dh_key: null,
+          auth_key: null,
+        } as any,
+        { onConflict: "user_id,endpoint" }
+      );
+
+      if (dbError) {
+        console.error("[Push] Supabase insert error:", dbError);
+        toast({
+          title: "❌ Supabase Hatası",
+          description: `Token kaydedilemedi: ${dbError.message} (Code: ${dbError.code})`,
+          variant: "destructive",
+        });
+        setConnectionStatus("pending");
+        setLoading(false);
+        return false;
+      }
+
+      // Step 8: Success!
+      setConnectionStatus("connected");
+      toast({
+        title: "🎉 Bildirimler Aktif",
+        description: "Player ID başarıyla Supabase'e kaydedildi. Artık bildirim alabilirsiniz!",
+      });
       setLoading(false);
+      return true;
+
+    } catch (err: any) {
+      console.error("[Push] Unexpected error:", err);
+      toast({
+        title: "Beklenmeyen Hata",
+        description: `${err?.message || String(err)}`,
+        variant: "destructive",
+      });
+      setConnectionStatus("disconnected");
+      setLoading(false);
+      return false;
     }
   }, []);
 
