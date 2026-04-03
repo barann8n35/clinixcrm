@@ -143,7 +143,7 @@ export function usePushNotifications() {
       });
 
       if (!subId) {
-        toast.warning("OneSignal sunucusu yanıt vermiyor, lütfen sayfayı yenileyip tekrar 'Etkinleştir'e basın");
+        toast.warning("Hizmet başlatılamadı, lütfen sayfayı yenileyin.");
         setConnectionStatus("pending");
         return false;
       }
