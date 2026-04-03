@@ -7,19 +7,6 @@ let initialized = false;
 export async function initOneSignal() {
   if (initialized) return;
 
-  // Don't init in iframe/preview
-  const isInIframe = (() => {
-    try { return window.self !== window.top; } catch { return true; }
-  })();
-  const isPreviewHost =
-    window.location.hostname.includes("id-preview--") ||
-    window.location.hostname.includes("lovableproject.com");
-
-  if (isInIframe || isPreviewHost) {
-    console.info("[OneSignal] Skipped in preview/iframe context");
-    return;
-  }
-
   try {
     await OneSignal.init({
       appId: ONESIGNAL_APP_ID,
