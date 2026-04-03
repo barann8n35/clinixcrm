@@ -216,3 +216,52 @@
     border-radius: 9999px;
   }
 }
+
+/* FullCalendar Clinix Theme */
+.clinix-calendar .fc {
+  --fc-border-color: hsl(var(--border));
+  --fc-button-bg-color: hsl(var(--primary));
+  --fc-button-border-color: hsl(var(--primary));
+  --fc-button-hover-bg-color: hsl(var(--primary) / 0.85);
+  --fc-button-hover-border-color: hsl(var(--primary) / 0.85);
+  --fc-button-active-bg-color: hsl(var(--primary) / 0.7);
+  --fc-button-active-border-color: hsl(var(--primary) / 0.7);
+  --fc-today-bg-color: hsl(var(--primary) / 0.06);
+  --fc-neutral-bg-color: hsl(var(--muted));
+  --fc-page-bg-color: transparent;
+  --fc-event-border-color: transparent;
+  font-family: var(--font-body);
+}
+.clinix-calendar .fc .fc-toolbar-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: hsl(var(--foreground));
+}
+.clinix-calendar .fc .fc-button {
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  text-transform: capitalize;
+}
+.clinix-calendar .fc .fc-col-header-cell-cushion,
+.clinix-calendar .fc .fc-daygrid-day-number {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+.clinix-calendar .fc .fc-event {
+  border-radius: 0.5rem;
+  border: none;
+  font-size: 0.7rem;
+}
+.clinix-calendar .fc .fc-daygrid-day.fc-day-today {
+  background: hsl(var(--primary) / 0.06);
+}
+.clinix-calendar .fc th {
+  border-color: hsl(var(--border) / 0.5);
+}
+.clinix-calendar .fc td {
+  border-color: hsl(var(--border) / 0.3);
+}

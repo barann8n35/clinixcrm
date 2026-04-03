@@ -10,7 +10,7 @@ const mainNavItems = [
   { icon: GitBranch, labelKey: "sidebar.pipeline", path: "/pipeline" },
   { icon: Users, labelKey: "sidebar.patients", path: "/patients" },
   { icon: Calendar, labelKey: "sidebar.appointments", path: "/appointments" },
-  { icon: Calendar, labelKey: "sidebar.calendar", path: "/calendar" },
+  { icon: CalendarDays, labelKey: "sidebar.calendar", path: "/calendar" },
   { icon: Megaphone, labelKey: "sidebar.campaigns", path: "/campaigns" },
 ];
 
