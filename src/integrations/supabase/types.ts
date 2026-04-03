@@ -117,6 +117,33 @@ export type Database = {
           },
         ]
       }
+      patient_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          is_done: boolean
+          note: string
+          patient_id: string
+          remind_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          note?: string
+          patient_id: string
+          remind_at: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          note?: string
+          patient_id?: string
+          remind_at?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           age: string | null
