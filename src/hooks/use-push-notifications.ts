@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 type PermissionState = "default" | "granted" | "denied";
+type ConnectionStatus = "disconnected" | "pending" | "connected";
 
 function getCurrentPermission(): PermissionState {
   if (typeof window === "undefined" || typeof Notification === "undefined") return "default";
@@ -12,7 +13,9 @@ function getCurrentPermission(): PermissionState {
 export function usePushNotifications() {
   const [permission, setPermission] = useState<PermissionState>(getCurrentPermission);
   const [loading, setLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
 
+  // Sync permission state on focus/visibility
   useEffect(() => {
     const sync = () => setPermission(getCurrentPermission());
     window.addEventListener("focus", sync);
@@ -25,6 +28,27 @@ export function usePushNotifications() {
     };
   }, []);
 
+  // Check if token exists in Supabase on mount
+  useEffect(() => {
+    async function checkConnection() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from("push_subscriptions")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1);
+        if (data && data.length > 0) {
+          setConnectionStatus("connected");
+        }
+      } catch {
+        // ignore
+      }
+    }
+    checkConnection();
+  }, []);
+
   const requestPermission = useCallback(async () => {
     if (typeof Notification === "undefined") {
       toast({ title: "Hata", description: "Bu tarayıcı bildirimleri desteklemiyor.", variant: "destructive" });
@@ -32,6 +56,7 @@ export function usePushNotifications() {
     }
 
     setLoading(true);
+    setConnectionStatus("pending");
     try {
       // Dynamically import OneSignal to avoid dual-React bundle issues
       const { OneSignal } = await import("@/lib/onesignal");
@@ -48,7 +73,7 @@ export function usePushNotifications() {
         if (subId) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            await supabase.from("push_subscriptions").upsert(
+            const { error } = await supabase.from("push_subscriptions").upsert(
               {
                 user_id: user.id,
                 endpoint: subId,
@@ -57,17 +82,26 @@ export function usePushNotifications() {
               } as any,
               { onConflict: "user_id,endpoint" }
             );
+            if (!error) {
+              setConnectionStatus("connected");
+            } else {
+              setConnectionStatus("pending");
+            }
           }
+        } else {
+          setConnectionStatus("pending");
         }
 
         toast({ title: "Başarılı", description: "Bildirimler etkinleştirildi! 🔔" });
         return true;
       } else if (result === "denied") {
+        setConnectionStatus("disconnected");
         toast({ title: "Engellendi", description: "Bildirim izni reddedildi. Tarayıcı ayarlarından etkinleştirebilirsiniz.", variant: "destructive" });
       }
       return false;
     } catch (err) {
       console.error("Push notification error:", err);
+      setConnectionStatus("disconnected");
       toast({ title: "Hata", description: "Bildirim izni alınamadı.", variant: "destructive" });
       return false;
     } finally {
@@ -75,5 +109,5 @@ export function usePushNotifications() {
     }
   }, []);
 
-  return { permission, loading, requestPermission };
+  return { permission, loading, connectionStatus, requestPermission };
 }
