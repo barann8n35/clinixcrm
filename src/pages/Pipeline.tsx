@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
-import { Inbox, Sparkles, Globe, Timer } from "lucide-react";
+import { Inbox, Sparkles, Globe, Timer, MessageCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { IconType } from "react-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import {
