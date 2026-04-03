@@ -50,7 +50,10 @@ const Campaigns = () => {
       setPatients(list);
 
       const tagSet = new Set<string>();
-      list.forEach(p => (p.tags || []).forEach(t => tagSet.add(t)));
+      list.forEach(p => {
+        const t = p.tags;
+        if (Array.isArray(t)) t.forEach(tag => tagSet.add(tag));
+      });
       setAllTags(Array.from(tagSet).sort());
       setLoading(false);
     }
@@ -60,7 +63,7 @@ const Campaigns = () => {
   const filtered = useMemo(() => {
     return patients.filter(p => {
       if (selectedTags.length > 0) {
-        const pTags = p.tags || [];
+        const pTags = Array.isArray(p.tags) ? p.tags : [];
         if (!selectedTags.some(t => pTags.includes(t))) return false;
       }
       if (selectedLang) {
