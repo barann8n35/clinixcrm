@@ -57,6 +57,10 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
   const [internalNotes, setInternalNotes] = useState(patient?.internal_notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
   const notesTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const [remindMe, setRemindMe] = useState(false);
+  const [reminderDate, setReminderDate] = useState<Date>();
+  const [reminderTime, setReminderTime] = useState("09:00");
+  const [savingReminder, setSavingReminder] = useState(false);
 
   const saveNotes = useCallback(async (value: string) => {
     setSavingNotes(true);

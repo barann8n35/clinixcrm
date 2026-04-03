@@ -63,7 +63,7 @@ const Campaigns = () => {
   const filtered = useMemo(() => {
     return patients.filter(p => {
       if (selectedTags.length > 0) {
-        const pTags = p.tags || [];
+        const pTags = Array.isArray(p.tags) ? p.tags : [];
         if (!selectedTags.some(t => pTags.includes(t))) return false;
       }
       if (selectedLang) {
