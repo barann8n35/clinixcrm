@@ -75,6 +75,24 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
     notesTimeout.current = setTimeout(() => saveNotes(value), 1000);
   }
 
+  async function handleSaveReminder() {
+    if (!reminderDate || !patient) return;
+    setSavingReminder(true);
+    const [h, m] = reminderTime.split(":").map(Number);
+    const remindAt = new Date(reminderDate);
+    remindAt.setHours(h, m, 0, 0);
+    const { error } = await supabase.from("patient_reminders" as any).insert({
+      patient_id: patientId,
+      note: internalNotes,
+      remind_at: remindAt.toISOString(),
+    });
+    setSavingReminder(false);
+    if (error) { toast.error("Hatırlatıcı kaydedilemedi"); return; }
+    toast.success("🔔 Hatırlatıcı kaydedildi!");
+    setRemindMe(false);
+    setReminderDate(undefined);
+  }
+
   async function handleAddTag() {
     const tag = newTag.trim();
     if (!tag || !patient) return;
