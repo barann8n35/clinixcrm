@@ -13,8 +13,10 @@ type MobileView = "list" | "chat";
 
 const Messages = () => {
   const { t } = useTranslation();
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [mobileView, setMobileView] = useState<MobileView>("list");
+  const [searchParams] = useSearchParams();
+  const initialPatient = searchParams.get("patient");
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(initialPatient);
+  const [mobileView, setMobileView] = useState<MobileView>(initialPatient ? "chat" : "list");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();

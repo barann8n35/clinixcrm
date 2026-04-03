@@ -42,8 +42,14 @@ function DashboardLayoutInner() {
         </>
       )}
 
-      <div className="flex-1 min-w-0 overflow-auto">
-        <Outlet />
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        {/* Top bar with notification bell */}
+        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/50 backdrop-blur-sm shrink-0">
+          <NotificationBell />
+        </div>
+        <div className="flex-1 overflow-auto">
+          <Outlet />
+        </div>
       </div>
     </div>
   );

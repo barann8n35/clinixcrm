@@ -279,6 +279,7 @@ const Dashboard = () => {
                 return (
                   <div
                     key={p.id}
+                    onClick={() => navigate(`/messages?patient=${p.id}`)}
                     className="flex items-center justify-between px-5 py-3 transition-all duration-200 hover:bg-accent/40 cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
