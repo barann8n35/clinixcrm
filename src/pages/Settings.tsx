@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download } from "lucide-react";
+import { usePWA } from "@/hooks/use-pwa";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +25,8 @@ interface QuickReply {
 const Settings = () => {
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const [instagramEnabled, setInstagramEnabled] = useState(false);
+  const { canInstall, isInstalled, install } = usePWA();
+  const { permission, loading: notifLoading, requestPermission } = usePushNotifications();
 
   // Quick replies state
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
@@ -123,11 +127,12 @@ const Settings = () => {
       </motion.div>
 
       <Tabs defaultValue="profil" className="space-y-6">
-        <TabsList className="bg-muted/50 w-full sm:w-auto rounded-xl">
+        <TabsList className="bg-muted/50 w-full sm:w-auto rounded-xl flex-wrap">
           <TabsTrigger value="profil" className="gap-2"><User className="h-4 w-4 hidden sm:block" />Profil</TabsTrigger>
           <TabsTrigger value="klinik" className="gap-2"><Building2 className="h-4 w-4 hidden sm:block" />Klinik</TabsTrigger>
           <TabsTrigger value="entegrasyonlar" className="gap-2"><Plug className="h-4 w-4 hidden sm:block" />Entegrasyonlar</TabsTrigger>
           <TabsTrigger value="hazir-yanitlar" className="gap-2"><Zap className="h-4 w-4 hidden sm:block" />Hazır Yanıtlar</TabsTrigger>
+          <TabsTrigger value="mobil" className="gap-2"><Smartphone className="h-4 w-4 hidden sm:block" />Mobil & Bildirim</TabsTrigger>
         </TabsList>
 
         {/* Profil Tab */}
@@ -308,6 +313,99 @@ const Settings = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Mobil & Bildirim Tab */}
+        <TabsContent value="mobil">
+          <div className="space-y-4">
+            {/* PWA Install Card */}
+            <Card className="border-border/60 shadow-card rounded-2xl">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <Download className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-foreground">Uygulamayı Yükle</h3>
+                        <Badge variant={isInstalled ? "default" : "secondary"} className={isInstalled ? "bg-success text-success-foreground" : ""}>
+                          {isInstalled ? "Yüklendi ✓" : "Hazır"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {isInstalled
+                          ? "Clinix CRM ana ekranınıza eklenmiş durumda."
+                          : "Clinix CRM'i ana ekranınıza ekleyerek gerçek bir uygulama deneyimi yaşayın."}
+                      </p>
+                    </div>
+                  </div>
+                  {canInstall && !isInstalled && (
+                    <Button onClick={install} className="gap-2 shrink-0">
+                      <Smartphone className="h-4 w-4" />
+                      Yükle
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Push Notifications Card */}
+            <Card className="border-border/60 shadow-card rounded-2xl">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${permission === "granted" ? "bg-success/10" : "bg-warning/10"}`}>
+                      {permission === "granted" ? (
+                        <BellRing className="h-6 w-6 text-success" />
+                      ) : (
+                        <Bell className="h-6 w-6 text-warning" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-foreground">Anlık Bildirimler</h3>
+                        <Badge
+                          variant={permission === "granted" ? "default" : permission === "denied" ? "destructive" : "secondary"}
+                          className={permission === "granted" ? "bg-success text-success-foreground" : ""}
+                        >
+                          {permission === "granted" ? "Aktif ✓" : permission === "denied" ? "Engellendi" : "Kapalı"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {permission === "granted"
+                          ? "Randevu hatırlatıcıları ve yeni mesaj bildirimleri telefonunuza anlık olarak ulaşacak."
+                          : permission === "denied"
+                            ? "Bildirimler tarayıcı ayarlarından engellendi. Lütfen site ayarlarından izin verin."
+                            : "Bildirimleri etkinleştirin — yeni mesajlar ve randevu hatırlatmaları için anlık uyarı alın."}
+                      </p>
+                    </div>
+                  </div>
+                  {permission !== "granted" && permission !== "denied" && (
+                    <Button onClick={requestPermission} disabled={notifLoading} className="gap-2 shrink-0">
+                      {notifLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
+                      Etkinleştir
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Info Card */}
+            <Card className="border-dashed border-border/60 rounded-2xl bg-muted/30">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-start gap-3">
+                  <Smartphone className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p className="font-medium text-foreground">Mobil Uygulama Olarak Kullanın</p>
+                    <p>iPhone: Safari'de <strong>Paylaş → Ana Ekrana Ekle</strong> seçeneğini kullanın.</p>
+                    <p>Android: Chrome menüsünden <strong>Ana Ekrana Ekle</strong> seçeneğini seçin.</p>
+                    <p>Masaüstü: Adres çubuğundaki yükleme ikonuna tıklayın.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
