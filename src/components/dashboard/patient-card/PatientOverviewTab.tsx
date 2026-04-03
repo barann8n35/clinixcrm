@@ -171,6 +171,68 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
           rows={3}
           className="w-full text-[12px] leading-relaxed bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-1 focus:ring-primary/30 resize-none"
         />
+
+        {/* Remind Me Toggle */}
+        <div className="mt-3 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <Bell className="w-3.5 h-3.5 text-warning" />
+              <span className="text-[12px] font-medium text-foreground">Bana Hatırlat 🔔</span>
+            </label>
+            <Switch checked={remindMe} onCheckedChange={setRemindMe} />
+          </div>
+
+          <AnimatePresence>
+            {remindMe && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden space-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "flex-1 justify-start text-left text-[11px] h-8 rounded-lg",
+                          !reminderDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="w-3 h-3 mr-1.5" />
+                        {reminderDate ? format(reminderDate, "d MMM yyyy", { locale: tr }) : "Tarih seç"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={reminderDate}
+                        onSelect={setReminderDate}
+                        className={cn("p-3 pointer-events-auto")}
+                        disabled={(date) => date < new Date()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => setReminderTime(e.target.value)}
+                    className="w-24 h-8 text-[11px] rounded-lg"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleSaveReminder}
+                  disabled={!reminderDate || savingReminder}
+                  className="w-full h-8 text-[11px] rounded-lg"
+                >
+                  {savingReminder ? "Kaydediliyor..." : "💾 Hatırlatıcıyı Kaydet"}
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </motion.div>
 
       {/* Tags */}
