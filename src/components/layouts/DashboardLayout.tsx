@@ -4,6 +4,7 @@ import { useIsMobile, useIsTablet } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { MobileNavProvider, useMobileNav } from "@/contexts/MobileNavContext";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 
 function DashboardLayoutInner() {
   const isMobile = useIsMobile();
