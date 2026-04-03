@@ -21,8 +21,18 @@ import Pipeline from "./pages/Pipeline";
 import Campaigns from "./pages/Campaigns";
 import CalendarPage from "./pages/CalendarPage";
 import "@/i18n";
+import { useEffect } from "react";
+import { initOneSignal } from "@/lib/onesignal";
 
 const queryClient = new QueryClient();
+
+// Initialize OneSignal at app level
+const OneSignalInit = () => {
+  useEffect(() => {
+    initOneSignal();
+  }, []);
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
