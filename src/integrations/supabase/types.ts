@@ -133,6 +133,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           platform: string | null
+          reminder_sent: boolean | null
           status: string
           surname: string | null
           tags: Json | null
@@ -153,6 +154,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           platform?: string | null
+          reminder_sent?: boolean | null
           status?: string
           surname?: string | null
           tags?: Json | null
@@ -173,6 +175,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           platform?: string | null
+          reminder_sent?: boolean | null
           status?: string
           surname?: string | null
           tags?: Json | null
