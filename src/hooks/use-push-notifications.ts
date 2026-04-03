@@ -1,26 +1,23 @@
 import { useState, useCallback, useEffect } from "react";
-import { OneSignal } from "@/lib/onesignal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 type PermissionState = "default" | "granted" | "denied";
 
 function getCurrentPermission(): PermissionState {
-  return typeof Notification !== "undefined" ? (Notification.permission as PermissionState) : "default";
+  if (typeof window === "undefined" || typeof Notification === "undefined") return "default";
+  return Notification.permission as PermissionState;
 }
 
 export function usePushNotifications() {
-  const [permission, setPermission] = useState<PermissionState>(() => getCurrentPermission());
+  const [permission, setPermission] = useState<PermissionState>(getCurrentPermission);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const sync = () => setPermission(getCurrentPermission());
-
     window.addEventListener("focus", sync);
     document.addEventListener("visibilitychange", sync);
-
     const interval = setInterval(sync, 2000);
-
     return () => {
       window.removeEventListener("focus", sync);
       document.removeEventListener("visibilitychange", sync);
@@ -36,18 +33,16 @@ export function usePushNotifications() {
 
     setLoading(true);
     try {
-      // Use OneSignal to prompt for permission
+      // Dynamically import OneSignal to avoid dual-React bundle issues
+      const { OneSignal } = await import("@/lib/onesignal");
+
       await OneSignal.Slidedown.promptPush();
 
-      // Check permission after prompt
       const result = Notification.permission as PermissionState;
       setPermission(result);
 
       if (result === "granted") {
-        // Wait a moment for OneSignal to register the subscription
         await new Promise((r) => setTimeout(r, 1500));
-
-        // Get OneSignal Subscription ID (Player ID)
         const subId = await OneSignal.User.PushSubscription.id;
 
         if (subId) {
@@ -56,7 +51,7 @@ export function usePushNotifications() {
             await supabase.from("push_subscriptions").upsert(
               {
                 user_id: user.id,
-                endpoint: subId, // Store OneSignal Subscription/Player ID as endpoint
+                endpoint: subId,
                 p256dh_key: null,
                 auth_key: null,
               } as any,
