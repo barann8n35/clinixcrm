@@ -19,6 +19,7 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Pipeline from "./pages/Pipeline";
 import Campaigns from "./pages/Campaigns";
+import CalendarPage from "./pages/CalendarPage";
 import "@/i18n";
 
 const queryClient = new QueryClient();
