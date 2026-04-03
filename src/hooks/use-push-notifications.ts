@@ -1,14 +1,32 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { OneSignal } from "@/lib/onesignal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 type PermissionState = "default" | "granted" | "denied";
 
+function getCurrentPermission(): PermissionState {
+  return typeof Notification !== "undefined" ? (Notification.permission as PermissionState) : "default";
+}
+
 export function usePushNotifications() {
-  const [permission, setPermission] = useState<PermissionState>(
-    typeof Notification !== "undefined" ? (Notification.permission as PermissionState) : "default"
-  );
+  const [permission, setPermission] = useState<PermissionState>(getCurrentPermission);
+
+  useEffect(() => {
+    const sync = () => setPermission(getCurrentPermission());
+
+    window.addEventListener("focus", sync);
+    document.addEventListener("visibilitychange", sync);
+
+    // Poll every 2s as a fallback (permission changes aren't observable via events)
+    const interval = setInterval(sync, 2000);
+
+    return () => {
+      window.removeEventListener("focus", sync);
+      document.removeEventListener("visibilitychange", sync);
+      clearInterval(interval);
+    };
+  }, []);
   const [loading, setLoading] = useState(false);
 
   const requestPermission = useCallback(async () => {
