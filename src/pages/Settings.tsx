@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download } from "lucide-react";
+import { usePWA } from "@/hooks/use-pwa";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
