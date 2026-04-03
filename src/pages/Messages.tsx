@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useMobileNav } from "@/contexts/MobileNavContext";
 import { useTranslation } from "react-i18next";
 import { MessageSquare } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 type MobileView = "list" | "chat";
 
