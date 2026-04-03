@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { OneSignal } from "@/lib/onesignal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -6,7 +7,7 @@ type PermissionState = "default" | "granted" | "denied";
 
 export function usePushNotifications() {
   const [permission, setPermission] = useState<PermissionState>(
-    typeof Notification !== "undefined" ? Notification.permission as PermissionState : "default"
+    typeof Notification !== "undefined" ? (Notification.permission as PermissionState) : "default"
   );
   const [loading, setLoading] = useState(false);
 
@@ -18,29 +19,32 @@ export function usePushNotifications() {
 
     setLoading(true);
     try {
-      const result = await Notification.requestPermission();
-      setPermission(result as PermissionState);
+      // Use OneSignal to prompt for permission
+      await OneSignal.Slidedown.promptPush();
+
+      // Check permission after prompt
+      const result = Notification.permission as PermissionState;
+      setPermission(result);
 
       if (result === "granted") {
-        // Register push subscription
-        const registration = await navigator.serviceWorker?.ready;
-        if (registration) {
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: undefined, // VAPID key would go here for production
-          }).catch(() => null);
+        // Wait a moment for OneSignal to register the subscription
+        await new Promise((r) => setTimeout(r, 1500));
 
-          if (subscription) {
-            const json = subscription.toJSON();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              await supabase.from("push_subscriptions" as any).upsert({
+        // Get OneSignal Subscription ID (Player ID)
+        const subId = await OneSignal.User.PushSubscription.id;
+
+        if (subId) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from("push_subscriptions").upsert(
+              {
                 user_id: user.id,
-                endpoint: json.endpoint,
-                p256dh_key: json.keys?.p256dh || null,
-                auth_key: json.keys?.auth || null,
-              }, { onConflict: "user_id,endpoint" });
-            }
+                endpoint: subId, // Store OneSignal Subscription/Player ID as endpoint
+                p256dh_key: null,
+                auth_key: null,
+              } as any,
+              { onConflict: "user_id,endpoint" }
+            );
           }
         }
 
