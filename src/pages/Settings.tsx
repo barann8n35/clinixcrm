@@ -26,7 +26,7 @@ const Settings = () => {
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const [instagramEnabled, setInstagramEnabled] = useState(false);
   const { canInstall, isInstalled, install } = usePWA();
-  const { permission, loading: notifLoading, connectionStatus, requestPermission } = usePushNotifications();
+  const { loading: notifLoading, connectionStatus, requestPermission } = usePushNotifications();
 
   // Quick replies state
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
