@@ -1,10 +1,17 @@
-import { Phone, MapPin, AlertCircle, Clock, Tag, X, Plus, StickyNote, DollarSign, CreditCard, TrendingUp } from "lucide-react";
+import { Phone, MapPin, AlertCircle, Clock, Tag, X, Plus, StickyNote, DollarSign, CreditCard, TrendingUp, Bell, CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface Patient {
   id: string;
