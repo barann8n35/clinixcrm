@@ -70,6 +70,7 @@ const cardVariants = {
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     todayAppointments: 0,
     pendingCount: 0,
