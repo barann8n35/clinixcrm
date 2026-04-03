@@ -58,25 +58,48 @@ export function usePushNotifications() {
     setConnectionStatus("pending");
 
     try {
-      // Step 1: Dynamically import OneSignal
-      const { OneSignal } = await import("@/lib/onesignal");
-
-      // Step 2: Prompt push
+      // Step 1: Try OneSignal prompt with a timeout fallback
+      let oneSignalWorked = false;
       try {
-        await OneSignal.Slidedown.promptPush();
+        const { OneSignal } = await import("@/lib/onesignal");
+
+        // Race: OneSignal prompt vs 8s timeout
+        await Promise.race([
+          OneSignal.Slidedown.promptPush(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("OneSignal prompt timeout")), 8000)),
+        ]);
+        oneSignalWorked = true;
       } catch (promptErr: any) {
-        console.error("[Push] OneSignal prompt error:", promptErr);
-        toast({
-          title: "OneSignal Hatası",
-          description: `Bildirim penceresi açılamadı: ${promptErr?.message || String(promptErr)}`,
-          variant: "destructive",
-        });
-        setConnectionStatus("disconnected");
-        setLoading(false);
-        return false;
+        console.warn("[Push] OneSignal prompt failed/timed out, falling back to native:", promptErr?.message);
       }
 
-      // Step 3: Check browser permission
+      // Step 2: Fallback — use native Notification.requestPermission if OneSignal didn't work
+      if (!oneSignalWorked) {
+        const nativeResult = await Notification.requestPermission();
+        setPermission(nativeResult as PermissionState);
+
+        if (nativeResult !== "granted") {
+          toast({
+            title: "İzin Verilmedi",
+            description: nativeResult === "denied"
+              ? "Bildirimler tarayıcı ayarlarından engellendi."
+              : "Bildirim izni verilmedi.",
+            variant: "destructive",
+          });
+          setConnectionStatus("disconnected");
+          return false;
+        }
+
+        // After native permission, try to login OneSignal in background
+        try {
+          const { initOneSignal } = await import("@/lib/onesignal");
+          await initOneSignal();
+        } catch {
+          // continue without OneSignal
+        }
+      }
+
+      // Step 3: Update permission state
       const result = Notification.permission as PermissionState;
       setPermission(result);
 
@@ -84,43 +107,40 @@ export function usePushNotifications() {
         setConnectionStatus("disconnected");
         toast({
           title: "İzin Verilmedi",
-          description: result === "denied"
-            ? "Bildirimler tarayıcı ayarlarından engellendi. Site ayarlarından izin verin."
-            : "Bildirim izni verilmedi.",
+          description: "Bildirim izni verilemedi.",
           variant: "destructive",
         });
-        setLoading(false);
         return false;
       }
 
-      // Step 4: Wait for OneSignal to register, then get ID
-      await new Promise((r) => setTimeout(r, 2000));
-
+      // Step 4: Try to get OneSignal subscription ID
       let subId: string | null | undefined = null;
       try {
+        const { OneSignal } = await import("@/lib/onesignal");
+        // Wait briefly for registration
+        await new Promise((r) => setTimeout(r, 2000));
         subId = await OneSignal.User.PushSubscription.id;
       } catch (idErr: any) {
-        console.error("[Push] Failed to get OneSignal Subscription ID:", idErr);
+        console.warn("[Push] Failed to get OneSignal Subscription ID:", idErr?.message);
       }
 
       if (!subId) {
         toast({
           title: "⚠️ Player ID Alınamadı",
-          description: "OneSignal henüz bir Subscription ID üretmedi. Lütfen birkaç saniye bekleyip tekrar deneyin.",
+          description: "OneSignal henüz bir Subscription ID üretmedi. Birkaç saniye bekleyip tekrar deneyin.",
           variant: "destructive",
         });
         setConnectionStatus("pending");
-        setLoading(false);
         return false;
       }
 
-      // Step 5: Player ID received — green toast
+      // Step 5: Player ID received
       toast({
         title: "✅ OneSignal ID Alındı",
         description: `Player ID: ${subId.substring(0, 12)}... — Supabase'e yazılıyor...`,
       });
 
-      // Step 6: Get current user (may be null for anon)
+      // Step 6: Get current user
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
@@ -131,11 +151,10 @@ export function usePushNotifications() {
           variant: "destructive",
         });
         setConnectionStatus("pending");
-        setLoading(false);
         return false;
       }
 
-      // Step 7: Insert/upsert to Supabase with full error handling
+      // Step 7: Upsert to Supabase
       const { error: dbError } = await supabase.from("push_subscriptions").upsert(
         {
           user_id: userId,
@@ -154,17 +173,15 @@ export function usePushNotifications() {
           variant: "destructive",
         });
         setConnectionStatus("pending");
-        setLoading(false);
         return false;
       }
 
-      // Step 8: Success!
+      // Step 8: Success
       setConnectionStatus("connected");
       toast({
         title: "🎉 Bildirimler Aktif",
-        description: "Player ID başarıyla Supabase'e kaydedildi. Artık bildirim alabilirsiniz!",
+        description: "Player ID başarıyla Supabase'e kaydedildi!",
       });
-      setLoading(false);
       return true;
 
     } catch (err: any) {
@@ -175,8 +192,9 @@ export function usePushNotifications() {
         variant: "destructive",
       });
       setConnectionStatus("disconnected");
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
