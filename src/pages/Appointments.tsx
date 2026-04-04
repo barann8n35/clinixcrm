@@ -3,7 +3,7 @@ import { Calendar, Clock, User, Filter, CalendarPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, parseISO, isToday, isTomorrow, isPast } from "date-fns";
+import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { motion } from "framer-motion";
 import NewAppointmentDialog from "@/components/appointments/NewAppointmentDialog";
@@ -24,6 +24,7 @@ const statusStyles: Record<string, string> = {
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   rescheduled: "bg-warning/10 text-warning border-warning/20",
   completed: "bg-muted text-muted-foreground border-border",
+  "in-progress": "bg-primary/10 text-primary border-primary/20",
 };
 
 const statusLabel: Record<string, string> = {
@@ -32,6 +33,7 @@ const statusLabel: Record<string, string> = {
   cancelled: "İptal",
   rescheduled: "Ertelendi",
   completed: "Tamamlandı",
+  "in-progress": "Devam Ediyor",
 };
 
 type FilterType = "all" | "upcoming" | "approved" | "cancelled";
@@ -41,31 +43,53 @@ const Appointments = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
 
+  const mapRow = (a: any): Appointment => ({
+    id: a.id,
+    patient_id: a.patient_id,
+    patient_name: a.patients?.name || "Bilinmiyor",
+    doctor: a.doctor,
+    type: a.type,
+    scheduled_at: a.scheduled_at,
+    status: a.status,
+  });
+
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
     const { data } = await supabase
       .from("appointments")
       .select("id, patient_id, doctor, type, scheduled_at, status, patients(name)")
+      .gte("scheduled_at", todayStart.toISOString())
       .order("scheduled_at", { ascending: true });
 
     if (data) {
-      setAppointments(
-        data.map((a: any) => ({
-          id: a.id,
-          patient_id: a.patient_id,
-          patient_name: a.patients?.name || "Bilinmiyor",
-          doctor: a.doctor,
-          type: a.type,
-          scheduled_at: a.scheduled_at,
-          status: a.status,
-        }))
-      );
+      setAppointments(data.map(mapRow));
     }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     fetchAppointments();
+  }, [fetchAppointments]);
+
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel("appointments-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" },
+        () => {
+          fetchAppointments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchAppointments]);
 
   const filtered = useMemo(
@@ -87,7 +111,7 @@ const Appointments = () => {
     const d = parseISO(dateStr);
     if (isToday(d)) return "Bugün";
     if (isTomorrow(d)) return "Yarın";
-    return format(d, "d MMMM yyyy, EEEE", { locale: tr });
+    return format(d, "dd.MM.yyyy, EEEE", { locale: tr });
   };
 
   const filters: { key: FilterType; label: string }[] = [
@@ -99,7 +123,6 @@ const Appointments = () => {
 
   return (
     <div className="p-4 md:p-8 space-y-5 h-full overflow-auto gradient-mesh">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -108,7 +131,7 @@ const Appointments = () => {
         <div>
           <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Randevular</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {appointments.length} randevu
+            {appointments.length} randevu (bugün ve sonrası)
           </p>
         </div>
         <NewAppointmentDialog onCreated={fetchAppointments} />
@@ -130,7 +153,6 @@ const Appointments = () => {
         </div>
       </motion.div>
 
-      {/* Loading */}
       {loading && (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
@@ -139,7 +161,6 @@ const Appointments = () => {
         </div>
       )}
 
-      {/* Empty */}
       {!loading && filtered.length === 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -151,14 +172,13 @@ const Appointments = () => {
           </div>
           <div className="text-center">
             <p className="text-sm font-semibold text-foreground">
-              {filter !== "all" ? "Bu filtreyle eşleşen randevu yok" : "Henüz randevu kaydı yok"}
+              {filter !== "all" ? "Bu filtreyle eşleşen randevu yok" : "Bugün için planlanmış bir randevu bulunmuyor."}
             </p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Yeni randevu eklemek için sağ üstteki butonu kullanın</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Yeni randevu eklemek için yukarıdaki butonu kullanın</p>
           </div>
         </motion.div>
       )}
 
-      {/* Grouped list */}
       {!loading &&
         grouped.map(([dateKey, items]) => (
           <div key={dateKey} className="space-y-2">
@@ -169,14 +189,13 @@ const Appointments = () => {
             <div className="grid gap-2">
               {items.map((apt, i) => {
                 const time = format(parseISO(apt.scheduled_at), "HH:mm");
-                const past = isPast(parseISO(apt.scheduled_at)) && apt.status !== "completed";
                 return (
                   <motion.div
                     key={apt.id}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className={`rounded-2xl border border-border/60 bg-card p-4 flex items-center gap-4 shadow-card card-interactive ${past ? "opacity-60" : ""}`}
+                    className="rounded-2xl border border-border/60 bg-card p-4 flex items-center gap-4 shadow-card card-interactive"
                   >
                     <div className="text-center shrink-0 w-14">
                       <div className="text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
@@ -205,6 +224,10 @@ const Appointments = () => {
                           <Clock className="w-3 h-3" /> {apt.type}
                         </span>
                       </div>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground/70 shrink-0">
+                      {format(parseISO(apt.scheduled_at), "dd.MM.yyyy", { locale: tr })}
                     </div>
                   </motion.div>
                 );
