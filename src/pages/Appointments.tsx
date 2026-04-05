@@ -135,22 +135,26 @@ const Appointments = () => {
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+        className="space-y-3"
       >
-        <div>
-          <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Randevular</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {appointments.length} randevu (bugün ve sonrası)
-          </p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-display font-extrabold text-foreground tracking-tight truncate">Randevular</h1>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+              {appointments.length} randevu
+            </p>
+          </div>
+          <div className="shrink-0">
+            <NewAppointmentDialog onCreated={fetchAppointments} />
+          </div>
         </div>
-        <NewAppointmentDialog onCreated={fetchAppointments} />
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Filter className="w-4 h-4 text-muted-foreground mr-1" />
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin -mx-1 px-1">
+          <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
           {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border whitespace-nowrap shrink-0 ${
                 filter === f.key
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
                   : "bg-card text-muted-foreground border-border/60 hover:bg-accent hover:border-primary/30"
