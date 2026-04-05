@@ -22,6 +22,8 @@ interface Patient {
   status: string;
   tags: string[] | null;
   internal_notes: string | null;
+  reminder_active?: boolean;
+  reminder_date?: string | null;
 }
 
 const TAG_COLORS = [
