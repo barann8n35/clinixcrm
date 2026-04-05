@@ -246,12 +246,14 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
                       />
                     </PopoverContent>
                   </Popover>
-                  <Input
-                    type="time"
-                    value={reminderTime}
-                    onChange={(e) => setReminderTime(e.target.value)}
-                    className="w-[88px] h-9 text-[11px] rounded-xl border-primary/20 bg-primary/5"
-                  />
+                  <div className="relative w-[88px]">
+                    <input
+                      type="time"
+                      value={reminderTime}
+                      onChange={(e) => setReminderTime(e.target.value)}
+                      className="w-full h-9 text-[11px] rounded-xl border border-primary/20 bg-primary/5 px-2.5 text-foreground cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    />
+                  </div>
                 </div>
               </motion.div>
             )}
