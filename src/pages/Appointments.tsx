@@ -178,7 +178,7 @@ const Appointments = () => {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="rounded-2xl border border-border/60 bg-card p-12 flex flex-col items-center justify-center min-h-[300px] gap-4 shadow-card"
+          className="rounded-2xl border border-border/60 bg-card p-8 md:p-12 flex flex-col items-center justify-center min-h-[200px] md:min-h-[300px] gap-4 shadow-card"
         >
           <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center">
             <CalendarPlus className="w-9 h-9 text-muted-foreground/30" />
