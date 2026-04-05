@@ -20,6 +20,8 @@ interface Patient {
   status: string;
   tags: string[] | null;
   internal_notes: string | null;
+  reminder_active?: boolean;
+  reminder_date?: string | null;
 }
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
@@ -39,7 +41,7 @@ export function PatientPanel({ patientId }: { patientId: string }) {
     async function load() {
       const { data } = await supabase
         .from("patients")
-        .select("id, name, phone, complaint, location, status, tags, internal_notes")
+        .select("id, name, phone, complaint, location, status, tags, internal_notes, reminder_active, reminder_date")
         .eq("id", patientId)
         .single();
       setPatient(data as Patient | null);

@@ -22,6 +22,8 @@ interface Patient {
   status: string;
   tags: string[] | null;
   internal_notes: string | null;
+  reminder_active?: boolean;
+  reminder_date?: string | null;
 }
 
 const TAG_COLORS = [
@@ -57,10 +59,21 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
   const [internalNotes, setInternalNotes] = useState(patient?.internal_notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
   const notesTimeout = useRef<ReturnType<typeof setTimeout>>();
-  const [remindMe, setRemindMe] = useState(false);
-  const [reminderDate, setReminderDate] = useState<Date>();
+  const [remindMe, setRemindMe] = useState(patient?.reminder_active ?? false);
+  const [reminderDate, setReminderDate] = useState<Date | undefined>(
+    patient?.reminder_date ? new Date(patient.reminder_date) : undefined
+  );
   const [reminderTime, setReminderTime] = useState("09:00");
   const [savingReminder, setSavingReminder] = useState(false);
+
+  // Sync state when patient changes
+  const prevPatientId = useRef(patientId);
+  if (prevPatientId.current !== patientId) {
+    prevPatientId.current = patientId;
+    setRemindMe(patient?.reminder_active ?? false);
+    setReminderDate(patient?.reminder_date ? new Date(patient.reminder_date) : undefined);
+    setInternalNotes(patient?.internal_notes || "");
+  }
 
   const saveNotes = useCallback(async (value: string) => {
     setSavingNotes(true);
@@ -75,22 +88,35 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
     notesTimeout.current = setTimeout(() => saveNotes(value), 1000);
   }
 
-  async function handleSaveReminder() {
-    if (!reminderDate || !patient) return;
-    setSavingReminder(true);
+  async function handleToggleReminder(checked: boolean) {
+    setRemindMe(checked);
+    const { error } = await supabase.from("patients").update({
+      reminder_active: checked,
+      ...(!checked ? { reminder_date: null } : {}),
+    }).eq("id", patientId);
+    if (error) { toast.error("Güncellenemedi"); setRemindMe(!checked); return; }
+    if (!checked) {
+      setReminderDate(undefined);
+      onPatientUpdate(prev => prev ? { ...prev, reminder_active: false, reminder_date: null } : null);
+    } else {
+      onPatientUpdate(prev => prev ? { ...prev, reminder_active: true } : null);
+    }
+  }
+
+  async function handleSelectReminderDate(date: Date | undefined) {
+    setReminderDate(date);
+    if (!date) return;
     const [h, m] = reminderTime.split(":").map(Number);
-    const remindAt = new Date(reminderDate);
+    const remindAt = new Date(date);
     remindAt.setHours(h, m, 0, 0);
-    const { error } = await supabase.from("patient_reminders" as any).insert({
-      patient_id: patientId,
-      note: internalNotes,
-      remind_at: remindAt.toISOString(),
-    });
+    setSavingReminder(true);
+    const { error } = await supabase.from("patients").update({
+      reminder_date: remindAt.toISOString(),
+    }).eq("id", patientId);
     setSavingReminder(false);
-    if (error) { toast.error("Hatırlatıcı kaydedilemedi"); return; }
-    toast.success("🔔 Hatırlatıcı kaydedildi!");
-    setRemindMe(false);
-    setReminderDate(undefined);
+    if (error) { toast.error("Tarih kaydedilemedi"); return; }
+    onPatientUpdate(prev => prev ? { ...prev, reminder_date: remindAt.toISOString() } : null);
+    toast.success("🔔 Hatırlatıcı tarihi kaydedildi!");
   }
 
   async function handleAddTag() {
@@ -179,7 +205,7 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
               <Bell className="w-3.5 h-3.5 text-warning" />
               <span className="text-[12px] font-medium text-foreground">Bana Hatırlat 🔔</span>
             </label>
-            <Switch checked={remindMe} onCheckedChange={setRemindMe} />
+            <Switch checked={remindMe} onCheckedChange={handleToggleReminder} />
           </div>
 
           <AnimatePresence>
@@ -188,29 +214,35 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden space-y-2"
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
               >
-                <div className="flex items-center gap-2">
+                <div className="mt-2 flex items-center gap-2">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className={cn(
-                          "flex-1 justify-start text-left text-[11px] h-8 rounded-lg",
+                          "flex-1 justify-start text-left text-[11px] h-9 rounded-xl border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors",
                           !reminderDate && "text-muted-foreground"
                         )}
                       >
-                        <CalendarIcon className="w-3 h-3 mr-1.5" />
-                        {reminderDate ? format(reminderDate, "d MMM yyyy", { locale: tr }) : "Tarih seç"}
+                        <CalendarIcon className="w-3.5 h-3.5 mr-2 text-primary" />
+                        {reminderDate ? format(reminderDate, "d MMM yyyy", { locale: tr }) : "Tarih seç..."}
+                        {savingReminder && <span className="ml-auto text-[10px] text-muted-foreground animate-pulse">💾</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={reminderDate}
-                        onSelect={setReminderDate}
+                        onSelect={handleSelectReminderDate}
                         className={cn("p-3 pointer-events-auto")}
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return date < today;
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -218,17 +250,9 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
                     type="time"
                     value={reminderTime}
                     onChange={(e) => setReminderTime(e.target.value)}
-                    className="w-24 h-8 text-[11px] rounded-lg"
+                    className="w-[88px] h-9 text-[11px] rounded-xl border-primary/20 bg-primary/5"
                   />
                 </div>
-                <Button
-                  size="sm"
-                  onClick={handleSaveReminder}
-                  disabled={!reminderDate || savingReminder}
-                  className="w-full h-8 text-[11px] rounded-lg"
-                >
-                  {savingReminder ? "Kaydediliyor..." : "💾 Hatırlatıcıyı Kaydet"}
-                </Button>
               </motion.div>
             )}
           </AnimatePresence>
