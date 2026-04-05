@@ -80,7 +80,7 @@ const Appointments = () => {
 
   useEffect(() => {
     fetchAppointments();
-  }, [fetchAppointments]);
+  }, [fetchAppointments, filter]);
 
   // Realtime subscription
   useEffect(() => {
