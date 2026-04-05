@@ -76,7 +76,7 @@ const Appointments = () => {
       setAppointments(data.map(mapRow));
     }
     setLoading(false);
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
     fetchAppointments();
