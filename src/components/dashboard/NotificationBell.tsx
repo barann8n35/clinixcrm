@@ -1,10 +1,9 @@
-import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock } from "lucide-react";
+import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const typeConfig: Record<string, { icon: typeof Bell; color: string; bg: string }> = {
@@ -12,16 +11,19 @@ const typeConfig: Record<string, { icon: typeof Bell; color: string; bg: string 
   cancellation: { icon: UserX, color: "text-destructive", bg: "bg-destructive/10" },
   message: { icon: MessageSquare, color: "text-success", bg: "bg-success/10" },
   alert: { icon: AlertTriangle, color: "text-warning", bg: "bg-warning/10" },
+  reminder: { icon: BellRing, color: "text-warning", bg: "bg-warning/10" },
 };
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAllRead, toggleRead } = useNotifications();
+  const { notifications, unreadCount, markAllRead, toggleRead, addNotification } = useNotifications();
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [reminderText, setReminderText] = useState("");
 
   const handleAddReminder = () => {
     if (!reminderText.trim()) return;
-    toast.success("Hatırlatıcı oluşturuldu", {
+    addNotification({
+      type: "reminder",
+      title: "🔔 Hızlı Hatırlatıcı",
       description: reminderText,
     });
     setReminderText("");
@@ -83,34 +85,41 @@ export function NotificationBell() {
         )}
 
         <div className="max-h-[320px] overflow-y-auto scrollbar-thin divide-y divide-border/40">
-          {notifications.slice(0, 6).map((n) => {
-            const config = typeConfig[n.type] || typeConfig.alert;
-            const Icon = config.icon;
-            return (
-              <button
-                key={n.id}
-                onClick={() => toggleRead(n.id)}
-                className={cn(
-                  "w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50",
-                  !n.read && "bg-primary/[0.03]"
-                )}
-              >
-                <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5", config.bg)}>
-                  <Icon className={cn("h-4 w-4", config.color)} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className={cn("text-[12px] text-foreground truncate", !n.read ? "font-semibold" : "font-medium")}>
-                      {n.title}
-                    </p>
-                    {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+          {notifications.length === 0 ? (
+            <div className="px-4 py-8 text-center">
+              <Bell className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-[12px] text-muted-foreground">Henüz bildirim yok</p>
+            </div>
+          ) : (
+            notifications.slice(0, 20).map((n) => {
+              const config = typeConfig[n.type] || typeConfig.alert;
+              const Icon = config.icon;
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => toggleRead(n.id)}
+                  className={cn(
+                    "w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50",
+                    !n.read && "bg-primary/[0.03]"
+                  )}
+                >
+                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5", config.bg)}>
+                    <Icon className={cn("h-4 w-4", config.color)} />
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{n.description}</p>
-                </div>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0 pt-1">{n.time}</span>
-              </button>
-            );
-          })}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className={cn("text-[12px] text-foreground truncate", !n.read ? "font-semibold" : "font-medium")}>
+                        {n.title}
+                      </p>
+                      {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{n.description}</p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0 pt-1">{n.time}</span>
+                </button>
+              );
+            })
+          )}
         </div>
       </PopoverContent>
     </Popover>

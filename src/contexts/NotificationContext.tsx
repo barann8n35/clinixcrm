@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-type NotificationType = "appointment" | "cancellation" | "message" | "alert";
+type NotificationType = "appointment" | "cancellation" | "message" | "alert" | "reminder";
 
 export interface Notification {
   id: string;
@@ -9,42 +10,131 @@ export interface Notification {
   description: string;
   time: string;
   read: boolean;
+  patient_id?: string | null;
+  created_at?: string;
 }
-
-const initialNotifications: Notification[] = [
-  { id: "1", type: "appointment", title: "Yeni randevu oluşturuldu", description: "Ahmet Yılmaz için 10 Mart 14:00 randevusu eklendi.", time: "5 dk önce", read: false },
-  { id: "2", type: "message", title: "Yeni mesaj alındı", description: "Fatma Demir WhatsApp üzerinden mesaj gönderdi.", time: "12 dk önce", read: false },
-  { id: "3", type: "cancellation", title: "Randevu iptal edildi", description: "Mehmet Kaya yarınki randevusunu iptal etti.", time: "1 saat önce", read: false },
-  { id: "4", type: "alert", title: "Sistem uyarısı", description: "Instagram entegrasyonu yeniden bağlantı gerektiriyor.", time: "2 saat önce", read: true },
-  { id: "5", type: "appointment", title: "Randevu hatırlatması", description: "Bugün 3 randevunuz bulunmaktadır.", time: "3 saat önce", read: true },
-  { id: "6", type: "message", title: "Okunmamış mesajlar", description: "5 okunmamış mesajınız var.", time: "5 saat önce", read: true },
-];
 
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
   markAllRead: () => void;
   toggleRead: (id: string) => void;
+  addNotification: (n: Omit<Notification, "id" | "time" | "read">) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Az önce";
+  if (mins < 60) return `${mins} dk önce`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} saat önce`;
+  const days = Math.floor(hrs / 24);
+  return `${days} gün önce`;
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAllRead = () => {
+  const fetchNotifications = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (!error && data) {
+      setNotifications(
+        data.map((n: any) => ({
+          id: n.id,
+          type: n.type as NotificationType,
+          title: n.title,
+          description: n.description || "",
+          time: timeAgo(n.created_at),
+          read: n.read,
+          patient_id: n.patient_id,
+          created_at: n.created_at,
+        }))
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel("notifications-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications" },
+        (payload) => {
+          const n = payload.new as any;
+          setNotifications((prev) => [
+            {
+              id: n.id,
+              type: n.type as NotificationType,
+              title: n.title,
+              description: n.description || "",
+              time: timeAgo(n.created_at),
+              read: n.read,
+              patient_id: n.patient_id,
+              created_at: n.created_at,
+            },
+            ...prev,
+          ]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchNotifications]);
+
+  const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+    }
   };
 
-  const toggleRead = (id: string) => {
+  const toggleRead = async (id: string) => {
+    const target = notifications.find((n) => n.id === id);
+    if (!target) return;
+    const newRead = !target.read;
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
+      prev.map((n) => (n.id === id ? { ...n, read: newRead } : n))
     );
+    await supabase.from("notifications").update({ read: newRead }).eq("id", id);
+  };
+
+  const addNotification = async (n: Omit<Notification, "id" | "time" | "read">) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("notifications").insert({
+      user_id: user.id,
+      type: n.type,
+      title: n.title,
+      description: n.description,
+      patient_id: n.patient_id || null,
+    });
   };
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAllRead, toggleRead }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, markAllRead, toggleRead, addNotification }}>
       {children}
     </NotificationContext.Provider>
   );
