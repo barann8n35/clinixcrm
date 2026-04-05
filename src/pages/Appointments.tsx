@@ -135,22 +135,26 @@ const Appointments = () => {
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+        className="space-y-3"
       >
-        <div>
-          <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">Randevular</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {appointments.length} randevu (bugün ve sonrası)
-          </p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-display font-extrabold text-foreground tracking-tight truncate">Randevular</h1>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+              {appointments.length} randevu
+            </p>
+          </div>
+          <div className="shrink-0">
+            <NewAppointmentDialog onCreated={fetchAppointments} />
+          </div>
         </div>
-        <NewAppointmentDialog onCreated={fetchAppointments} />
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Filter className="w-4 h-4 text-muted-foreground mr-1" />
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin -mx-1 px-1">
+          <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
           {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border whitespace-nowrap shrink-0 ${
                 filter === f.key
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
                   : "bg-card text-muted-foreground border-border/60 hover:bg-accent hover:border-primary/30"
@@ -174,7 +178,7 @@ const Appointments = () => {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="rounded-2xl border border-border/60 bg-card p-12 flex flex-col items-center justify-center min-h-[300px] gap-4 shadow-card"
+          className="rounded-2xl border border-border/60 bg-card p-8 md:p-12 flex flex-col items-center justify-center min-h-[200px] md:min-h-[300px] gap-4 shadow-card"
         >
           <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center">
             <CalendarPlus className="w-9 h-9 text-muted-foreground/30" />
@@ -204,39 +208,39 @@ const Appointments = () => {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="rounded-2xl border border-border/60 bg-card p-4 flex items-center gap-4 shadow-card card-interactive"
+                    className="rounded-2xl border border-border/60 bg-card p-3 md:p-4 flex items-start md:items-center gap-3 md:gap-4 shadow-card card-interactive"
                   >
-                    <div className="text-center shrink-0 w-14">
-                      <div className="text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
-                      <div className="text-xs text-muted-foreground">:{time.split(":")[1]}</div>
+                    <div className="text-center shrink-0 w-11 md:w-14">
+                      <div className="text-base md:text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
+                      <div className="text-[10px] md:text-xs text-muted-foreground">:{time.split(":")[1]}</div>
                     </div>
 
-                    <div className="w-px h-10 bg-border/40 shrink-0" />
+                    <div className="w-px h-8 md:h-10 bg-border/40 shrink-0" />
 
                     <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm text-foreground truncate">
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        <span className="font-semibold text-xs md:text-sm text-foreground truncate">
                           {apt.patient_name}
                         </span>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] px-1.5 py-0 ${statusStyles[apt.status] || statusStyles.upcoming}`}
+                          className={`text-[9px] md:text-[10px] px-1.5 py-0 shrink-0 ${statusStyles[apt.status] || statusStyles.upcoming}`}
                         >
                           {statusLabel[apt.status] || apt.status}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" /> {apt.doctor}
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] md:text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 truncate">
+                          <User className="w-3 h-3 shrink-0" /> {apt.doctor}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {apt.type}
+                          <Clock className="w-3 h-3 shrink-0" /> {apt.type}
                         </span>
                       </div>
                     </div>
 
-                    <div className="text-xs text-muted-foreground/70 shrink-0">
-                      {format(parseISO(apt.scheduled_at), "dd.MM.yyyy", { locale: tr })}
+                    <div className="text-[10px] md:text-xs text-muted-foreground/70 shrink-0">
+                      {format(parseISO(apt.scheduled_at), "dd.MM", { locale: tr })}
                     </div>
                   </motion.div>
                 );

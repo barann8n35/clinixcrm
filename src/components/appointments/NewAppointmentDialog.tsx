@@ -131,15 +131,40 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
             />
           </div>
 
-          {/* Phone */}
+           {/* Phone */}
           <div className="space-y-1.5">
             <Label htmlFor="phone">Telefon Numarası</Label>
             <Input
               id="phone"
+              type="tel"
+              inputMode="tel"
               placeholder="+90 5XX XXX XX XX"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              maxLength={20}
+              onChange={(e) => {
+                let val = e.target.value.replace(/[^\d+\s]/g, "");
+                // Auto-format: +90 5XX XXX XX XX
+                const digits = val.replace(/\D/g, "");
+                if (digits.length > 0) {
+                  let formatted = "";
+                  if (digits.startsWith("90")) {
+                    formatted = "+" + digits.slice(0, 2);
+                    if (digits.length > 2) formatted += " " + digits.slice(2, 5);
+                    if (digits.length > 5) formatted += " " + digits.slice(5, 8);
+                    if (digits.length > 8) formatted += " " + digits.slice(8, 10);
+                    if (digits.length > 10) formatted += " " + digits.slice(10, 12);
+                  } else if (digits.startsWith("0")) {
+                    formatted = digits.slice(0, 4);
+                    if (digits.length > 4) formatted += " " + digits.slice(4, 7);
+                    if (digits.length > 7) formatted += " " + digits.slice(7, 9);
+                    if (digits.length > 9) formatted += " " + digits.slice(9, 11);
+                  } else {
+                    formatted = val;
+                  }
+                  val = formatted;
+                }
+                setPhone(val);
+              }}
+              maxLength={17}
             />
           </div>
 
