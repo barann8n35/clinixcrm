@@ -127,6 +127,7 @@ const Appointments = () => {
     { key: "upcoming", label: "Yaklaşan" },
     { key: "approved", label: "Onaylı" },
     { key: "cancelled", label: "İptal" },
+    { key: "past", label: "Geçmiş" },
   ];
 
   return (
