@@ -101,7 +101,7 @@ const Appointments = () => {
   }, [fetchAppointments]);
 
   const filtered = useMemo(
-    () => (filter === "all" ? appointments : appointments.filter((a) => a.status === filter)),
+    () => (filter === "all" || filter === "past" ? appointments : appointments.filter((a) => a.status === filter)),
     [appointments, filter]
   );
 
