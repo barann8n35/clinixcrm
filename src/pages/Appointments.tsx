@@ -36,7 +36,7 @@ const statusLabel: Record<string, string> = {
   "in-progress": "Devam Ediyor",
 };
 
-type FilterType = "all" | "upcoming" | "approved" | "cancelled";
+type FilterType = "all" | "upcoming" | "approved" | "cancelled" | "past";
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
