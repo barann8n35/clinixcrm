@@ -88,22 +88,35 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
     notesTimeout.current = setTimeout(() => saveNotes(value), 1000);
   }
 
-  async function handleSaveReminder() {
-    if (!reminderDate || !patient) return;
-    setSavingReminder(true);
+  async function handleToggleReminder(checked: boolean) {
+    setRemindMe(checked);
+    const { error } = await supabase.from("patients").update({
+      reminder_active: checked,
+      ...(!checked ? { reminder_date: null } : {}),
+    }).eq("id", patientId);
+    if (error) { toast.error("Güncellenemedi"); setRemindMe(!checked); return; }
+    if (!checked) {
+      setReminderDate(undefined);
+      onPatientUpdate(prev => prev ? { ...prev, reminder_active: false, reminder_date: null } : null);
+    } else {
+      onPatientUpdate(prev => prev ? { ...prev, reminder_active: true } : null);
+    }
+  }
+
+  async function handleSelectReminderDate(date: Date | undefined) {
+    setReminderDate(date);
+    if (!date) return;
     const [h, m] = reminderTime.split(":").map(Number);
-    const remindAt = new Date(reminderDate);
+    const remindAt = new Date(date);
     remindAt.setHours(h, m, 0, 0);
-    const { error } = await supabase.from("patient_reminders" as any).insert({
-      patient_id: patientId,
-      note: internalNotes,
-      remind_at: remindAt.toISOString(),
-    });
+    setSavingReminder(true);
+    const { error } = await supabase.from("patients").update({
+      reminder_date: remindAt.toISOString(),
+    }).eq("id", patientId);
     setSavingReminder(false);
-    if (error) { toast.error("Hatırlatıcı kaydedilemedi"); return; }
-    toast.success("🔔 Hatırlatıcı kaydedildi!");
-    setRemindMe(false);
-    setReminderDate(undefined);
+    if (error) { toast.error("Tarih kaydedilemedi"); return; }
+    onPatientUpdate(prev => prev ? { ...prev, reminder_date: remindAt.toISOString() } : null);
+    toast.success("🔔 Hatırlatıcı tarihi kaydedildi!");
   }
 
   async function handleAddTag() {
