@@ -36,7 +36,7 @@ const statusLabel: Record<string, string> = {
   "in-progress": "Devam Ediyor",
 };
 
-type FilterType = "all" | "upcoming" | "approved" | "cancelled";
+type FilterType = "all" | "upcoming" | "approved" | "cancelled" | "past";
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -55,24 +55,32 @@ const Appointments = () => {
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
 
-    const { data } = await supabase
+    let query = supabase
       .from("appointments")
-      .select("id, patient_id, doctor, type, scheduled_at, status, patients(name)")
-      .gte("scheduled_at", todayStart.toISOString())
-      .order("scheduled_at", { ascending: true });
+      .select("id, patient_id, doctor, type, scheduled_at, status, patients(name)");
+
+    if (filter === "past") {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      query = query.lt("scheduled_at", todayStart.toISOString()).order("scheduled_at", { ascending: false });
+    } else {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      query = query.gte("scheduled_at", todayStart.toISOString()).order("scheduled_at", { ascending: true });
+    }
+
+    const { data } = await query;
 
     if (data) {
       setAppointments(data.map(mapRow));
     }
     setLoading(false);
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
     fetchAppointments();
-  }, [fetchAppointments]);
+  }, [fetchAppointments, filter]);
 
   // Realtime subscription
   useEffect(() => {
@@ -93,7 +101,7 @@ const Appointments = () => {
   }, [fetchAppointments]);
 
   const filtered = useMemo(
-    () => (filter === "all" ? appointments : appointments.filter((a) => a.status === filter)),
+    () => (filter === "all" || filter === "past" ? appointments : appointments.filter((a) => a.status === filter)),
     [appointments, filter]
   );
 
@@ -119,6 +127,7 @@ const Appointments = () => {
     { key: "upcoming", label: "Yaklaşan" },
     { key: "approved", label: "Onaylı" },
     { key: "cancelled", label: "İptal" },
+    { key: "past", label: "Geçmiş" },
   ];
 
   return (
