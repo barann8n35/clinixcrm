@@ -55,14 +55,22 @@ const Appointments = () => {
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
 
-    const { data } = await supabase
+    let query = supabase
       .from("appointments")
-      .select("id, patient_id, doctor, type, scheduled_at, status, patients(name)")
-      .gte("scheduled_at", todayStart.toISOString())
-      .order("scheduled_at", { ascending: true });
+      .select("id, patient_id, doctor, type, scheduled_at, status, patients(name)");
+
+    if (filter === "past") {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      query = query.lt("scheduled_at", todayStart.toISOString()).order("scheduled_at", { ascending: false });
+    } else {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      query = query.gte("scheduled_at", todayStart.toISOString()).order("scheduled_at", { ascending: true });
+    }
+
+    const { data } = await query;
 
     if (data) {
       setAppointments(data.map(mapRow));
