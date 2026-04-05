@@ -208,39 +208,39 @@ const Appointments = () => {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="rounded-2xl border border-border/60 bg-card p-4 flex items-center gap-4 shadow-card card-interactive"
+                    className="rounded-2xl border border-border/60 bg-card p-3 md:p-4 flex items-start md:items-center gap-3 md:gap-4 shadow-card card-interactive"
                   >
-                    <div className="text-center shrink-0 w-14">
-                      <div className="text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
-                      <div className="text-xs text-muted-foreground">:{time.split(":")[1]}</div>
+                    <div className="text-center shrink-0 w-11 md:w-14">
+                      <div className="text-base md:text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
+                      <div className="text-[10px] md:text-xs text-muted-foreground">:{time.split(":")[1]}</div>
                     </div>
 
-                    <div className="w-px h-10 bg-border/40 shrink-0" />
+                    <div className="w-px h-8 md:h-10 bg-border/40 shrink-0" />
 
                     <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm text-foreground truncate">
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        <span className="font-semibold text-xs md:text-sm text-foreground truncate">
                           {apt.patient_name}
                         </span>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] px-1.5 py-0 ${statusStyles[apt.status] || statusStyles.upcoming}`}
+                          className={`text-[9px] md:text-[10px] px-1.5 py-0 shrink-0 ${statusStyles[apt.status] || statusStyles.upcoming}`}
                         >
                           {statusLabel[apt.status] || apt.status}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" /> {apt.doctor}
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] md:text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 truncate">
+                          <User className="w-3 h-3 shrink-0" /> {apt.doctor}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {apt.type}
+                          <Clock className="w-3 h-3 shrink-0" /> {apt.type}
                         </span>
                       </div>
                     </div>
 
-                    <div className="text-xs text-muted-foreground/70 shrink-0">
-                      {format(parseISO(apt.scheduled_at), "dd.MM.yyyy", { locale: tr })}
+                    <div className="text-[10px] md:text-xs text-muted-foreground/70 shrink-0">
+                      {format(parseISO(apt.scheduled_at), "dd.MM", { locale: tr })}
                     </div>
                   </motion.div>
                 );
