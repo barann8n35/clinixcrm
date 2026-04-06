@@ -12,7 +12,8 @@
     "logout": "Çıkış Yap",
     "notLoggedIn": "Giriş yapılmadı",
     "campaigns": "Kampanyalar",
-    "calendar": "Takvim"
+    "calendar": "Takvim",
+    "inventory": "Stok Takibi"
   },
   "dashboard": {
     "title": "Gösterge Paneli",

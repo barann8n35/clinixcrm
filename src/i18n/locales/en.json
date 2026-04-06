@@ -12,7 +12,8 @@
     "logout": "Log Out",
     "notLoggedIn": "Not logged in",
     "campaigns": "Campaigns",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "inventory": "Inventory"
   },
   "dashboard": {
     "title": "Dashboard",
