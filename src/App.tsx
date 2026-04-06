@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import Pipeline from "./pages/Pipeline";
 import Campaigns from "./pages/Campaigns";
 import CalendarPage from "./pages/CalendarPage";
+import Inventory from "./pages/Inventory";
 import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
