@@ -45,12 +45,12 @@ const platformConfig: Record<string, { icon: IconType; color: string }> = {
   telegram: { icon: FaTelegramPlane, color: "#0088cc" },
 };
 
-const pieData = [
-  { name: "WhatsApp", value: 45, color: "hsl(142 71% 45%)" },
-  { name: "Instagram", value: 25, color: "hsl(330 80% 60%)" },
-  { name: "Telegram", value: 15, color: "hsl(200 80% 50%)" },
-  { name: "Web", value: 15, color: "hsl(38 92% 50%)" },
-];
+const pieColorMap: Record<string, { color: string; label: string }> = {
+  whatsapp: { color: "hsl(142 71% 45%)", label: "WhatsApp" },
+  instagram: { color: "hsl(330 80% 60%)", label: "Instagram" },
+  telegram: { color: "hsl(200 80% 50%)", label: "Telegram" },
+  web: { color: "hsl(38 92% 50%)", label: "Web" },
+};
 
 const pieConfig: ChartConfig = {
   whatsapp: { label: "WhatsApp", color: "hsl(142 71% 45%)" },
@@ -75,11 +75,12 @@ const Dashboard = () => {
     todayAppointments: 0,
     pendingCount: 0,
     totalPatients: 0,
-    totalValue: 28200,
+    totalValue: 0,
     criticalCount: 0,
   });
   const [criticalPatients, setCriticalPatients] = useState<CriticalPatient[]>([]);
   const [todayApts, setTodayApts] = useState<TodayAppointment[]>([]);
+  const [pieData, setPieData] = useState<{ name: string; value: number; color: string }[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -107,6 +108,19 @@ const Dashboard = () => {
           platform: p.platform,
         }));
 
+      // Build pie data from real platform distribution
+      const platformCounts: Record<string, number> = {};
+      patients.forEach((p: any) => {
+        const platform = p.platform || "web";
+        platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+      });
+      const realPieData = Object.entries(platformCounts).map(([key, value]) => ({
+        name: pieColorMap[key]?.label || key,
+        value,
+        color: pieColorMap[key]?.color || "hsl(0 0% 60%)",
+      }));
+      setPieData(realPieData);
+
       setCriticalPatients(critical);
       setTodayApts(
         (todayAptsRes.data || []).map((a: any) => ({
@@ -123,7 +137,7 @@ const Dashboard = () => {
         todayAppointments: apts.length,
         pendingCount,
         totalPatients: patients.length,
-        totalValue: 28200,
+        totalValue: 0,
         criticalCount: critical.length,
       });
     }

@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import Pipeline from "./pages/Pipeline";
 import Campaigns from "./pages/Campaigns";
 import CalendarPage from "./pages/CalendarPage";
+import Inventory from "./pages/Inventory";
 import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="inventory" element={<Inventory />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
