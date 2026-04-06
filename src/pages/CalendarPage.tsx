@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { User, Phone, Stethoscope, FileText, Clock, X, CalendarDays } from "lucide-react";
+import { User, Phone, Stethoscope, FileText, Clock, CalendarDays, StickyNote, MapPin } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,9 @@ interface CalendarEvent {
     complaint: string;
     patientName: string;
     phone: string;
+    location: string;
     scheduledAt: string;
+    internalNotes: string;
   };
 }
 
@@ -67,12 +69,12 @@ const CalendarPage = () => {
 
       const { data: patientData } = await supabase
         .from("patients")
-        .select("id, name, complaint, appointment_date, status, phone")
+        .select("id, name, complaint, appointment_date, status, phone, location, internal_notes")
         .not("appointment_date", "is", null);
 
-      const patientMap: Record<string, { name: string; complaint: string | null; phone: string | null }> = {};
+      const patientMap: Record<string, { name: string; complaint: string | null; phone: string | null; location: string | null; internal_notes: string | null }> = {};
       (patientData || []).forEach((p: any) => {
-        patientMap[p.id] = { name: p.name, complaint: p.complaint, phone: p.phone };
+        patientMap[p.id] = { name: p.name, complaint: p.complaint, phone: p.phone, location: p.location, internal_notes: p.internal_notes };
       });
 
       const eventsArr: CalendarEvent[] = [];
@@ -94,7 +96,9 @@ const CalendarPage = () => {
             complaint: patient?.complaint || "—",
             patientName: patient?.name || "—",
             phone: patient?.phone || "—",
+            location: patient?.location || "—",
             scheduledAt: a.scheduled_at,
+            internalNotes: patient?.internal_notes || "",
           },
         });
       });
@@ -117,7 +121,9 @@ const CalendarPage = () => {
             complaint: p.complaint || "—",
             patientName: p.name,
             phone: p.phone || "—",
+            location: p.location || "—",
             scheduledAt: p.appointment_date,
+            internalNotes: p.internal_notes || "",
           },
         });
       });
@@ -143,18 +149,26 @@ const CalendarPage = () => {
         complaint: event.extendedProps.complaint,
         patientName: event.extendedProps.patientName,
         phone: event.extendedProps.phone,
+        location: event.extendedProps.location,
         scheduledAt: event.extendedProps.scheduledAt,
+        internalNotes: event.extendedProps.internalNotes,
       },
     });
   };
 
   const formatDateTime = (dateStr: string) => {
     try {
-      const d = new Date(dateStr);
-      return format(d, "d MMMM yyyy, HH:mm", { locale: tr });
+      return format(new Date(dateStr), "d MMMM yyyy, HH:mm", { locale: tr });
     } catch {
       return dateStr;
     }
+  };
+
+  const truncateNotes = (notes: string, wordCount = 4) => {
+    if (!notes) return "";
+    const words = notes.trim().split(/\s+/);
+    if (words.length <= wordCount) return notes;
+    return words.slice(0, wordCount).join(" ") + "…";
   };
 
   return (
@@ -204,10 +218,19 @@ const CalendarPage = () => {
             }}
             eventClick={handleEventClick}
             eventContent={(arg) => {
+              const notes = arg.event.extendedProps.internalNotes;
+              const preview = truncateNotes(notes);
               return (
                 <div className="px-1.5 py-0.5 text-[11px] font-medium truncate cursor-pointer">
-                  <span>{arg.timeText} </span>
-                  <span className="font-semibold">{arg.event.title}</span>
+                  <div>
+                    <span>{arg.timeText} </span>
+                    <span className="font-semibold">{arg.event.title}</span>
+                  </div>
+                  {preview && (
+                    <div className="text-[9px] opacity-80 truncate mt-0.5">
+                      📝 {preview}
+                    </div>
+                  )}
                 </div>
               );
             }}
@@ -226,7 +249,6 @@ const CalendarPage = () => {
           </DialogHeader>
           {selectedEvent && (
             <div className="space-y-4 pt-2">
-              {/* Status badge */}
               <div className="flex items-center gap-2">
                 <Badge
                   className="text-xs"
@@ -240,7 +262,6 @@ const CalendarPage = () => {
                 </Badge>
               </div>
 
-              {/* Details grid */}
               <div className="space-y-3 rounded-xl border border-border/60 bg-muted/30 p-4">
                 <div className="flex items-start gap-3">
                   <User className="w-4 h-4 text-primary mt-0.5 shrink-0" />
@@ -255,6 +276,14 @@ const CalendarPage = () => {
                   <div>
                     <p className="text-xs text-muted-foreground">Telefon</p>
                     <p className="text-sm text-foreground">{selectedEvent.extendedProps.phone}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Konum</p>
+                    <p className="text-sm text-foreground">{selectedEvent.extendedProps.location}</p>
                   </div>
                 </div>
 
@@ -289,6 +318,16 @@ const CalendarPage = () => {
                     <p className="text-sm text-foreground">{selectedEvent.extendedProps.complaint}</p>
                   </div>
                 </div>
+
+                {selectedEvent.extendedProps.internalNotes && (
+                  <div className="flex items-start gap-3 pt-2 border-t border-border/40">
+                    <StickyNote className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">İç Notlar</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{selectedEvent.extendedProps.internalNotes}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
