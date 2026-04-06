@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
@@ -48,6 +49,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
   const [time, setTime] = useState("");
   const [doctor, setDoctor] = useState("");
   const [type, setType] = useState("Consultation");
+  const [complaint, setComplaint] = useState("");
 
   const resetForm = () => {
     setPatientName("");
@@ -56,6 +58,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
     setTime("");
     setDoctor("");
     setType("Consultation");
+    setComplaint("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,6 +78,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
         id: patientId,
         name: patientName.trim(),
         phone: phone.trim() || null,
+        complaint: complaint.trim() || null,
         status: "pending",
       });
 
@@ -241,6 +245,19 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Complaint / Note */}
+          <div className="space-y-1.5">
+            <Label htmlFor="complaint">Şikayet / Not</Label>
+            <Textarea
+              id="complaint"
+              placeholder="Hastanın şikayetini veya notları yazın..."
+              value={complaint}
+              onChange={(e) => setComplaint(e.target.value)}
+              className="min-h-[80px] resize-none"
+              maxLength={500}
+            />
           </div>
 
           <Button type="submit" className="w-full" disabled={saving}>
