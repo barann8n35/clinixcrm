@@ -194,7 +194,7 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
                 <Calendar
                   mode="single"
                   selected={reminderDate}
-                  onSelect={(date) => { setReminderDate(date); markDirty(); }}
+                  onSelect={(date) => { setReminderDate(date); markDirty(); document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); }}
                   className={cn("p-3 pointer-events-auto")}
                   disabled={(date) => { const today = new Date(); today.setHours(0, 0, 0, 0); return date < today; }}
                 />
