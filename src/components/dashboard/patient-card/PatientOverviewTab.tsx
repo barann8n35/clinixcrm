@@ -1,8 +1,9 @@
-import { Phone, MapPin, AlertCircle, Tag, X, Plus, StickyNote, CreditCard, Bell, CalendarIcon, Save } from "lucide-react";
+import { Phone, MapPin, AlertCircle, Tag, X, Plus, StickyNote, CreditCard, Bell, CalendarIcon, Save, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -53,6 +54,9 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
   const [reminderTime, setReminderTime] = useState("09:00");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [timePickerStep, setTimePickerStep] = useState<"hour" | "minute">("hour");
+  const [selectedHour, setSelectedHour] = useState("09");
 
   // Reset state when patientId or patient data changes
   useEffect(() => {
@@ -196,12 +200,62 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
                 />
               </PopoverContent>
             </Popover>
-            <input
-              type="time"
-              value={reminderTime}
-              onChange={(e) => { setReminderTime(e.target.value); markDirty(); }}
-              className="h-9 w-[88px] text-[11px] rounded-xl border border-border bg-background px-2.5 text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/30"
-            />
+            <Popover open={timePickerOpen} onOpenChange={(open) => { setTimePickerOpen(open); if (open) setTimePickerStep("hour"); }}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[88px] justify-start text-[11px] h-9 rounded-xl border-border")}>
+                  <Clock className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                  {reminderTime}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-2" align="start">
+                {timePickerStep === "hour" ? (
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Saat Seç</p>
+                    <ScrollArea className="h-[200px]">
+                      <div className="grid grid-cols-4 gap-1">
+                        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
+                          <button
+                            key={h}
+                            onClick={() => { setSelectedHour(h); setTimePickerStep("minute"); }}
+                            className={cn(
+                              "h-8 rounded-lg text-[12px] font-medium transition-colors",
+                              selectedHour === h ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                            )}
+                          >
+                            {h}
+                          </button>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Dakika Seç</p>
+                    <div className="grid grid-cols-4 gap-1">
+                      {["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"].map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => {
+                            const newTime = `${selectedHour}:${m}`;
+                            setReminderTime(newTime);
+                            markDirty();
+                            setTimePickerOpen(false);
+                          }}
+                          className={cn(
+                            "h-8 rounded-lg text-[12px] font-medium transition-colors",
+                            reminderTime.split(":")[1] === m && reminderTime.split(":")[0] === selectedHour
+                              ? "bg-primary text-primary-foreground"
+                              : "hover:bg-muted text-foreground"
+                          )}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
             {reminderDate && (
               <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive" onClick={handleClearReminder}>
                 <X className="w-3.5 h-3.5" />
