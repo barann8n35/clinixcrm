@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-type NotificationType = "appointment" | "cancellation" | "message" | "alert" | "reminder";
+type NotificationType = "appointment" | "cancellation" | "message" | "alert" | "reminder" | "new_registration";
 
 export interface Notification {
   id: string;
