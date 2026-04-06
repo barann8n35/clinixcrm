@@ -60,6 +60,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
     setDoctor("");
     setType("Consultation");
     setComplaint("");
+    setLocation("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
