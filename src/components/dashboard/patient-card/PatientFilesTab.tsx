@@ -1,4 +1,4 @@
-import { FileText, Inbox } from "lucide-react";
+import { Inbox } from "lucide-react";
 
 export function PatientFilesTab() {
   return (

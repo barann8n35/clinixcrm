@@ -134,7 +134,7 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
 
   const rawTags = patient?.tags;
   const tags: string[] = Array.isArray(rawTags) ? rawTags : [];
-  const status = STATUS_MAP[patient?.status || ""] || STATUS_MAP.pending;
+  const _status = STATUS_MAP[patient?.status || ""] || STATUS_MAP.pending;
 
   return (
     <div className="space-y-5 p-1">

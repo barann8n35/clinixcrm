@@ -156,7 +156,7 @@ export function PatientPanel({ patientId }: { patientId: string }) {
           </TabsContent>
 
           <TabsContent value="timeline" className="p-4 mt-0">
-            <PatientTimelineTab />
+            <PatientTimelineTab patientId={patientId} />
           </TabsContent>
 
           <TabsContent value="tasks" className="p-4 mt-0">
