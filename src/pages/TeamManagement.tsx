@@ -55,9 +55,8 @@ const TeamManagement = () => {
 
   async function handleRoleChange(userId: string, newRole: string) {
     setUpdating(userId);
-    // Delete existing role then insert new one
     await supabase.from("user_roles").delete().eq("user_id", userId);
-    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
+    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any });
     setUpdating(null);
     if (error) { toast.error("Rol güncellenemedi: " + error.message); return; }
     toast.success("Rol güncellendi!");

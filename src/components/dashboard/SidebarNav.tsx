@@ -16,6 +16,7 @@ const mainNavItems = [
 
 const managementNavItems = [
   { icon: Package, labelKey: "sidebar.inventory", path: "/inventory" },
+  { icon: UsersRound, labelKey: "sidebar.team", path: "/team" },
   { icon: BookOpen, labelKey: "sidebar.knowledgeBase", path: "/knowledge-base" },
   { icon: Settings, labelKey: "sidebar.settings", path: "/settings" },
 ];
