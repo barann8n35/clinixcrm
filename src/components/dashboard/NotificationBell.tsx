@@ -1,10 +1,11 @@
-import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing } from "lucide-react";
+import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing, UserPlus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 const typeConfig: Record<string, { icon: typeof Bell; color: string; bg: string }> = {
   appointment: { icon: CalendarCheck, color: "text-primary", bg: "bg-primary/10" },
@@ -12,12 +13,14 @@ const typeConfig: Record<string, { icon: typeof Bell; color: string; bg: string 
   message: { icon: MessageSquare, color: "text-success", bg: "bg-success/10" },
   alert: { icon: AlertTriangle, color: "text-warning", bg: "bg-warning/10" },
   reminder: { icon: BellRing, color: "text-warning", bg: "bg-warning/10" },
+  new_registration: { icon: UserPlus, color: "text-primary", bg: "bg-primary/10" },
 };
 
 export function NotificationBell() {
   const { notifications, unreadCount, markAllRead, toggleRead, addNotification } = useNotifications();
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [reminderText, setReminderText] = useState("");
+  const navigate = useNavigate();
 
   const handleAddReminder = () => {
     if (!reminderText.trim()) return;
@@ -28,6 +31,14 @@ export function NotificationBell() {
     });
     setReminderText("");
     setShowAddReminder(false);
+  };
+
+  const handleNotificationClick = (n: typeof notifications[0]) => {
+    toggleRead(n.id);
+    // Navigate to team management for new_registration notifications
+    if (n.type === "new_registration") {
+      navigate("/team");
+    }
   };
 
   return (
@@ -53,10 +64,7 @@ export function NotificationBell() {
               <Plus className="w-4 h-4" />
             </button>
             {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                className="text-[11px] text-primary font-medium hover:underline"
-              >
+              <button onClick={markAllRead} className="text-[11px] text-primary font-medium hover:underline">
                 Tümünü oku
               </button>
             )}
@@ -97,7 +105,7 @@ export function NotificationBell() {
               return (
                 <button
                   key={n.id}
-                  onClick={() => toggleRead(n.id)}
+                  onClick={() => handleNotificationClick(n)}
                   className={cn(
                     "w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50",
                     !n.read && "bg-primary/[0.03]"

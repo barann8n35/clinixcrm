@@ -1,4 +1,4 @@
-import { Bell, CalendarCheck, UserX, MessageSquare, AlertTriangle, CheckCheck, BellRing } from "lucide-react";
+import { Bell, CalendarCheck, UserX, MessageSquare, AlertTriangle, CheckCheck, BellRing, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const typeConfig: Record<NotificationType, { icon: typeof Bell; color: string; b
   message: { icon: MessageSquare, color: "text-success", bg: "bg-success/10" },
   alert: { icon: AlertTriangle, color: "text-warning", bg: "bg-warning/10" },
   reminder: { icon: BellRing, color: "text-warning", bg: "bg-warning/10" },
+  new_registration: { icon: UserPlus, color: "text-primary", bg: "bg-primary/10" },
 };
 
 const Notifications = () => {
