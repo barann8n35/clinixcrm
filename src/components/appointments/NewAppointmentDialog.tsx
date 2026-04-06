@@ -50,6 +50,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
   const [doctor, setDoctor] = useState("");
   const [type, setType] = useState("Consultation");
   const [complaint, setComplaint] = useState("");
+  const [location, setLocation] = useState("");
 
   const resetForm = () => {
     setPatientName("");
