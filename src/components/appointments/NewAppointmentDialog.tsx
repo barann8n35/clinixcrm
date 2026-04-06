@@ -247,6 +247,18 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
             </div>
           </div>
 
+          {/* Location */}
+          <div className="space-y-1.5">
+            <Label htmlFor="location">Adres</Label>
+            <Input
+              id="location"
+              placeholder="Hastanın adresini girin"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              maxLength={200}
+            />
+          </div>
+
           {/* Complaint / Note */}
           <div className="space-y-1.5">
             <Label htmlFor="complaint">Şikayet / Not</Label>
