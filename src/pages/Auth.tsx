@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, MailCheck, AlertCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 const Auth = () => {
   const { session, loading: authLoading } = useAuth();
