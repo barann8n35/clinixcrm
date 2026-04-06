@@ -59,6 +59,7 @@ const App = () => (
               <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="inventory" element={<Inventory />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
