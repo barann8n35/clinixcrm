@@ -75,11 +75,12 @@ const Dashboard = () => {
     todayAppointments: 0,
     pendingCount: 0,
     totalPatients: 0,
-    totalValue: 28200,
+    totalValue: 0,
     criticalCount: 0,
   });
   const [criticalPatients, setCriticalPatients] = useState<CriticalPatient[]>([]);
   const [todayApts, setTodayApts] = useState<TodayAppointment[]>([]);
+  const [pieData, setPieData] = useState<{ name: string; value: number; color: string }[]>([]);
 
   useEffect(() => {
     async function load() {
