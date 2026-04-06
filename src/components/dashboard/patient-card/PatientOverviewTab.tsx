@@ -1,5 +1,4 @@
-import { Phone, MapPin, AlertCircle, Clock, Tag, X, Plus, StickyNote, DollarSign, CreditCard, TrendingUp, Bell, CalendarIcon, Inbox } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Phone, MapPin, AlertCircle, Tag, X, Plus, StickyNote, CreditCard, Bell, CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
