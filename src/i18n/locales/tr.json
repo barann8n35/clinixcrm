@@ -13,7 +13,8 @@
     "notLoggedIn": "Giriş yapılmadı",
     "campaigns": "Kampanyalar",
     "calendar": "Takvim",
-    "inventory": "Stok Takibi"
+    "inventory": "Stok Takibi",
+    "team": "Ekip Yönetimi"
   },
   "dashboard": {
     "title": "Gösterge Paneli",

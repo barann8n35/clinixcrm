@@ -13,7 +13,8 @@
     "notLoggedIn": "Not logged in",
     "campaigns": "Campaigns",
     "calendar": "Calendar",
-    "inventory": "Inventory"
+    "inventory": "Inventory",
+    "team": "Team Management"
   },
   "dashboard": {
     "title": "Dashboard",
