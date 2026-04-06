@@ -247,6 +247,19 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
             </div>
           </div>
 
+          {/* Complaint / Note */}
+          <div className="space-y-1.5">
+            <Label htmlFor="complaint">Şikayet / Not</Label>
+            <Textarea
+              id="complaint"
+              placeholder="Hastanın şikayetini veya notları yazın..."
+              value={complaint}
+              onChange={(e) => setComplaint(e.target.value)}
+              className="min-h-[80px] resize-none"
+              maxLength={500}
+            />
+          </div>
+
           <Button type="submit" className="w-full" disabled={saving}>
             {saving ? "Kaydediliyor..." : "Randevu Oluştur"}
           </Button>

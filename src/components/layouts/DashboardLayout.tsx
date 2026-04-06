@@ -13,7 +13,7 @@ function DashboardLayoutInner() {
   const { hideHamburger } = useMobileNav();
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-screen w-full overflow-hidden bg-background" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       {!isMobile && <SidebarNav collapsed={isTablet} />}
 
       {isMobile && !hideHamburger && (
