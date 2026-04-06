@@ -90,6 +90,7 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
         internal_notes: internalNotes,
         reminder_active: !!reminderDate,
         reminder_date: reminderIso,
+        reminder_sent: false,
       }).eq("id", patientId);
 
       if (error) throw error;

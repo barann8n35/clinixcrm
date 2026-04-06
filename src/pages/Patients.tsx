@@ -99,6 +99,7 @@ const Patients = () => {
         internal_notes: noteText,
         reminder_active: !!reminderDate,
         reminder_date: reminderIso,
+        reminder_sent: false,
       }).eq("id", selectedId);
       if (error) throw error;
 
