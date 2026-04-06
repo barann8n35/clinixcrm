@@ -198,7 +198,7 @@ const Patients = () => {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.3 }}
-                onClick={() => setSelectedId(selectedId === patient.id ? null : patient.id)}
+                onClick={() => selectPatient(selectedId === patient.id ? null : patient.id)}
                 className={cn(
                   "rounded-2xl border bg-card p-4 flex items-start gap-4 shadow-card card-interactive cursor-pointer transition-all",
                   selectedId === patient.id ? "border-primary/40 ring-1 ring-primary/20" : "border-border/60"
