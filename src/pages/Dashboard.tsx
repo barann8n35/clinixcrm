@@ -108,6 +108,19 @@ const Dashboard = () => {
           platform: p.platform,
         }));
 
+      // Build pie data from real platform distribution
+      const platformCounts: Record<string, number> = {};
+      patients.forEach((p: any) => {
+        const platform = p.platform || "web";
+        platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+      });
+      const realPieData = Object.entries(platformCounts).map(([key, value]) => ({
+        name: pieColorMap[key]?.label || key,
+        value,
+        color: pieColorMap[key]?.color || "hsl(0 0% 60%)",
+      }));
+      setPieData(realPieData);
+
       setCriticalPatients(critical);
       setTodayApts(
         (todayAptsRes.data || []).map((a: any) => ({
@@ -124,7 +137,7 @@ const Dashboard = () => {
         todayAppointments: apts.length,
         pendingCount,
         totalPatients: patients.length,
-        totalValue: 28200,
+        totalValue: 0,
         criticalCount: critical.length,
       });
     }
