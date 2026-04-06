@@ -50,6 +50,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
   const [doctor, setDoctor] = useState("");
   const [type, setType] = useState("Consultation");
   const [complaint, setComplaint] = useState("");
+  const [location, setLocation] = useState("");
 
   const resetForm = () => {
     setPatientName("");
@@ -59,6 +60,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
     setDoctor("");
     setType("Consultation");
     setComplaint("");
+    setLocation("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +81,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
         name: patientName.trim(),
         phone: phone.trim() || null,
         complaint: complaint.trim() || null,
+        location: location.trim() || null,
         status: "pending",
       });
 
@@ -245,6 +248,18 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Location */}
+          <div className="space-y-1.5">
+            <Label htmlFor="location">Adres</Label>
+            <Input
+              id="location"
+              placeholder="Hastanın adresini girin"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              maxLength={200}
+            />
           </div>
 
           {/* Complaint / Note */}
