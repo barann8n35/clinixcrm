@@ -51,6 +51,9 @@ const Patients = () => {
   const [reminderTime, setReminderTime] = useState("09:00");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [timePickerStep, setTimePickerStep] = useState<"hour" | "minute">("hour");
+  const [selectedHour, setSelectedHour] = useState("09");
 
   useEffect(() => {
     const fetchPatients = async () => {
