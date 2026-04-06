@@ -78,6 +78,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
         id: patientId,
         name: patientName.trim(),
         phone: phone.trim() || null,
+        complaint: complaint.trim() || null,
         status: "pending",
       });
 
