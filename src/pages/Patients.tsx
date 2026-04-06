@@ -41,6 +41,7 @@ const platformIcon: Record<string, string> = {
 };
 
 const Patients = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -56,6 +57,16 @@ const Patients = () => {
   const [timePickerStep, setTimePickerStep] = useState<"hour" | "minute">("hour");
   const [selectedHour, setSelectedHour] = useState("09");
 
+  // Select patient and sync URL
+  const selectPatient = useCallback((id: string | null) => {
+    setSelectedId(id);
+    if (id) {
+      setSearchParams({ id }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [setSearchParams]);
+
   useEffect(() => {
     const fetchPatients = async () => {
       const { data } = await supabase
@@ -67,6 +78,35 @@ const Patients = () => {
     };
     fetchPatients();
   }, []);
+
+  // Handle URL ?id= parameter on mount and when params change
+  useEffect(() => {
+    if (loading) return;
+    const urlId = searchParams.get("id");
+    if (!urlId) return;
+
+    const exists = patients.find(p => p.id === urlId);
+    if (exists) {
+      setSelectedId(urlId);
+    } else {
+      // Fetch from Supabase if not in current list
+      const fetchSingle = async () => {
+        const { data } = await supabase
+          .from("patients")
+          .select("id, name, phone, complaint, location, status, platform, created_at, internal_notes, reminder_date")
+          .eq("id", urlId)
+          .maybeSingle();
+        if (data) {
+          setPatients(prev => [data, ...prev]);
+          setSelectedId(urlId);
+        } else {
+          toast.error("Hasta bulunamadı");
+          setSearchParams({}, { replace: true });
+        }
+      };
+      fetchSingle();
+    }
+  }, [loading, searchParams, patients.length]);
 
   // When selected patient changes, load their data
   useEffect(() => {
