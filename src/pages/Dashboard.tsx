@@ -14,6 +14,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { PieChart, Pie, Cell } from "recharts";
+import { PatientDetailModal } from "@/components/patients/PatientDetailModal";
 
 interface DashboardStats {
   todayAppointments: number;
@@ -32,6 +33,7 @@ interface CriticalPatient {
 
 interface TodayAppointment {
   id: string;
+  patient_id: string;
   patient_name: string;
   doctor: string;
   type: string;
@@ -39,6 +41,7 @@ interface TodayAppointment {
   status: string;
 }
 
+// ... keep existing code (platformConfig, pieColorMap, pieConfig, cardVariants - lines 42-69)
 const platformConfig: Record<string, { icon: IconType; color: string }> = {
   whatsapp: { icon: FaWhatsapp, color: "#25D366" },
   instagram: { icon: FaInstagram, color: "#E1306C" },
@@ -81,6 +84,7 @@ const Dashboard = () => {
   const [criticalPatients, setCriticalPatients] = useState<CriticalPatient[]>([]);
   const [todayApts, setTodayApts] = useState<TodayAppointment[]>([]);
   const [pieData, setPieData] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -91,7 +95,7 @@ const Dashboard = () => {
       const [patientsRes, aptsRes, todayAptsRes] = await Promise.all([
         supabase.from("patients").select("id, name, platform, status", { count: "exact" }),
         supabase.from("appointments").select("id, status").gte("scheduled_at", startOfDay).lt("scheduled_at", endOfDay),
-        supabase.from("appointments").select("id, doctor, type, scheduled_at, status, patients(name)").gte("scheduled_at", startOfDay).lt("scheduled_at", endOfDay).order("scheduled_at", { ascending: true }),
+        supabase.from("appointments").select("id, patient_id, doctor, type, scheduled_at, status, patients(name)").gte("scheduled_at", startOfDay).lt("scheduled_at", endOfDay).order("scheduled_at", { ascending: true }),
       ]);
 
       const patients = patientsRes.data || [];
@@ -108,7 +112,6 @@ const Dashboard = () => {
           platform: p.platform,
         }));
 
-      // Build pie data from real platform distribution
       const platformCounts: Record<string, number> = {};
       patients.forEach((p: any) => {
         const platform = p.platform || "web";
@@ -125,6 +128,7 @@ const Dashboard = () => {
       setTodayApts(
         (todayAptsRes.data || []).map((a: any) => ({
           id: a.id,
+          patient_id: a.patient_id,
           patient_name: a.patients?.name || "—",
           doctor: a.doctor,
           type: a.type,
@@ -153,6 +157,7 @@ const Dashboard = () => {
       gradient: "gradient-primary",
       iconBg: "bg-primary/10",
       iconColor: "text-primary",
+      route: "/appointments",
     },
     {
       label: t("dashboard.totalPatients"),
@@ -161,6 +166,7 @@ const Dashboard = () => {
       gradient: "gradient-primary",
       iconBg: "bg-primary/10",
       iconColor: "text-primary",
+      route: "/patients",
     },
     {
       label: t("dashboard.totalValue"),
@@ -169,6 +175,7 @@ const Dashboard = () => {
       gradient: "gradient-success",
       iconBg: "bg-success/10",
       iconColor: "text-success",
+      route: null,
     },
     {
       label: t("dashboard.criticalCandidates"),
@@ -179,6 +186,7 @@ const Dashboard = () => {
       gradient: "gradient-destructive",
       iconBg: "bg-destructive/10",
       iconColor: "text-destructive",
+      route: "/patients",
     },
   ];
 
@@ -199,7 +207,8 @@ const Dashboard = () => {
             variants={cardVariants}
             initial="hidden"
             animate="visible"
-            className={`rounded-2xl border border-border/60 bg-card p-5 space-y-3 shadow-card card-interactive ${card.gradient}`}
+            onClick={() => card.route && navigate(card.route)}
+            className={`rounded-2xl border border-border/60 bg-card p-5 space-y-3 shadow-card card-interactive ${card.gradient} ${card.route ? "cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200" : ""}`}
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</span>
@@ -247,6 +256,7 @@ const Dashboard = () => {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 + i * 0.05 }}
+                    onClick={() => setSelectedPatientId(apt.patient_id)}
                     className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-accent/50 transition-all duration-200 group cursor-pointer"
                   >
                     <div className="text-center w-12 shrink-0">
@@ -293,7 +303,7 @@ const Dashboard = () => {
                 return (
                   <div
                     key={p.id}
-                    onClick={() => navigate(`/messages?patient=${p.id}`)}
+                    onClick={() => setSelectedPatientId(p.id)}
                     className="flex items-center justify-between px-5 py-3 transition-all duration-200 hover:bg-accent/40 cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -355,6 +365,12 @@ const Dashboard = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Patient Detail Modal */}
+      <PatientDetailModal
+        patientId={selectedPatientId}
+        onClose={() => setSelectedPatientId(null)}
+      />
     </div>
   );
 };
