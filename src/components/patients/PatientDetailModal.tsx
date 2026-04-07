@@ -260,7 +260,7 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden max-h-[85vh]">
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden max-h-[85vh] [&>button.absolute]:hidden">
         {content}
       </DialogContent>
     </Dialog>
