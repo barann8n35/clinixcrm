@@ -62,29 +62,27 @@ const CalendarPage = () => {
 
   useEffect(() => {
     async function load() {
+      // Single query with JOIN to patients table
       const { data: apptData } = await supabase
         .from("appointments")
-        .select("id, doctor, type, scheduled_at, status, patient_id")
+        .select("id, doctor, type, scheduled_at, status, patient_id, patients(name, surname, phone, complaint, location, internal_notes)")
         .order("scheduled_at", { ascending: true });
 
+      // Also fetch patients with appointment_date but no appointment record
       const { data: patientData } = await supabase
         .from("patients")
-        .select("id, name, complaint, appointment_date, status, phone, location, internal_notes")
+        .select("id, name, surname, complaint, appointment_date, status, phone, location, internal_notes")
         .not("appointment_date", "is", null);
-
-      const patientMap: Record<string, { name: string; complaint: string | null; phone: string | null; location: string | null; internal_notes: string | null }> = {};
-      (patientData || []).forEach((p: any) => {
-        patientMap[p.id] = { name: p.name, complaint: p.complaint, phone: p.phone, location: p.location, internal_notes: p.internal_notes };
-      });
 
       const eventsArr: CalendarEvent[] = [];
 
       (apptData || []).forEach((a: any) => {
-        const patient = patientMap[a.patient_id];
+        const p = a.patients;
+        const fullName = p ? [p.name, p.surname].filter(Boolean).join(" ") : "—";
         const colors = statusColors[a.status] || statusColors.upcoming;
         eventsArr.push({
           id: a.id,
-          title: patient?.name || "—",
+          title: fullName,
           start: a.scheduled_at,
           backgroundColor: colors.bg,
           borderColor: colors.border,
@@ -93,12 +91,12 @@ const CalendarPage = () => {
             doctor: a.doctor,
             type: a.type,
             status: a.status,
-            complaint: patient?.complaint || "—",
-            patientName: patient?.name || "—",
-            phone: patient?.phone || "—",
-            location: patient?.location || "—",
+            complaint: p?.complaint || "—",
+            patientName: fullName,
+            phone: p?.phone || "—",
+            location: p?.location || "—",
             scheduledAt: a.scheduled_at,
-            internalNotes: patient?.internal_notes || "",
+            internalNotes: p?.internal_notes || "",
           },
         });
       });
@@ -106,10 +104,11 @@ const CalendarPage = () => {
       const coveredPatientIds = new Set((apptData || []).map((a: any) => a.patient_id));
       (patientData || []).forEach((p: any) => {
         if (coveredPatientIds.has(p.id)) return;
+        const fullName = [p.name, p.surname].filter(Boolean).join(" ");
         const colors = statusColors[p.status] || statusColors.pending;
         eventsArr.push({
           id: `patient-${p.id}`,
-          title: p.name,
+          title: fullName,
           start: p.appointment_date,
           backgroundColor: colors.bg,
           borderColor: colors.border,
@@ -119,7 +118,7 @@ const CalendarPage = () => {
             type: "Genel",
             status: p.status,
             complaint: p.complaint || "—",
-            patientName: p.name,
+            patientName: fullName,
             phone: p.phone || "—",
             location: p.location || "—",
             scheduledAt: p.appointment_date,
