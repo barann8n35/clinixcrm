@@ -20,7 +20,8 @@ function DashboardLayoutInner() {
         <>
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="fixed top-3 left-3 z-50 p-2 rounded-xl bg-card/90 backdrop-blur-md border border-border/60 shadow-elevated"
+            className="fixed z-50 p-2 rounded-xl bg-card/90 backdrop-blur-md border border-border/60 shadow-elevated"
+            style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)", left: "12px" }}
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
@@ -44,7 +45,7 @@ function DashboardLayoutInner() {
 
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Top bar with notification bell */}
-        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/50 backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/50 backdrop-blur-sm shrink-0" style={{ paddingTop: isMobile ? "env(safe-area-inset-top, 8px)" : undefined }}>
           <NotificationBell />
         </div>
         <div className="flex-1 overflow-auto">
