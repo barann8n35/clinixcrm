@@ -7,6 +7,7 @@ import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { motion } from "framer-motion";
 import NewAppointmentDialog from "@/components/appointments/NewAppointmentDialog";
+import { PatientDetailModal } from "@/components/patients/PatientDetailModal";
 
 interface Appointment {
   id: string;
@@ -42,6 +43,7 @@ const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   const mapRow = (a: any): Appointment => ({
     id: a.id,
@@ -55,7 +57,6 @@ const Appointments = () => {
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
-
     let query = supabase
       .from("appointments")
       .select("id, patient_id, doctor, type, scheduled_at, status, patients(name)");
@@ -71,33 +72,18 @@ const Appointments = () => {
     }
 
     const { data } = await query;
-
-    if (data) {
-      setAppointments(data.map(mapRow));
-    }
+    if (data) setAppointments(data.map(mapRow));
     setLoading(false);
   }, [filter]);
 
-  useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments, filter]);
+  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel("appointments-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "appointments" },
-        () => {
-          fetchAppointments();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => fetchAppointments())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchAppointments]);
 
   const filtered = useMemo(
@@ -132,17 +118,11 @@ const Appointments = () => {
 
   return (
     <div className="p-4 md:p-8 space-y-5 h-full overflow-auto gradient-mesh">
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-3"
-      >
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-xl md:text-2xl font-display font-extrabold text-foreground tracking-tight truncate">Randevular</h1>
-            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-              {appointments.length} randevu
-            </p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{appointments.length} randevu</p>
           </div>
           <div className="shrink-0">
             <NewAppointmentDialog onCreated={fetchAppointments} />
@@ -168,18 +148,12 @@ const Appointments = () => {
 
       {loading && (
         <div className="space-y-3">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-2xl" />
-          ))}
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
         </div>
       )}
 
       {!loading && filtered.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="rounded-2xl border border-border/60 bg-card p-8 md:p-12 flex flex-col items-center justify-center min-h-[200px] md:min-h-[300px] gap-4 shadow-card"
-        >
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="rounded-2xl border border-border/60 bg-card p-8 md:p-12 flex flex-col items-center justify-center min-h-[200px] md:min-h-[300px] gap-4 shadow-card">
           <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center">
             <CalendarPlus className="w-9 h-9 text-muted-foreground/30" />
           </div>
@@ -192,62 +166,56 @@ const Appointments = () => {
         </motion.div>
       )}
 
-      {!loading &&
-        grouped.map(([dateKey, items]) => (
-          <div key={dateKey} className="space-y-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 sticky top-0 bg-background/80 backdrop-blur-sm py-1.5 z-10">
-              <Calendar className="w-3.5 h-3.5" />
-              {formatDateLabel(dateKey)}
-            </h2>
-            <div className="grid gap-2">
-              {items.map((apt, i) => {
-                const time = format(parseISO(apt.scheduled_at), "HH:mm");
-                return (
-                  <motion.div
-                    key={apt.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="rounded-2xl border border-border/60 bg-card p-3 md:p-4 flex items-start md:items-center gap-3 md:gap-4 shadow-card card-interactive"
-                  >
-                    <div className="text-center shrink-0 w-11 md:w-14">
-                      <div className="text-base md:text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
-                      <div className="text-[10px] md:text-xs text-muted-foreground">:{time.split(":")[1]}</div>
+      {!loading && grouped.map(([dateKey, items]) => (
+        <div key={dateKey} className="space-y-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 sticky top-0 bg-background/80 backdrop-blur-sm py-1.5 z-10">
+            <Calendar className="w-3.5 h-3.5" />
+            {formatDateLabel(dateKey)}
+          </h2>
+          <div className="grid gap-2">
+            {items.map((apt, i) => {
+              const time = format(parseISO(apt.scheduled_at), "HH:mm");
+              return (
+                <motion.div
+                  key={apt.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  onClick={() => setSelectedPatientId(apt.patient_id)}
+                  className="rounded-2xl border border-border/60 bg-card p-3 md:p-4 flex items-start md:items-center gap-3 md:gap-4 shadow-card card-interactive cursor-pointer hover:border-primary/30 transition-all"
+                >
+                  <div className="text-center shrink-0 w-11 md:w-14">
+                    <div className="text-base md:text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
+                    <div className="text-[10px] md:text-xs text-muted-foreground">:{time.split(":")[1]}</div>
+                  </div>
+                  <div className="w-px h-8 md:h-10 bg-border/40 shrink-0" />
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <span className="font-semibold text-xs md:text-sm text-foreground truncate">{apt.patient_name}</span>
+                      <Badge variant="outline" className={`text-[9px] md:text-[10px] px-1.5 py-0 shrink-0 ${statusStyles[apt.status] || statusStyles.upcoming}`}>
+                        {statusLabel[apt.status] || apt.status}
+                      </Badge>
                     </div>
-
-                    <div className="w-px h-8 md:h-10 bg-border/40 shrink-0" />
-
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-1.5 md:gap-2">
-                        <span className="font-semibold text-xs md:text-sm text-foreground truncate">
-                          {apt.patient_name}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className={`text-[9px] md:text-[10px] px-1.5 py-0 shrink-0 ${statusStyles[apt.status] || statusStyles.upcoming}`}
-                        >
-                          {statusLabel[apt.status] || apt.status}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] md:text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1 truncate">
-                          <User className="w-3 h-3 shrink-0" /> {apt.doctor}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 shrink-0" /> {apt.type}
-                        </span>
-                      </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] md:text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1 truncate"><User className="w-3 h-3 shrink-0" /> {apt.doctor}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" /> {apt.type}</span>
                     </div>
-
-                    <div className="text-[10px] md:text-xs text-muted-foreground/70 shrink-0">
-                      {format(parseISO(apt.scheduled_at), "dd.MM", { locale: tr })}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  </div>
+                  <div className="text-[10px] md:text-xs text-muted-foreground/70 shrink-0">
+                    {format(parseISO(apt.scheduled_at), "dd.MM", { locale: tr })}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
-        ))}
+        </div>
+      ))}
+
+      {/* Patient Detail Modal - opens when clicking an appointment */}
+      <PatientDetailModal
+        patientId={selectedPatientId}
+        onClose={() => setSelectedPatientId(null)}
+      />
     </div>
   );
 };
