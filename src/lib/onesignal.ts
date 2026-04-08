@@ -26,27 +26,75 @@ export function getOneSignalDebugSnapshot(): OneSignalDebugSnapshot {
   };
 }
 
-export async function waitForOneSignalSubscriptionId(
+/**
+ * Returns a promise that resolves with the Subscription ID once it becomes
+ * available via the PushSubscription 'change' event listener.
+ * Falls back to polling if the event never fires.
+ */
+export function waitForOneSignalSubscriptionId(
   timeoutMs = 15_000,
-  intervalMs = 1_000,
+  _intervalMs = 1_000,
   onPoll?: (snapshot: OneSignalDebugSnapshot, attempt: number) => void,
-) {
-  const maxAttempts = Math.max(1, Math.ceil(timeoutMs / intervalMs));
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const snapshot = getOneSignalDebugSnapshot();
-    onPoll?.(snapshot, attempt);
-
-    if (snapshot.subscriptionId) {
-      return snapshot.subscriptionId;
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    // Check if already available
+    const immediate = OneSignal.User.PushSubscription.id;
+    if (immediate) {
+      onPoll?.(getOneSignalDebugSnapshot(), 0);
+      resolve(immediate);
+      return;
     }
 
-    if (attempt < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
-    }
-  }
+    let resolved = false;
+    let pollAttempt = 0;
 
-  return null;
+    const cleanup = () => {
+      resolved = true;
+      try {
+        OneSignal.User.PushSubscription.removeEventListener("change", onChange);
+      } catch {
+        // ignore
+      }
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      if (pollTimer) clearInterval(pollTimer);
+    };
+
+    // Primary: event listener
+    const onChange = (event: any) => {
+      if (resolved) return;
+      const subId = event?.current?.id ?? OneSignal.User.PushSubscription.id;
+      onPoll?.(getOneSignalDebugSnapshot(), pollAttempt);
+      if (subId) {
+        cleanup();
+        resolve(subId);
+      }
+    };
+
+    try {
+      OneSignal.User.PushSubscription.addEventListener("change", onChange);
+    } catch (err) {
+      console.warn("[OneSignal] Failed to add change listener:", err);
+    }
+
+    // Secondary: polling fallback
+    const pollTimer = setInterval(() => {
+      if (resolved) return;
+      pollAttempt++;
+      const snapshot = getOneSignalDebugSnapshot();
+      onPoll?.(snapshot, pollAttempt);
+      if (snapshot.subscriptionId) {
+        cleanup();
+        resolve(snapshot.subscriptionId);
+      }
+    }, _intervalMs);
+
+    // Timeout
+    const timeoutTimer = setTimeout(() => {
+      if (resolved) return;
+      cleanup();
+      resolve(null);
+    }, timeoutMs);
+  });
 }
 
 export async function initOneSignal() {
@@ -62,7 +110,6 @@ export async function initOneSignal() {
     console.info("[OneSignal] Initialized successfully", getOneSignalDebugSnapshot());
   } catch (err) {
     console.warn("[OneSignal] Init failed:", err);
-    // Allow retry on next call if init failed (e.g. domain mismatch in preview)
     initialized = false;
   }
 }
