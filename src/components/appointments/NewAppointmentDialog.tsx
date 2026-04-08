@@ -60,7 +60,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState("");
   const [doctor, setDoctor] = useState(DEFAULT_DOCTOR);
-  const [type, setType] = useState("Consultation");
+  const [type, setType] = useState("Muayene");
   const [complaint, setComplaint] = useState("");
   const [location, setLocation] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
@@ -71,7 +71,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
     setDate(new Date());
     setTime("");
     setDoctor(DEFAULT_DOCTOR);
-    setType("Consultation");
+    setType("Muayene");
     setComplaint("");
     setLocation("");
     setSelectedPatientId(null);
@@ -202,10 +202,10 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Consultation">Konsültasyon</SelectItem>
-            <SelectItem value="Follow-up">Kontrol</SelectItem>
-            <SelectItem value="Surgery">Ameliyat</SelectItem>
-            <SelectItem value="Lab">Laboratuvar</SelectItem>
+            <SelectItem value="Ön Muayene">Ön Muayene</SelectItem>
+            <SelectItem value="Muayene">Muayene</SelectItem>
+            <SelectItem value="Kontrol">Kontrol</SelectItem>
+            <SelectItem value="Operasyon">Operasyon</SelectItem>
           </SelectContent>
         </Select>
       </div>
