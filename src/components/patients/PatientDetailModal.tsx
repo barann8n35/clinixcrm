@@ -21,9 +21,6 @@ import { cn } from "@/lib/utils";
 import { PatientOverviewTab } from "@/components/dashboard/patient-card/PatientOverviewTab";
 import { PatientTimelineTab } from "@/components/dashboard/patient-card/PatientTimelineTab";
 import { PatientTasksTab } from "@/components/dashboard/patient-card/PatientTasksTab";
-import { PatientOverviewTab } from "@/components/dashboard/patient-card/PatientOverviewTab";
-import { PatientTimelineTab } from "@/components/dashboard/patient-card/PatientTimelineTab";
-import { PatientTasksTab } from "@/components/dashboard/patient-card/PatientTasksTab";
 
 export interface PatientFull {
   id: string;
