@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import QuickAppointmentDialog from "@/components/appointments/QuickAppointmentDialog";
 
 interface CalendarEvent {
   id: string;
@@ -59,78 +60,80 @@ const CalendarPage = () => {
   const { t } = useTranslation();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [quickAppt, setQuickAppt] = useState<{ open: boolean; date: Date; time: string }>({
+    open: false,
+    date: new Date(),
+    time: "09:00",
+  });
 
-  useEffect(() => {
-    async function load() {
-      // Single query with JOIN to patients table
-      const { data: apptData } = await supabase
-        .from("appointments")
-        .select("id, doctor, type, scheduled_at, status, patient_id, patients(name, surname, phone, complaint, location, internal_notes)")
-        .order("scheduled_at", { ascending: true });
+  const loadEvents = useCallback(async () => {
+    const { data: apptData } = await supabase
+      .from("appointments")
+      .select("id, doctor, type, scheduled_at, status, patient_id, patients(name, surname, phone, complaint, location, internal_notes)")
+      .order("scheduled_at", { ascending: true });
 
-      // Also fetch patients with appointment_date but no appointment record
-      const { data: patientData } = await supabase
-        .from("patients")
-        .select("id, name, surname, complaint, appointment_date, status, phone, location, internal_notes")
-        .not("appointment_date", "is", null);
+    const { data: patientData } = await supabase
+      .from("patients")
+      .select("id, name, surname, complaint, appointment_date, status, phone, location, internal_notes")
+      .not("appointment_date", "is", null);
 
-      const eventsArr: CalendarEvent[] = [];
+    const eventsArr: CalendarEvent[] = [];
 
-      (apptData || []).forEach((a: any) => {
-        const p = a.patients;
-        const fullName = p ? [p.name, p.surname].filter(Boolean).join(" ") : "—";
-        const colors = statusColors[a.status] || statusColors.upcoming;
-        eventsArr.push({
-          id: a.id,
-          title: fullName,
-          start: a.scheduled_at,
-          backgroundColor: colors.bg,
-          borderColor: colors.border,
-          textColor: colors.text,
-          extendedProps: {
-            doctor: a.doctor,
-            type: a.type,
-            status: a.status,
-            complaint: p?.complaint || "—",
-            patientName: fullName,
-            phone: p?.phone || "—",
-            location: p?.location || "—",
-            scheduledAt: a.scheduled_at,
-            internalNotes: p?.internal_notes || "",
-          },
-        });
+    (apptData || []).forEach((a: any) => {
+      const p = a.patients;
+      const fullName = p ? [p.name, p.surname].filter(Boolean).join(" ") : "—";
+      const colors = statusColors[a.status] || statusColors.upcoming;
+      eventsArr.push({
+        id: a.id,
+        title: fullName,
+        start: a.scheduled_at,
+        backgroundColor: colors.bg,
+        borderColor: colors.border,
+        textColor: colors.text,
+        extendedProps: {
+          doctor: a.doctor,
+          type: a.type,
+          status: a.status,
+          complaint: p?.complaint || "—",
+          patientName: fullName,
+          phone: p?.phone || "—",
+          location: p?.location || "—",
+          scheduledAt: a.scheduled_at,
+          internalNotes: p?.internal_notes || "",
+        },
       });
+    });
 
-      const coveredPatientIds = new Set((apptData || []).map((a: any) => a.patient_id));
-      (patientData || []).forEach((p: any) => {
-        if (coveredPatientIds.has(p.id)) return;
-        const fullName = [p.name, p.surname].filter(Boolean).join(" ");
-        const colors = statusColors[p.status] || statusColors.pending;
-        eventsArr.push({
-          id: `patient-${p.id}`,
-          title: fullName,
-          start: p.appointment_date,
-          backgroundColor: colors.bg,
-          borderColor: colors.border,
-          textColor: colors.text,
-          extendedProps: {
-            doctor: "—",
-            type: "Genel",
-            status: p.status,
-            complaint: p.complaint || "—",
-            patientName: fullName,
-            phone: p.phone || "—",
-            location: p.location || "—",
-            scheduledAt: p.appointment_date,
-            internalNotes: p.internal_notes || "",
-          },
-        });
+    const coveredPatientIds = new Set((apptData || []).map((a: any) => a.patient_id));
+    (patientData || []).forEach((p: any) => {
+      if (coveredPatientIds.has(p.id)) return;
+      const fullName = [p.name, p.surname].filter(Boolean).join(" ");
+      const colors = statusColors[p.status] || statusColors.pending;
+      eventsArr.push({
+        id: `patient-${p.id}`,
+        title: fullName,
+        start: p.appointment_date,
+        backgroundColor: colors.bg,
+        borderColor: colors.border,
+        textColor: colors.text,
+        extendedProps: {
+          doctor: "—",
+          type: "Genel",
+          status: p.status,
+          complaint: p.complaint || "—",
+          patientName: fullName,
+          phone: p.phone || "—",
+          location: p.location || "—",
+          scheduledAt: p.appointment_date,
+          internalNotes: p.internal_notes || "",
+        },
       });
+    });
 
-      setEvents(eventsArr);
-    }
-    load();
+    setEvents(eventsArr);
   }, []);
+
+  useEffect(() => { loadEvents(); }, [loadEvents]);
 
   const handleEventClick = (info: any) => {
     const event = info.event;
@@ -153,6 +156,18 @@ const CalendarPage = () => {
         internalNotes: event.extendedProps.internalNotes,
       },
     });
+  };
+
+  const handleDateClick = (info: any) => {
+    const clickedDate = new Date(info.dateStr);
+    const hours = clickedDate.getHours();
+    const minutes = clickedDate.getMinutes();
+    const timeStr = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    
+    // If it's a date-only click (month view), default to 09:00
+    const finalTime = hours === 0 && minutes === 0 ? "09:00" : timeStr;
+    
+    setQuickAppt({ open: true, date: clickedDate, time: finalTime });
   };
 
   const formatDateTime = (dateStr: string) => {
@@ -178,7 +193,7 @@ const CalendarPage = () => {
             {t("sidebar.calendar", "Takvim")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Randevuları ay, hafta ve gün bazında görüntüleyin
+            Randevuları ay, hafta ve gün bazında görüntüleyin — boş alana tıklayarak hızlı randevu oluşturun
           </p>
         </motion.div>
 
@@ -209,6 +224,8 @@ const CalendarPage = () => {
             slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
             allDaySlot={false}
             expandRows
+            selectable
+            dateClick={handleDateClick}
             buttonText={{
               today: "Bugün",
               month: "Ay",
@@ -236,6 +253,15 @@ const CalendarPage = () => {
           />
         </motion.div>
       </div>
+
+      {/* Quick Appointment Dialog */}
+      <QuickAppointmentDialog
+        open={quickAppt.open}
+        onOpenChange={(v) => setQuickAppt((prev) => ({ ...prev, open: v }))}
+        date={quickAppt.date}
+        time={quickAppt.time}
+        onCreated={loadEvents}
+      />
 
       {/* Event Detail Modal */}
       <Dialog open={!!selectedEvent} onOpenChange={(v) => !v && setSelectedEvent(null)}>
@@ -269,7 +295,6 @@ const CalendarPage = () => {
                     <p className="text-sm font-semibold text-foreground">{selectedEvent.extendedProps.patientName}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Phone className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div>
@@ -277,7 +302,6 @@ const CalendarPage = () => {
                     <p className="text-sm text-foreground">{selectedEvent.extendedProps.phone}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div>
@@ -285,7 +309,6 @@ const CalendarPage = () => {
                     <p className="text-sm text-foreground">{selectedEvent.extendedProps.location}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Stethoscope className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div>
@@ -293,7 +316,6 @@ const CalendarPage = () => {
                     <p className="text-sm text-foreground">{selectedEvent.extendedProps.doctor}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div>
@@ -301,7 +323,6 @@ const CalendarPage = () => {
                     <p className="text-sm text-foreground">{formatDateTime(selectedEvent.extendedProps.scheduledAt)}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <FileText className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div>
@@ -309,7 +330,6 @@ const CalendarPage = () => {
                     <p className="text-sm text-foreground">{selectedEvent.extendedProps.type}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <FileText className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div>
@@ -317,7 +337,6 @@ const CalendarPage = () => {
                     <p className="text-sm text-foreground">{selectedEvent.extendedProps.complaint}</p>
                   </div>
                 </div>
-
                 {selectedEvent.extendedProps.internalNotes && (
                   <div className="flex items-start gap-3 pt-2 border-t border-border/40">
                     <StickyNote className="w-4 h-4 text-warning mt-0.5 shrink-0" />
