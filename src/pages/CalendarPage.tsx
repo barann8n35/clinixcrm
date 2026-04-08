@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -69,6 +69,7 @@ const typeColors: Record<string, string> = {
 
 const CalendarPage = () => {
   const { t } = useTranslation();
+  const calendarRef = useRef<any>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -221,6 +222,7 @@ const CalendarPage = () => {
           className="rounded-2xl border border-border/60 bg-card shadow-card p-4 md:p-6 clinix-calendar"
         >
           <FullCalendar
+            ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
             headerToolbar={{
@@ -250,6 +252,13 @@ const CalendarPage = () => {
               day: "Gün",
             }}
             eventClick={handleEventClick}
+            moreLinkClick={(info) => {
+              const calApi = calendarRef.current?.getApi();
+              if (calApi) {
+                calApi.changeView("timeGridDay", info.date);
+              }
+              return "none";
+            }}
             moreLinkContent={(arg) => (
               <span className="text-[10px] font-semibold text-primary cursor-pointer hover:underline">
                 +{arg.num} daha...
