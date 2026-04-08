@@ -59,12 +59,18 @@ const statusLabel: Record<string, string> = {
   pending: "Beklemede",
 };
 
-// Type-based left border colors for calendar cells
 const typeColors: Record<string, string> = {
-  "Ön Muayene": "#6366f1",  // indigo
-  "Muayene": "#0ea5e9",     // sky
-  "Kontrol": "#22c55e",     // green
-  "Operasyon": "#ef4444",   // red
+  "Ön Muayene": "#6366f1",
+  "Muayene": "#0ea5e9",
+  "Kontrol": "#22c55e",
+  "Operasyon": "#ef4444",
+};
+
+const typeBgColors: Record<string, string> = {
+  "Ön Muayene": "rgba(99,102,241,0.08)",
+  "Muayene": "rgba(14,165,233,0.08)",
+  "Kontrol": "rgba(34,197,94,0.08)",
+  "Operasyon": "rgba(239,68,68,0.08)",
 };
 
 const CalendarPage = () => {
@@ -73,6 +79,7 @@ const CalendarPage = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [currentView, setCurrentView] = useState("dayGridMonth");
   const [quickAppt, setQuickAppt] = useState<{ open: boolean; date: Date; time: string }>({
     open: false,
     date: new Date(),
@@ -191,7 +198,6 @@ const CalendarPage = () => {
     }
   };
 
-  // Abbreviate name: "Kenan Tüfekçi" → "Kenan T."
   const abbreviateName = (name: string) => {
     const parts = name.trim().split(/\s+/);
     if (parts.length <= 1) return name;
@@ -252,6 +258,7 @@ const CalendarPage = () => {
               day: "Gün",
             }}
             eventClick={handleEventClick}
+            viewDidMount={(info) => setCurrentView(info.view.type)}
             moreLinkClick={(info) => {
               const calApi = calendarRef.current?.getApi();
               if (calApi) {
@@ -260,23 +267,54 @@ const CalendarPage = () => {
               return "none";
             }}
             moreLinkContent={(arg) => (
-              <span className="text-[10px] font-semibold text-primary cursor-pointer hover:underline">
+              <span className="text-[10px] font-semibold text-primary cursor-pointer hover:underline transition-colors duration-200">
                 +{arg.num} daha...
               </span>
             )}
             eventContent={(arg) => {
               const eventType = arg.event.extendedProps.type || "";
               const borderColor = typeColors[eventType] || "hsl(var(--primary))";
+              const bgColor = typeBgColors[eventType] || "transparent";
               const shortName = abbreviateName(arg.event.title);
               const timeText = arg.timeText;
+              const viewType = calendarRef.current?.getApi()?.view?.type || currentView;
+
+              // Month view: minimal
+              if (viewType === "dayGridMonth") {
+                return (
+                  <div
+                    className="px-1.5 py-0.5 text-[10px] font-medium truncate cursor-pointer rounded-md transition-all duration-200 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                    style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "6px", backgroundColor: bgColor }}
+                  >
+                    <span className="opacity-70">{timeText}</span>{" "}
+                    <span className="font-semibold">{shortName}</span>
+                  </div>
+                );
+              }
+
+              // Week / Day view: detailed
+              const fullName = arg.event.extendedProps.patientName || arg.event.title;
+              const complaint = arg.event.extendedProps.complaint;
+              const showComplaint = complaint && complaint !== "—";
 
               return (
                 <div
-                  className="px-1.5 py-0.5 text-[10px] font-medium truncate cursor-pointer rounded-sm"
-                  style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "6px" }}
+                  className="px-2 py-1 text-[11px] cursor-pointer rounded-md transition-all duration-200 hover:shadow-md hover:scale-[1.01] active:scale-[0.99] space-y-0.5"
+                  style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "8px", backgroundColor: bgColor }}
                 >
-                  <span className="opacity-75">{timeText}</span>{" "}
-                  <span className="font-semibold">{shortName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="opacity-70 text-[10px]">{timeText}</span>
+                    <span className="font-bold truncate">{fullName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] opacity-60">
+                    <span className="truncate">{eventType}</span>
+                    {showComplaint && (
+                      <>
+                        <span>·</span>
+                        <span className="truncate">{complaint}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               );
             }}
@@ -311,7 +349,7 @@ const CalendarPage = () => {
 
       {/* Event Detail Modal */}
       <Dialog open={!!selectedEvent && !editOpen} onOpenChange={(v) => !v && setSelectedEvent(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl shadow-elevated">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2">
@@ -319,7 +357,12 @@ const CalendarPage = () => {
                 Randevu Detayı
               </DialogTitle>
               {selectedEvent?.extendedProps.appointmentId && (
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={openEdit}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110 active:scale-95"
+                  onClick={openEdit}
+                >
                   <Pencil className="w-4 h-4" />
                 </Button>
               )}
@@ -329,7 +372,7 @@ const CalendarPage = () => {
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-2">
                 <Badge
-                  className="text-xs"
+                  className="text-xs transition-all duration-200"
                   style={{
                     backgroundColor: selectedEvent.backgroundColor,
                     color: selectedEvent.textColor,
