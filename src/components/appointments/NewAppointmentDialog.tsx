@@ -49,7 +49,7 @@ const timeSlots = Array.from({ length: 20 }, (_, i) => {
   return `${String(hour).padStart(2, "0")}:${min}`;
 });
 
-const DEFAULT_DOCTOR = "Dr. Mehmet";
+const DEFAULT_DOCTOR = "Dr. İlhan Elmacı";
 
 const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
   const isMobile = useIsMobile();

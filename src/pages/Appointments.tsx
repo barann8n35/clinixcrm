@@ -182,7 +182,7 @@ const Appointments = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
                   onClick={() => setSelectedPatientId(apt.patient_id)}
-                  className="rounded-2xl border border-border/60 bg-card p-3 md:p-4 flex items-start md:items-center gap-3 md:gap-4 shadow-card card-interactive cursor-pointer hover:border-primary/30 transition-all"
+                  className="rounded-2xl border border-border/60 bg-card p-3 md:p-4 flex items-start md:items-center gap-3 md:gap-4 shadow-sm hover:shadow-md card-interactive cursor-pointer hover:border-primary/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
                 >
                   <div className="text-center shrink-0 w-11 md:w-14">
                     <div className="text-base md:text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
