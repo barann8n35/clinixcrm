@@ -78,7 +78,7 @@ const QuickAppointmentDialog = ({ open, onOpenChange, date, time, onCreated }: Q
       const { error: aErr } = await supabase.from("appointments").insert({
         patient_id: patientId,
         doctor: doctor.trim(),
-        type: "Consultation",
+        type: "Muayene",
         scheduled_at: scheduledAt.toISOString(),
         status: "upcoming",
       });
