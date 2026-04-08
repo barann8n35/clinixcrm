@@ -25,6 +25,7 @@ import TeamManagement from "./pages/TeamManagement";
 import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
+import { OneSignalClickHandler } from "@/components/OneSignalClickHandler";
 
 const queryClient = new QueryClient();
 
