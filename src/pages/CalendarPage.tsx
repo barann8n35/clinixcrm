@@ -8,7 +8,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { User, Phone, Stethoscope, FileText, Clock, CalendarDays, StickyNote, MapPin } from "lucide-react";
+import { User, Phone, Stethoscope, FileText, Clock, CalendarDays, StickyNote, MapPin, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import QuickAppointmentDialog from "@/components/appointments/QuickAppointmentDialog";
+import EditAppointmentDialog from "@/components/appointments/EditAppointmentDialog";
 
 interface CalendarEvent {
   id: string;
@@ -35,6 +37,7 @@ interface CalendarEvent {
     location: string;
     scheduledAt: string;
     internalNotes: string;
+    appointmentId: string;
   };
 }
 
@@ -56,10 +59,19 @@ const statusLabel: Record<string, string> = {
   pending: "Beklemede",
 };
 
+// Type-based left border colors for calendar cells
+const typeColors: Record<string, string> = {
+  "Ön Muayene": "#6366f1",  // indigo
+  "Muayene": "#0ea5e9",     // sky
+  "Kontrol": "#22c55e",     // green
+  "Operasyon": "#ef4444",   // red
+};
+
 const CalendarPage = () => {
   const { t } = useTranslation();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [quickAppt, setQuickAppt] = useState<{ open: boolean; date: Date; time: string }>({
     open: false,
     date: new Date(),
@@ -100,6 +112,7 @@ const CalendarPage = () => {
           location: p?.location || "—",
           scheduledAt: a.scheduled_at,
           internalNotes: p?.internal_notes || "",
+          appointmentId: a.id,
         },
       });
     });
@@ -126,6 +139,7 @@ const CalendarPage = () => {
           location: p.location || "—",
           scheduledAt: p.appointment_date,
           internalNotes: p.internal_notes || "",
+          appointmentId: "",
         },
       });
     });
@@ -154,6 +168,7 @@ const CalendarPage = () => {
         location: event.extendedProps.location,
         scheduledAt: event.extendedProps.scheduledAt,
         internalNotes: event.extendedProps.internalNotes,
+        appointmentId: event.extendedProps.appointmentId,
       },
     });
   };
@@ -163,10 +178,7 @@ const CalendarPage = () => {
     const hours = clickedDate.getHours();
     const minutes = clickedDate.getMinutes();
     const timeStr = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-    
-    // If it's a date-only click (month view), default to 09:00
     const finalTime = hours === 0 && minutes === 0 ? "09:00" : timeStr;
-    
     setQuickAppt({ open: true, date: clickedDate, time: finalTime });
   };
 
@@ -178,11 +190,16 @@ const CalendarPage = () => {
     }
   };
 
-  const truncateNotes = (notes: string, wordCount = 4) => {
-    if (!notes) return "";
-    const words = notes.trim().split(/\s+/);
-    if (words.length <= wordCount) return notes;
-    return words.slice(0, wordCount).join(" ") + "…";
+  // Abbreviate name: "Kenan Tüfekçi" → "Kenan T."
+  const abbreviateName = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length <= 1) return name;
+    return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
+
+  const openEdit = () => {
+    if (!selectedEvent || !selectedEvent.extendedProps.appointmentId) return;
+    setEditOpen(true);
   };
 
   return (
@@ -233,20 +250,24 @@ const CalendarPage = () => {
               day: "Gün",
             }}
             eventClick={handleEventClick}
+            moreLinkContent={(arg) => (
+              <span className="text-[10px] font-semibold text-primary cursor-pointer hover:underline">
+                +{arg.num} daha...
+              </span>
+            )}
             eventContent={(arg) => {
-              const notes = arg.event.extendedProps.internalNotes;
-              const preview = truncateNotes(notes);
+              const eventType = arg.event.extendedProps.type || "";
+              const borderColor = typeColors[eventType] || "hsl(var(--primary))";
+              const shortName = abbreviateName(arg.event.title);
+              const timeText = arg.timeText;
+
               return (
-                <div className="px-1.5 py-0.5 text-[11px] font-medium truncate cursor-pointer">
-                  <div>
-                    <span>{arg.timeText} </span>
-                    <span className="font-semibold">{arg.event.title}</span>
-                  </div>
-                  {preview && (
-                    <div className="text-[9px] opacity-80 truncate mt-0.5">
-                      📝 {preview}
-                    </div>
-                  )}
+                <div
+                  className="px-1.5 py-0.5 text-[10px] font-medium truncate cursor-pointer rounded-sm"
+                  style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "6px" }}
+                >
+                  <span className="opacity-75">{timeText}</span>{" "}
+                  <span className="font-semibold">{shortName}</span>
                 </div>
               );
             }}
@@ -263,14 +284,37 @@ const CalendarPage = () => {
         onCreated={loadEvents}
       />
 
+      {/* Edit Appointment Dialog */}
+      {selectedEvent && selectedEvent.extendedProps.appointmentId && (
+        <EditAppointmentDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          appointmentId={selectedEvent.extendedProps.appointmentId}
+          currentDate={new Date(selectedEvent.extendedProps.scheduledAt)}
+          currentTime={format(new Date(selectedEvent.extendedProps.scheduledAt), "HH:mm")}
+          currentType={selectedEvent.extendedProps.type}
+          onUpdated={() => {
+            loadEvents();
+            setSelectedEvent(null);
+          }}
+        />
+      )}
+
       {/* Event Detail Modal */}
-      <Dialog open={!!selectedEvent} onOpenChange={(v) => !v && setSelectedEvent(null)}>
+      <Dialog open={!!selectedEvent && !editOpen} onOpenChange={(v) => !v && setSelectedEvent(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarDays className="w-5 h-5 text-primary" />
-              Randevu Detayı
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-primary" />
+                Randevu Detayı
+              </DialogTitle>
+              {selectedEvent?.extendedProps.appointmentId && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={openEdit}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           {selectedEvent && (
             <div className="space-y-4 pt-2">
@@ -284,6 +328,9 @@ const CalendarPage = () => {
                   }}
                 >
                   {statusLabel[selectedEvent.extendedProps.status] || selectedEvent.extendedProps.status}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {selectedEvent.extendedProps.type}
                 </Badge>
               </div>
 
@@ -321,13 +368,6 @@ const CalendarPage = () => {
                   <div>
                     <p className="text-xs text-muted-foreground">Tarih & Saat</p>
                     <p className="text-sm text-foreground">{formatDateTime(selectedEvent.extendedProps.scheduledAt)}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <FileText className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Randevu Türü</p>
-                    <p className="text-sm text-foreground">{selectedEvent.extendedProps.type}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
