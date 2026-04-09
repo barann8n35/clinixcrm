@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Calendar, Clock, User, Filter, CalendarPlus, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,7 @@ const Appointments = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const pendingArrivals = useRef<Set<string>>(new Set());
 
   const mapRow = (a: any): Appointment => ({
     id: a.id,
@@ -93,20 +94,24 @@ const Appointments = () => {
 
   const handleMarkArrived = async (e: React.MouseEvent, apt: Appointment) => {
     e.stopPropagation();
-    const { error } = await supabase
-      .from("appointments")
-      .update({ status: "arrived" })
-      .eq("id", apt.id);
-    if (error) {
+    if (pendingArrivals.current.has(apt.id)) return;
+    pendingArrivals.current.add(apt.id);
+    // Optimistic update
+    setAppointments(prev => prev.map(a => a.id === apt.id ? { ...a, status: "arrived" } : a));
+    try {
+      const [r1, r2] = await Promise.all([
+        supabase.from("appointments").update({ status: "arrived" }).eq("id", apt.id),
+        supabase.from("patients").update({ status: "arrived" }).eq("id", apt.patient_id),
+      ]);
+      if (r1.error || r2.error) throw new Error("update failed");
+      toast.success("Hasta bekleme salonuna alındı ✅");
+    } catch {
       toast.error("Durum güncellenemedi");
-      return;
+      // Revert optimistic update
+      setAppointments(prev => prev.map(a => a.id === apt.id ? { ...a, status: apt.status } : a));
+    } finally {
+      pendingArrivals.current.delete(apt.id);
     }
-    // Also update patient status
-    await supabase
-      .from("patients")
-      .update({ status: "arrived" })
-      .eq("id", apt.patient_id);
-    toast.success("Hasta bekleme salonuna alındı ✅");
   };
 
   const filtered = useMemo(
