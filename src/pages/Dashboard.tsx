@@ -143,9 +143,21 @@ const Dashboard = () => {
         totalValue: 0,
         criticalCount: critical.length,
       });
-    }
-    load();
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const ch1 = supabase
+      .channel("dashboard-appointments-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => load())
+      .subscribe();
+    const ch2 = supabase
+      .channel("dashboard-patients-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
+  }, [load]);
 
   const statCards = [
     {
