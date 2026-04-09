@@ -164,6 +164,19 @@ const CalendarPage = () => {
 
   useEffect(() => { loadEvents(); }, [loadEvents]);
 
+  // Realtime: auto-refresh on appointment or patient changes
+  useEffect(() => {
+    const ch1 = supabase
+      .channel("calendar-appointments-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => loadEvents())
+      .subscribe();
+    const ch2 = supabase
+      .channel("calendar-patients-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, () => loadEvents())
+      .subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
+  }, [loadEvents]);
+
   const handleEventClick = (info: any) => {
     const event = info.event;
     setSelectedEvent({
