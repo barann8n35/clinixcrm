@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Calendar, Clock, User, Filter, CalendarPlus } from "lucide-react";
+import { Calendar, Clock, User, Filter, CalendarPlus, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { tr } from "date-fns/locale";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import NewAppointmentDialog from "@/components/appointments/NewAppointmentDialog";
 import { PatientDetailModal } from "@/components/patients/PatientDetailModal";
 
@@ -26,6 +29,7 @@ const statusStyles: Record<string, string> = {
   rescheduled: "bg-warning/10 text-warning border-warning/20",
   completed: "bg-muted text-muted-foreground border-border",
   "in-progress": "bg-primary/10 text-primary border-primary/20",
+  arrived: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
 };
 
 const statusLabel: Record<string, string> = {
@@ -35,9 +39,10 @@ const statusLabel: Record<string, string> = {
   rescheduled: "Ertelendi",
   completed: "Tamamlandı",
   "in-progress": "Devam Ediyor",
+  arrived: "Geldi ✓",
 };
 
-type FilterType = "all" | "upcoming" | "approved" | "cancelled" | "past";
+type FilterType = "all" | "upcoming" | "approved" | "cancelled" | "past" | "arrived";
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -86,6 +91,24 @@ const Appointments = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchAppointments]);
 
+  const handleMarkArrived = async (e: React.MouseEvent, apt: Appointment) => {
+    e.stopPropagation();
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "arrived" })
+      .eq("id", apt.id);
+    if (error) {
+      toast.error("Durum güncellenemedi");
+      return;
+    }
+    // Also update patient status
+    await supabase
+      .from("patients")
+      .update({ status: "arrived" })
+      .eq("id", apt.patient_id);
+    toast.success("Hasta bekleme salonuna alındı ✅");
+  };
+
   const filtered = useMemo(
     () => (filter === "all" || filter === "past" ? appointments : appointments.filter((a) => a.status === filter)),
     [appointments, filter]
@@ -112,6 +135,7 @@ const Appointments = () => {
     { key: "all", label: "Tümü" },
     { key: "upcoming", label: "Yaklaşan" },
     { key: "approved", label: "Onaylı" },
+    { key: "arrived", label: "Geldi" },
     { key: "cancelled", label: "İptal" },
     { key: "past", label: "Geçmiş" },
   ];
@@ -175,6 +199,7 @@ const Appointments = () => {
           <div className="grid gap-2">
             {items.map((apt, i) => {
               const time = format(parseISO(apt.scheduled_at), "HH:mm");
+              const isArrived = apt.status === "arrived";
               return (
                 <motion.div
                   key={apt.id}
@@ -182,7 +207,11 @@ const Appointments = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
                   onClick={() => setSelectedPatientId(apt.patient_id)}
-                  className="rounded-2xl border border-border/60 bg-card p-3 md:p-4 flex items-start md:items-center gap-3 md:gap-4 shadow-sm hover:shadow-md card-interactive cursor-pointer hover:border-primary/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+                  className={`rounded-2xl border p-3 md:p-4 flex items-start md:items-center gap-3 md:gap-4 shadow-sm hover:shadow-md card-interactive cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] ${
+                    isArrived
+                      ? "border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20"
+                      : "border-border/60 bg-card hover:border-primary/30"
+                  }`}
                 >
                   <div className="text-center shrink-0 w-11 md:w-14">
                     <div className="text-base md:text-lg font-extrabold text-foreground leading-tight">{time.split(":")[0]}</div>
@@ -201,9 +230,27 @@ const Appointments = () => {
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3 shrink-0" /> {apt.type}</span>
                     </div>
                   </div>
-                  <div className="text-[10px] md:text-xs text-muted-foreground/70 shrink-0">
-                    {format(parseISO(apt.scheduled_at), "dd.MM", { locale: tr })}
-                  </div>
+                  {/* Arrived check button */}
+                  {!isArrived && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 hover:scale-110 active:scale-95"
+                          onClick={(e) => handleMarkArrived(e, apt)}
+                        >
+                          <CheckCircle2 className="w-5 h-5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left"><p className="text-xs">Hasta Geldi</p></TooltipContent>
+                    </Tooltip>
+                  )}
+                  {isArrived && (
+                    <div className="shrink-0 flex items-center gap-1 text-emerald-600">
+                      <CheckCircle2 className="w-5 h-5 fill-emerald-500/20" />
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
@@ -211,7 +258,6 @@ const Appointments = () => {
         </div>
       ))}
 
-      {/* Patient Detail Modal - opens when clicking an appointment */}
       <PatientDetailModal
         patientId={selectedPatientId}
         onClose={() => setSelectedPatientId(null)}

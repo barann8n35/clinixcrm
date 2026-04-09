@@ -60,6 +60,7 @@
     "medium": "Orta",
     "low": "Düşük",
     "postOp": "Post-Op Takip",
+    "arrived": "Bekleme Salonu",
     "empty": "Bu aşamada lead yok"
   },
   "patients": {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Edit3, Save, Phone, MapPin, AlertCircle, User, CalendarIcon } from "lucide-react";
+import { X, Edit3, Save, CalendarIcon, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,10 +13,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+
 import { cn } from "@/lib/utils";
 import { PatientOverviewTab } from "@/components/dashboard/patient-card/PatientOverviewTab";
 import { PatientTimelineTab } from "@/components/dashboard/patient-card/PatientTimelineTab";
@@ -50,6 +51,7 @@ const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
   pending: "bg-warning/10 text-warning border-warning/20",
   discharged: "bg-muted text-muted-foreground border-border",
+  arrived: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
 };
 
 const timeSlots = Array.from({ length: 28 }, (_, i) => {
@@ -185,6 +187,19 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
     setPatient(updater);
   };
 
+  const handleMarkArrived = async () => {
+    if (!patient) return;
+    // Update patient status
+    await supabase.from("patients").update({ status: "arrived" }).eq("id", patient.id);
+    // Update latest appointment status too
+    if (apptId) {
+      await supabase.from("appointments").update({ status: "arrived" }).eq("id", apptId);
+    }
+    setPatient(prev => prev ? { ...prev, status: "arrived" } : null);
+    toast.success("Hasta bekleme salonuna alındı ✅");
+  };
+
+  const isArrived = patient?.status === "arrived";
   const isOpen = !!patientId;
 
   const content = (
@@ -210,6 +225,21 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {!editing && !isArrived && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200" onClick={handleMarkArrived}>
+                  <CheckCircle2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p className="text-xs">Hasta Geldi</p></TooltipContent>
+            </Tooltip>
+          )}
+          {isArrived && !editing && (
+            <div className="h-8 w-8 flex items-center justify-center text-emerald-600">
+              <CheckCircle2 className="w-4 h-4 fill-emerald-500/20" />
+            </div>
+          )}
           {!editing ? (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={startEdit}>
               <Edit3 className="w-4 h-4" />
