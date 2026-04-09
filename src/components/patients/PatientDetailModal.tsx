@@ -186,6 +186,19 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
     setPatient(updater);
   };
 
+  const handleMarkArrived = async () => {
+    if (!patient) return;
+    // Update patient status
+    await supabase.from("patients").update({ status: "arrived" }).eq("id", patient.id);
+    // Update latest appointment status too
+    if (apptId) {
+      await supabase.from("appointments").update({ status: "arrived" }).eq("id", apptId);
+    }
+    setPatient(prev => prev ? { ...prev, status: "arrived" } : null);
+    toast.success("Hasta bekleme salonuna alındı ✅");
+  };
+
+  const isArrived = patient?.status === "arrived";
   const isOpen = !!patientId;
 
   const content = (
