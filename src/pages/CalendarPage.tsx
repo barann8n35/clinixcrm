@@ -8,7 +8,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { User, Phone, Stethoscope, FileText, Clock, CalendarDays, StickyNote, MapPin, Pencil } from "lucide-react";
+import { User, Phone, Stethoscope, FileText, Clock, CalendarDays, StickyNote, MapPin, Pencil, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 import QuickAppointmentDialog from "@/components/appointments/QuickAppointmentDialog";
 import EditAppointmentDialog from "@/components/appointments/EditAppointmentDialog";
 
@@ -38,6 +40,7 @@ interface CalendarEvent {
     scheduledAt: string;
     internalNotes: string;
     appointmentId: string;
+    patientId: string;
   };
 }
 
@@ -48,6 +51,7 @@ const statusColors: Record<string, { bg: string; border: string; text: string }>
   rescheduled: { bg: "hsl(var(--warning))", border: "hsl(var(--warning))", text: "#fff" },
   completed: { bg: "hsl(var(--muted-foreground))", border: "hsl(var(--muted-foreground))", text: "#fff" },
   pending: { bg: "hsl(var(--primary))", border: "hsl(var(--primary))", text: "#fff" },
+  arrived: { bg: "#10b981", border: "#059669", text: "#fff" },
 };
 
 const statusLabel: Record<string, string> = {
@@ -57,6 +61,7 @@ const statusLabel: Record<string, string> = {
   rescheduled: "Yeniden Planlandı",
   completed: "Tamamlandı",
   pending: "Beklemede",
+  arrived: "Geldi ✓",
 };
 
 const typeColors: Record<string, string> = {
@@ -121,6 +126,7 @@ const CalendarPage = () => {
           scheduledAt: a.scheduled_at,
           internalNotes: p?.internal_notes || "",
           appointmentId: a.id,
+          patientId: a.patient_id,
         },
       });
     });
@@ -148,6 +154,7 @@ const CalendarPage = () => {
           scheduledAt: p.appointment_date,
           internalNotes: p.internal_notes || "",
           appointmentId: "",
+          patientId: p.id,
         },
       });
     });
@@ -177,6 +184,7 @@ const CalendarPage = () => {
         scheduledAt: event.extendedProps.scheduledAt,
         internalNotes: event.extendedProps.internalNotes,
         appointmentId: event.extendedProps.appointmentId,
+        patientId: event.extendedProps.patientId,
       },
     });
   };
@@ -208,6 +216,24 @@ const CalendarPage = () => {
     if (!selectedEvent || !selectedEvent.extendedProps.appointmentId) return;
     setEditOpen(true);
   };
+
+  const handleMarkArrived = async () => {
+    if (!selectedEvent) return;
+    const apptId = selectedEvent.extendedProps.appointmentId;
+    const patientId = selectedEvent.extendedProps.patientId;
+
+    if (apptId) {
+      await supabase.from("appointments").update({ status: "arrived" }).eq("id", apptId);
+    }
+    if (patientId) {
+      await supabase.from("patients").update({ status: "arrived" }).eq("id", patientId);
+    }
+    toast.success("Hasta bekleme salonuna alındı ✅");
+    setSelectedEvent(null);
+    loadEvents();
+  };
+
+  const isSelectedArrived = selectedEvent?.extendedProps.status === "arrived";
 
   return (
     <>
@@ -273,26 +299,27 @@ const CalendarPage = () => {
             )}
             eventContent={(arg) => {
               const eventType = arg.event.extendedProps.type || "";
-              const borderColor = typeColors[eventType] || "hsl(var(--primary))";
-              const bgColor = typeBgColors[eventType] || "transparent";
+              const eventStatus = arg.event.extendedProps.status || "";
+              const isArrived = eventStatus === "arrived";
+              const borderColor = isArrived ? "#10b981" : (typeColors[eventType] || "hsl(var(--primary))");
+              const bgColor = isArrived ? "rgba(16,185,129,0.1)" : (typeBgColors[eventType] || "transparent");
               const shortName = abbreviateName(arg.event.title);
               const timeText = arg.timeText;
               const viewType = calendarRef.current?.getApi()?.view?.type || currentView;
 
-              // Month view: minimal
               if (viewType === "dayGridMonth") {
                 return (
                   <div
-                    className="px-1.5 py-0.5 text-[10px] font-medium truncate cursor-pointer rounded-md transition-all duration-200 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                    className="px-1.5 py-0.5 text-[10px] font-medium truncate cursor-pointer rounded-md transition-all duration-200 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1"
                     style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "6px", backgroundColor: bgColor }}
                   >
+                    {isArrived && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
                     <span className="opacity-70">{timeText}</span>{" "}
                     <span className="font-semibold">{shortName}</span>
                   </div>
                 );
               }
 
-              // Week / Day view: detailed
               const fullName = arg.event.extendedProps.patientName || arg.event.title;
               const complaint = arg.event.extendedProps.complaint;
               const showComplaint = complaint && complaint !== "—";
@@ -303,12 +330,14 @@ const CalendarPage = () => {
                   style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "8px", backgroundColor: bgColor }}
                 >
                   <div className="flex items-center gap-1.5">
+                    {isArrived && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
                     <span className="opacity-70 text-[10px]">{timeText}</span>
                     <span className="font-bold truncate">{fullName}</span>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] opacity-60">
                     <span className="truncate">{eventType}</span>
-                    {showComplaint && (
+                    {isArrived && <span className="text-emerald-600 font-semibold">Geldi ✓</span>}
+                    {showComplaint && !isArrived && (
                       <>
                         <span>·</span>
                         <span className="truncate">{complaint}</span>
@@ -322,7 +351,6 @@ const CalendarPage = () => {
         </motion.div>
       </div>
 
-      {/* Quick Appointment Dialog */}
       <QuickAppointmentDialog
         open={quickAppt.open}
         onOpenChange={(v) => setQuickAppt((prev) => ({ ...prev, open: v }))}
@@ -331,7 +359,6 @@ const CalendarPage = () => {
         onCreated={loadEvents}
       />
 
-      {/* Edit Appointment Dialog */}
       {selectedEvent && selectedEvent.extendedProps.appointmentId && (
         <EditAppointmentDialog
           open={editOpen}
@@ -347,7 +374,6 @@ const CalendarPage = () => {
         />
       )}
 
-      {/* Event Detail Modal */}
       <Dialog open={!!selectedEvent && !editOpen} onOpenChange={(v) => !v && setSelectedEvent(null)}>
         <DialogContent className="sm:max-w-md rounded-2xl shadow-elevated">
           <DialogHeader>
@@ -356,16 +382,34 @@ const CalendarPage = () => {
                 <CalendarDays className="w-5 h-5 text-primary" />
                 Randevu Detayı
               </DialogTitle>
-              {selectedEvent?.extendedProps.appointmentId && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110 active:scale-95"
-                  onClick={openEdit}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              )}
+              <div className="flex items-center gap-1">
+                {/* Mark Arrived button */}
+                {selectedEvent && !isSelectedArrived && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 hover:scale-110 active:scale-95"
+                        onClick={handleMarkArrived}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p className="text-xs">Hasta Geldi</p></TooltipContent>
+                  </Tooltip>
+                )}
+                {selectedEvent?.extendedProps.appointmentId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110 active:scale-95"
+                    onClick={openEdit}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </DialogHeader>
           {selectedEvent && (

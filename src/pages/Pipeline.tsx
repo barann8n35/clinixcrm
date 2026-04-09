@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
-import { Inbox, Sparkles, Globe, Timer, MessageCircle, Send, Save } from "lucide-react";
+import { Inbox, Sparkles, Globe, Timer, MessageCircle, Send, Save, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { IconType } from "react-icons";
@@ -36,13 +36,14 @@ const priorityStyles: Record<string, { bg: string; text: string }> = {
   low: { bg: "bg-primary/10", text: "text-primary" },
 };
 
-const columnKeys = ["incoming", "aiScan", "awaitingApproval", "appointmentBooked", "postOp"] as const;
+const columnKeys = ["incoming", "aiScan", "awaitingApproval", "arrived", "appointmentBooked", "postOp"] as const;
 type ColumnKey = (typeof columnKeys)[number];
 
 const statusForColumn: Record<ColumnKey, string> = {
   incoming: "pending",
   aiScan: "active",
   awaitingApproval: "approved",
+  arrived: "arrived",
   appointmentBooked: "completed",
   postOp: "post_op",
 };
@@ -51,6 +52,7 @@ const columnForStatus = (status: string): ColumnKey => {
   if (status === "pending") return "incoming";
   if (status === "active") return "aiScan";
   if (status === "approved" || status === "rescheduled") return "awaitingApproval";
+  if (status === "arrived") return "arrived";
   if (status === "post_op") return "postOp";
   return "appointmentBooked";
 };
@@ -59,11 +61,12 @@ const columnColors: Record<ColumnKey, string> = {
   incoming: "from-primary/5 to-transparent",
   aiScan: "from-warning/5 to-transparent",
   awaitingApproval: "from-success/5 to-transparent",
+  arrived: "from-emerald-500/8 to-emerald-500/2",
   appointmentBooked: "from-muted to-transparent",
   postOp: "from-primary/8 to-success/3",
 };
 
-const successColumns: ColumnKey[] = ["awaitingApproval", "appointmentBooked"];
+const successColumns: ColumnKey[] = ["awaitingApproval", "arrived", "appointmentBooked"];
 
 /* ── Platform Icon ── */
 const PlatformIcon = ({ platform }: { platform: string | null }) => {
@@ -160,10 +163,13 @@ const PostOpBadge = ({ days, patientName }: { days: number; patientName: string 
 };
 
 /* ── Reusable card inner ── */
-const CardContent = ({ card, pStyle, t, showPostOp }: { card: PipelineCard; pStyle: { bg: string; text: string }; t: (k: string) => string; showPostOp?: boolean }) => (
+const CardContent = ({ card, pStyle, t, showPostOp, isArrived }: { card: PipelineCard; pStyle: { bg: string; text: string }; t: (k: string) => string; showPostOp?: boolean; isArrived?: boolean }) => (
   <>
     <div className="flex items-center justify-between mb-2 min-w-0">
-      <span className="text-sm font-semibold text-foreground truncate mr-2">{card.name}</span>
+      <div className="flex items-center gap-1.5 min-w-0">
+        {isArrived && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
+        <span className="text-sm font-semibold text-foreground truncate mr-2">{card.name}</span>
+      </div>
       <PlatformIcon platform={card.platform} />
     </div>
     <div className="flex items-center gap-2 mb-2">
@@ -185,53 +191,65 @@ const Pipeline = () => {
     incoming: [],
     aiScan: [],
     awaitingApproval: [],
+    arrived: [],
     appointmentBooked: [],
     postOp: [],
   });
   const valuesRef = useRef<Record<string, number>>({});
   const [celebrateId, setCelebrateId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      const { data } = await supabase
-        .from("patients")
-        .select("id, name, platform, status, complaint, created_at")
-        .order("updated_at", { ascending: false });
-      if (!data) return;
+  const loadData = useCallback(async () => {
+    const { data } = await supabase
+      .from("patients")
+      .select("id, name, platform, status, complaint, created_at")
+      .order("updated_at", { ascending: false });
+    if (!data) return;
 
-      const stages: Record<ColumnKey, PipelineCard[]> = {
-        incoming: [],
-        aiScan: [],
-        awaitingApproval: [],
-        appointmentBooked: [],
-        postOp: [],
+    const stages: Record<ColumnKey, PipelineCard[]> = {
+      incoming: [],
+      aiScan: [],
+      awaitingApproval: [],
+      arrived: [],
+      appointmentBooked: [],
+      postOp: [],
+    };
+
+    data.forEach((p, i) => {
+      if (!valuesRef.current[p.id]) {
+        valuesRef.current[p.id] = Math.floor(Math.random() * 20000) + 3000;
+      }
+      const col = columnForStatus(p.status);
+      const card: PipelineCard = {
+        id: p.id,
+        name: p.name,
+        value: valuesRef.current[p.id],
+        priority: i % 3 === 0 ? "urgent" : i % 3 === 1 ? "medium" : "low",
+        platform: p.platform,
+        date: new Date(p.created_at).toLocaleDateString("tr-TR", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }),
+        postOpDays: col === "postOp" ? Math.floor(Math.random() * 7) + 1 : undefined,
       };
+      stages[col].push(card);
+    });
 
-      data.forEach((p, i) => {
-        if (!valuesRef.current[p.id]) {
-          valuesRef.current[p.id] = Math.floor(Math.random() * 20000) + 3000;
-        }
-        const col = columnForStatus(p.status);
-        const card: PipelineCard = {
-          id: p.id,
-          name: p.name,
-          value: valuesRef.current[p.id],
-          priority: i % 3 === 0 ? "urgent" : i % 3 === 1 ? "medium" : "low",
-          platform: p.platform,
-          date: new Date(p.created_at).toLocaleDateString("tr-TR", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          }),
-          postOpDays: col === "postOp" ? Math.floor(Math.random() * 7) + 1 : undefined,
-        };
-        stages[col].push(card);
-      });
-
-      setColumns(stages);
-    }
-    load();
+    setColumns(stages);
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // Realtime sync for patient status changes (e.g. from "Hasta Geldi" button)
+  useEffect(() => {
+    const channel = supabase
+      .channel("pipeline-patients-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "patients" }, () => {
+        loadData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadData]);
 
   const onDragEnd = useCallback(
     (result: DropResult) => {
@@ -251,7 +269,6 @@ const Pipeline = () => {
           return { ...prev, [srcKey]: srcCards };
         }
 
-        // Add postOp days when dropping to postOp column
         if (dstKey === "postOp") {
           moved.postOpDays = 3;
         } else {
@@ -282,6 +299,7 @@ const Pipeline = () => {
     { key: "incoming", labelKey: "pipeline.incoming" },
     { key: "aiScan", labelKey: "pipeline.aiScan" },
     { key: "awaitingApproval", labelKey: "pipeline.awaitingApproval" },
+    { key: "arrived", labelKey: "pipeline.arrived" },
     { key: "appointmentBooked", labelKey: "pipeline.appointmentBooked" },
     { key: "postOp", labelKey: "pipeline.postOp" },
   ];
@@ -299,10 +317,11 @@ const Pipeline = () => {
       </motion.div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
           {columnDefs.map((col, colIdx) => {
             const cards = columns[col.key] || [];
             const isPostOp = col.key === "postOp";
+            const isArrivedCol = col.key === "arrived";
             return (
               <motion.div
                 key={col.key}
@@ -310,14 +329,13 @@ const Pipeline = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: colIdx * 0.08 }}
                 className={`bg-gradient-to-b ${columnColors[col.key]} rounded-2xl p-3 min-h-[400px] border ${
-                  isPostOp ? "border-primary/20" : "border-border/40"
+                  isArrivedCol ? "border-emerald-500/20" : isPostOp ? "border-primary/20" : "border-border/40"
                 }`}
               >
-                {/* Column Header */}
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div>
-                    <h3 className={`text-sm font-bold ${isPostOp ? "text-primary" : "text-foreground"}`}>
-                      {t(col.labelKey)}
+                    <h3 className={`text-sm font-bold ${isArrivedCol ? "text-emerald-600" : isPostOp ? "text-primary" : "text-foreground"}`}>
+                      {col.key === "arrived" ? "Bekleme Salonu" : t(col.labelKey)}
                     </h3>
                     <p className="text-[11px] text-muted-foreground">
                       {cards.length} {t("pipeline.lead")} · {totalValue(cards)} ₺
@@ -325,7 +343,9 @@ const Pipeline = () => {
                   </div>
                   {cards.length > 0 && (
                     <span className={`min-w-[22px] h-[22px] flex items-center justify-center rounded-full text-[11px] font-bold shadow-sm border ${
-                      isPostOp
+                      isArrivedCol
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        : isPostOp
                         ? "bg-primary/10 text-primary border-primary/20"
                         : "bg-card text-foreground border-border/40"
                     }`}>
@@ -348,14 +368,18 @@ const Pipeline = () => {
                       {cards.length === 0 && !snapshot.isDraggingOver && (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                           <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-2">
-                            {isPostOp ? (
+                            {isArrivedCol ? (
+                              <CheckCircle2 className="w-5 h-5 text-muted-foreground/30" />
+                            ) : isPostOp ? (
                               <Timer className="w-5 h-5 text-muted-foreground/30" />
                             ) : (
                               <Inbox className="w-5 h-5 text-muted-foreground/30" />
                             )}
                           </div>
                           <p className="text-[11px] text-muted-foreground/60">
-                            {isPostOp
+                            {isArrivedCol
+                              ? "Bekleme salonunda hasta yok"
+                              : isPostOp
                               ? "Post-op takip bekleyen hasta yok"
                               : t("pipeline.empty", "Bu aşamada lead yok")}
                           </p>
@@ -377,7 +401,11 @@ const Pipeline = () => {
                                     ? { width: (provided.draggableProps.style as any)?.width || "auto" }
                                     : {}),
                                 }}
-                                className={`relative overflow-hidden bg-card rounded-2xl border border-border/60 p-4 cursor-grab active:cursor-grabbing transition-shadow duration-200 ${
+                                className={`relative overflow-hidden bg-card rounded-2xl border p-4 cursor-grab active:cursor-grabbing transition-shadow duration-200 ${
+                                  isArrivedCol
+                                    ? "border-emerald-500/30"
+                                    : "border-border/60"
+                                } ${
                                   snapshot.isDragging
                                     ? "shadow-float ring-2 ring-primary/30 rotate-[2deg] scale-[1.03] z-50"
                                     : "shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-300"
@@ -408,7 +436,7 @@ const Pipeline = () => {
                                   )}
                                 </AnimatePresence>
 
-                                <CardContent card={card} pStyle={pStyle} t={t} showPostOp={isPostOp} />
+                                <CardContent card={card} pStyle={pStyle} t={t} showPostOp={isPostOp} isArrived={isArrivedCol} />
                               </div>
                             )}
                           </Draggable>
