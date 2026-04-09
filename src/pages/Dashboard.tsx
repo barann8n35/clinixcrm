@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Calendar, Users, TrendingUp, AlertTriangle, ArrowUpRight, Sparkles } from "lucide-react";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
 import { IconType } from "react-icons";
@@ -86,8 +86,7 @@ const Dashboard = () => {
   const [pieData, setPieData] = useState<{ name: string; value: number; color: string }[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
+  const load = useCallback(async () => {
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
@@ -144,9 +143,21 @@ const Dashboard = () => {
         totalValue: 0,
         criticalCount: critical.length,
       });
-    }
-    load();
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const ch1 = supabase
+      .channel("dashboard-appointments-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => load())
+      .subscribe();
+    const ch2 = supabase
+      .channel("dashboard-patients-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
+  }, [load]);
 
   const statCards = [
     {

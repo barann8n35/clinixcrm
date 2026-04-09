@@ -85,6 +85,7 @@ const CalendarPage = () => {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [currentView, setCurrentView] = useState("dayGridMonth");
+  const [markingArrived, setMarkingArrived] = useState(false);
   const [quickAppt, setQuickAppt] = useState<{ open: boolean; date: Date; time: string }>({
     open: false,
     date: new Date(),
@@ -164,6 +165,19 @@ const CalendarPage = () => {
 
   useEffect(() => { loadEvents(); }, [loadEvents]);
 
+  // Realtime: auto-refresh on appointment or patient changes
+  useEffect(() => {
+    const ch1 = supabase
+      .channel("calendar-appointments-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => loadEvents())
+      .subscribe();
+    const ch2 = supabase
+      .channel("calendar-patients-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, () => loadEvents())
+      .subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
+  }, [loadEvents]);
+
   const handleEventClick = (info: any) => {
     const event = info.event;
     setSelectedEvent({
@@ -218,19 +232,22 @@ const CalendarPage = () => {
   };
 
   const handleMarkArrived = async () => {
-    if (!selectedEvent) return;
-    const apptId = selectedEvent.extendedProps.appointmentId;
-    const patientId = selectedEvent.extendedProps.patientId;
-
-    if (apptId) {
-      await supabase.from("appointments").update({ status: "arrived" }).eq("id", apptId);
+    if (!selectedEvent || markingArrived) return;
+    setMarkingArrived(true);
+    try {
+      const apptId = selectedEvent.extendedProps.appointmentId;
+      const patientId = selectedEvent.extendedProps.patientId;
+      await Promise.all([
+        apptId ? supabase.from("appointments").update({ status: "arrived" }).eq("id", apptId) : Promise.resolve(),
+        patientId ? supabase.from("patients").update({ status: "arrived" }).eq("id", patientId) : Promise.resolve(),
+      ]);
+      toast.success("Hasta bekleme salonuna alındı ✅");
+      setSelectedEvent(null);
+    } catch {
+      toast.error("Durum güncellenemedi");
+    } finally {
+      setMarkingArrived(false);
     }
-    if (patientId) {
-      await supabase.from("patients").update({ status: "arrived" }).eq("id", patientId);
-    }
-    toast.success("Hasta bekleme salonuna alındı ✅");
-    setSelectedEvent(null);
-    loadEvents();
   };
 
   const isSelectedArrived = selectedEvent?.extendedProps.status === "arrived";
@@ -392,8 +409,9 @@ const CalendarPage = () => {
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 hover:scale-110 active:scale-95"
                         onClick={handleMarkArrived}
+                        disabled={markingArrived}
                       >
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle2 className={`w-4 h-4 ${markingArrived ? "animate-spin" : ""}`} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent><p className="text-xs">Hasta Geldi</p></TooltipContent>
