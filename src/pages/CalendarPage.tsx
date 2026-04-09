@@ -409,8 +409,9 @@ const CalendarPage = () => {
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 hover:scale-110 active:scale-95"
                         onClick={handleMarkArrived}
+                        disabled={markingArrived}
                       >
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle2 className={`w-4 h-4 ${markingArrived ? "animate-spin" : ""}`} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent><p className="text-xs">Hasta Geldi</p></TooltipContent>
