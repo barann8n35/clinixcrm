@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+
 import { cn } from "@/lib/utils";
 import { PatientOverviewTab } from "@/components/dashboard/patient-card/PatientOverviewTab";
 import { PatientTimelineTab } from "@/components/dashboard/patient-card/PatientTimelineTab";
