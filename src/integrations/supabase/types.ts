@@ -192,6 +192,7 @@ export type Database = {
           id: string
           patient_id: string | null
           read: boolean
+          remind_at: string | null
           title: string
           type: string
           user_id: string
@@ -202,6 +203,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           read?: boolean
+          remind_at?: string | null
           title: string
           type?: string
           user_id: string
@@ -212,6 +214,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           read?: boolean
+          remind_at?: string | null
           title?: string
           type?: string
           user_id?: string

@@ -12,6 +12,7 @@ export interface Notification {
   read: boolean;
   patient_id?: string | null;
   created_at?: string;
+  remind_at?: string | null;
 }
 
 interface NotificationContextType {
@@ -19,7 +20,7 @@ interface NotificationContextType {
   unreadCount: number;
   markAllRead: () => void;
   toggleRead: (id: string) => void;
-  addNotification: (n: Omit<Notification, "id" | "time" | "read">) => void;
+  addNotification: (n: Omit<Notification, "id" | "time" | "read"> & { remind_at?: string | null }) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -61,6 +62,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           read: n.read,
           patient_id: n.patient_id,
           created_at: n.created_at,
+          remind_at: n.remind_at,
         }))
       );
     }
@@ -87,6 +89,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               read: n.read,
               patient_id: n.patient_id,
               created_at: n.created_at,
+              remind_at: n.remind_at,
             },
             ...prev,
           ]);
@@ -121,7 +124,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     await supabase.from("notifications").update({ read: newRead }).eq("id", id);
   };
 
-  const addNotification = async (n: Omit<Notification, "id" | "time" | "read">) => {
+  const addNotification = async (n: Omit<Notification, "id" | "time" | "read"> & { remind_at?: string | null }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from("notifications").insert({
@@ -130,7 +133,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       title: n.title,
       description: n.description,
       patient_id: n.patient_id || null,
-    });
+      remind_at: n.remind_at || null,
+    } as any);
   };
 
   return (
