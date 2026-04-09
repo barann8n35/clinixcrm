@@ -251,6 +251,7 @@ export type Database = {
           appointment_date: string | null
           complaint: string | null
           created_at: string
+          doctor: string | null
           event_id: string | null
           gender: string | null
           id: string
@@ -274,6 +275,7 @@ export type Database = {
           appointment_date?: string | null
           complaint?: string | null
           created_at?: string
+          doctor?: string | null
           event_id?: string | null
           gender?: string | null
           id: string
@@ -297,6 +299,7 @@ export type Database = {
           appointment_date?: string | null
           complaint?: string | null
           created_at?: string
+          doctor?: string | null
           event_id?: string | null
           gender?: string | null
           id?: string
