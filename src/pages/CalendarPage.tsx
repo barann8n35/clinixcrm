@@ -85,6 +85,7 @@ const CalendarPage = () => {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [currentView, setCurrentView] = useState("dayGridMonth");
+  const [markingArrived, setMarkingArrived] = useState(false);
   const [quickAppt, setQuickAppt] = useState<{ open: boolean; date: Date; time: string }>({
     open: false,
     date: new Date(),
@@ -231,19 +232,22 @@ const CalendarPage = () => {
   };
 
   const handleMarkArrived = async () => {
-    if (!selectedEvent) return;
-    const apptId = selectedEvent.extendedProps.appointmentId;
-    const patientId = selectedEvent.extendedProps.patientId;
-
-    if (apptId) {
-      await supabase.from("appointments").update({ status: "arrived" }).eq("id", apptId);
+    if (!selectedEvent || markingArrived) return;
+    setMarkingArrived(true);
+    try {
+      const apptId = selectedEvent.extendedProps.appointmentId;
+      const patientId = selectedEvent.extendedProps.patientId;
+      await Promise.all([
+        apptId ? supabase.from("appointments").update({ status: "arrived" }).eq("id", apptId) : Promise.resolve(),
+        patientId ? supabase.from("patients").update({ status: "arrived" }).eq("id", patientId) : Promise.resolve(),
+      ]);
+      toast.success("Hasta bekleme salonuna alındı ✅");
+      setSelectedEvent(null);
+    } catch {
+      toast.error("Durum güncellenemedi");
+    } finally {
+      setMarkingArrived(false);
     }
-    if (patientId) {
-      await supabase.from("patients").update({ status: "arrived" }).eq("id", patientId);
-    }
-    toast.success("Hasta bekleme salonuna alındı ✅");
-    setSelectedEvent(null);
-    loadEvents();
   };
 
   const isSelectedArrived = selectedEvent?.extendedProps.status === "arrived";
