@@ -12,6 +12,7 @@ export interface Notification {
   read: boolean;
   patient_id?: string | null;
   created_at?: string;
+  remind_at?: string | null;
 }
 
 interface NotificationContextType {
@@ -19,7 +20,7 @@ interface NotificationContextType {
   unreadCount: number;
   markAllRead: () => void;
   toggleRead: (id: string) => void;
-  addNotification: (n: Omit<Notification, "id" | "time" | "read">) => void;
+  addNotification: (n: Omit<Notification, "id" | "time" | "read"> & { remind_at?: string | null }) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
