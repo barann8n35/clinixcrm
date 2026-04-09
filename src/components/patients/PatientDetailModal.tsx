@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Edit3, Save, Phone, MapPin, AlertCircle, User, CalendarIcon, CheckCircle2 } from "lucide-react";
+import { X, Edit3, Save, CalendarIcon, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";

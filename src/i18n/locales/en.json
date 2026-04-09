@@ -60,6 +60,7 @@
     "medium": "Medium",
     "low": "Low",
     "postOp": "Post-Op Follow-up",
+    "arrived": "Waiting Room",
     "empty": "No leads in this stage"
   },
   "patients": {
