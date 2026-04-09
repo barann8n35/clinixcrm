@@ -51,6 +51,7 @@ const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
   pending: "bg-warning/10 text-warning border-warning/20",
   discharged: "bg-muted text-muted-foreground border-border",
+  arrived: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
 };
 
 const timeSlots = Array.from({ length: 28 }, (_, i) => {
@@ -224,6 +225,21 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {!editing && !isArrived && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200" onClick={handleMarkArrived}>
+                  <CheckCircle2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p className="text-xs">Hasta Geldi</p></TooltipContent>
+            </Tooltip>
+          )}
+          {isArrived && !editing && (
+            <div className="h-8 w-8 flex items-center justify-center text-emerald-600">
+              <CheckCircle2 className="w-4 h-4 fill-emerald-500/20" />
+            </div>
+          )}
           {!editing ? (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={startEdit}>
               <Edit3 className="w-4 h-4" />
