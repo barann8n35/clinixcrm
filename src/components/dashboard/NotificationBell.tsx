@@ -1,4 +1,4 @@
-import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing, UserPlus, CalendarIcon, X, Check } from "lucide-react";
+import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing, UserPlus, CalendarIcon, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications, type Notification } from "@/contexts/NotificationContext";
 import { useState } from "react";
