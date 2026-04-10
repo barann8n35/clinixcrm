@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8..20
+const HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6..23
 const QUICK_MINUTES = [0, 15, 30, 45];
 
 interface TimePickerProps {
