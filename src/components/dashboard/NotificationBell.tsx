@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { TimePicker } from "@/components/ui/time-picker";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -233,12 +234,7 @@ export function NotificationBell() {
                   />
                 </PopoverContent>
               </Popover>
-              <input
-                type="time"
-                value={reminderTime}
-                onChange={(e) => setReminderTime(e.target.value)}
-                className="h-8 px-2 text-[11px] rounded-lg border border-input bg-background w-24"
-              />
+              <TimePicker value={reminderTime} onChange={setReminderTime} />
               <Button size="sm" onClick={handleAddReminder} className="h-8 px-3 rounded-lg text-[11px]">
                 Ekle
               </Button>
