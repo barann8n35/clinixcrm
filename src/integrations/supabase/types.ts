@@ -580,6 +580,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_team_members: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          username: string
+        }[]
+      }
       handle_omnichannel_message: {
         Args: {
           p_external_id: string

@@ -34,22 +34,21 @@ const TeamManagement = () => {
 
   async function fetchMembers() {
     setLoading(true);
-    // Get all profiles with their roles
-    const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, username");
-    const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-
-    const roleMap = new Map<string, string>();
-    (roles || []).forEach((r: any) => roleMap.set(r.user_id, r.role));
-
-    const memberList: TeamMember[] = (profiles || []).map((p: any) => ({
-      user_id: p.user_id,
-      full_name: p.full_name,
-      username: p.username,
-      email: "",
-      role: roleMap.get(p.user_id) || "pending",
+    const { data, error } = await supabase.rpc("admin_list_team_members");
+    if (error) {
+      toast.error("Ekip listesi alınamadı: " + error.message);
+      setMembers([]);
+      setLoading(false);
+      return;
+    }
+    const list: TeamMember[] = (Array.isArray(data) ? data : []).map((r: any) => ({
+      user_id: r.user_id,
+      full_name: r.full_name,
+      username: r.username,
+      email: r.email || "",
+      role: r.role || "pending",
     }));
-
-    setMembers(memberList);
+    setMembers(list);
     setLoading(false);
   }
 
