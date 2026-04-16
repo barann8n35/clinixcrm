@@ -142,9 +142,17 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
           {msg.platform && (
             <span className="text-[10px] text-muted-foreground">via {platformConfig[msg.platform]?.label}</span>
           )}
-          <span className="text-[10px] text-muted-foreground ml-auto">{time}</span>
+          <span
+            className="text-[10px] text-muted-foreground ml-auto cursor-help tabular-nums"
+            title={fullDateTime}
+          >
+            {time}
+          </span>
         </div>
-        <p className="text-[13px] text-foreground leading-relaxed">{msg.text}</p>
+        <p className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+        <div className="text-[9px] text-muted-foreground/60 mt-1 text-right tabular-nums">
+          {fullDateTime}
+        </div>
       </div>
     </motion.div>
   );
