@@ -317,6 +317,23 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
+        {/* Ses Klonum Tab */}
+        <TabsContent value="ses-klonum">
+          <Card className="border-border/60 shadow-card rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-lg font-display flex items-center gap-2">
+                <Mic className="h-5 w-5 text-primary" /> Ses Klonum
+              </CardTitle>
+              <CardDescription>
+                Kendi sesinizi klonlayın ve videolarınızı tüm dillerde kendi sesinizle dublajlayın.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <VoiceCloneManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Mobil & Bildirim Tab */}
         <TabsContent value="mobil">
           <div className="space-y-4">
