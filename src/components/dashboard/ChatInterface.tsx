@@ -57,8 +57,27 @@ function TypingIndicator() {
   );
 }
 
+function formatDateLabel(date: Date, t: (k: string) => string): string {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (sameDay(date, today)) return t("inbox.today");
+  if (sameDay(date, yesterday)) return "Dün";
+  return date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+}
+
 function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string) => string; patientName?: string }) {
-  const time = format(new Date(msg.created_at), "HH:mm");
+  const msgDate = new Date(msg.created_at);
+  const time = format(msgDate, "HH:mm");
+  const fullDateTime = msgDate.toLocaleString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   const isOutgoing = msg.sender_type === "admin" || msg.sender_type === "doctor";
 
   const getConfig = () => {
@@ -123,9 +142,17 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
           {msg.platform && (
             <span className="text-[10px] text-muted-foreground">via {platformConfig[msg.platform]?.label}</span>
           )}
-          <span className="text-[10px] text-muted-foreground ml-auto">{time}</span>
+          <span
+            className="text-[10px] text-muted-foreground ml-auto cursor-help tabular-nums"
+            title={fullDateTime}
+          >
+            {time}
+          </span>
         </div>
-        <p className="text-[13px] text-foreground leading-relaxed">{msg.text}</p>
+        <p className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+        <div className="text-[9px] text-muted-foreground/60 mt-1 text-right tabular-nums">
+          {fullDateTime}
+        </div>
       </div>
     </motion.div>
   );
@@ -302,16 +329,32 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-4 md:px-8 py-4 md:py-5 space-y-3 md:space-y-4">
-        <div className="flex items-center gap-3 py-2">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-[11px] text-muted-foreground font-medium">{t("inbox.today")}</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
         <AnimatePresence initial={false}>
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} t={t} patientName={patient?.name} />
-          ))}
+          {messages.map((msg, idx) => {
+            const currentDate = new Date(msg.created_at);
+            const prevMsg = idx > 0 ? messages[idx - 1] : null;
+            const prevDate = prevMsg ? new Date(prevMsg.created_at) : null;
+            const showDateSeparator =
+              !prevDate ||
+              currentDate.getFullYear() !== prevDate.getFullYear() ||
+              currentDate.getMonth() !== prevDate.getMonth() ||
+              currentDate.getDate() !== prevDate.getDate();
+
+            return (
+              <div key={msg.id}>
+                {showDateSeparator && (
+                  <div className="flex items-center gap-3 py-2 my-2">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[11px] text-muted-foreground font-semibold px-2.5 py-1 rounded-full bg-muted/60 border border-border">
+                      {formatDateLabel(currentDate, t)}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
+                <MessageBubble msg={msg} t={t} patientName={patient?.name} />
+              </div>
+            );
+          })}
         </AnimatePresence>
 
         {showTyping && (
