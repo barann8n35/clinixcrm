@@ -357,9 +357,57 @@ const VideoStudio = () => {
                     ${mode === "dub" ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
                   <Mic className={`w-5 h-5 ${mode === "dub" ? "text-primary" : "text-muted-foreground"}`} />
                   <span className="text-xs font-semibold">Dublaj (TTS)</span>
-                  <span className="text-[10px] text-muted-foreground">Premium ses</span>
+                  <span className="text-[10px] text-muted-foreground">Genel ses</span>
+                </button>
+                <button
+                  onClick={() => isPremiumPlus ? setMode("clone_dub") : toast.error("Bu özellik için Premium+ rolü gereklidir")}
+                  disabled={!isPremiumPlus}
+                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 relative
+                    ${!isPremiumPlus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] active:scale-95"}
+                    ${mode === "clone_dub" ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+                  <Mic className={`w-5 h-5 ${mode === "clone_dub" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-xs font-semibold flex items-center gap-1">Klon Dublaj
+                    <Sparkles className="w-2.5 h-2.5 text-primary" />
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">Kendi sesinle</span>
+                  <Badge variant="outline" className="absolute top-1 right-1 text-[8px] py-0 px-1 h-3.5 border-primary/40 bg-primary/5 text-primary">P+</Badge>
+                </button>
+                <button
+                  onClick={() => isPremiumPlus ? setMode("lipsync") : toast.error("Bu özellik için Premium+ rolü gereklidir")}
+                  disabled={!isPremiumPlus}
+                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 relative
+                    ${!isPremiumPlus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] active:scale-95"}
+                    ${mode === "lipsync" ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+                  <Sparkles className={`w-5 h-5 ${mode === "lipsync" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-xs font-semibold flex items-center gap-1">Lip-Sync
+                    <Sparkles className="w-2.5 h-2.5 text-primary" />
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">Dudak senkronu</span>
+                  <Badge variant="outline" className="absolute top-1 right-1 text-[8px] py-0 px-1 h-3.5 border-primary/40 bg-primary/5 text-primary">P+</Badge>
                 </button>
               </div>
+
+              {(mode === "clone_dub" || mode === "lipsync") && (
+                <div className="pt-2 space-y-1.5">
+                  <Label className="text-xs">Ses Klonu Seçin</Label>
+                  {voiceClones.length === 0 ? (
+                    <div className="text-[11px] p-3 rounded-lg border border-dashed border-warning/40 bg-warning/5 text-foreground">
+                      Henüz hazır ses klonunuz yok. <b>Ayarlar → Ses Klonum</b> sekmesinden bir ses klonu oluşturun.
+                    </div>
+                  ) : (
+                    <Select value={selectedVoiceCloneId} onValueChange={setSelectedVoiceCloneId}>
+                      <SelectTrigger className="rounded-lg">
+                        <SelectValue placeholder="Bir ses klonu seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {voiceClones.map(vc => (
+                          <SelectItem key={vc.id} value={vc.id}>{vc.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Languages */}
