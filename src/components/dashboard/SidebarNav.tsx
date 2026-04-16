@@ -1,4 +1,5 @@
-import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound } from "lucide-react";
+import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
@@ -21,6 +22,10 @@ const managementNavItems = [
   { icon: Settings, labelKey: "sidebar.settings", path: "/settings" },
 ];
 
+const premiumNavItems = [
+  { icon: Video, labelKey: "sidebar.videoStudio", path: "/video-studio", premium: true },
+];
+
 interface SidebarNavProps {
   collapsed?: boolean;
   onNavigate?: () => void;
@@ -29,6 +34,7 @@ interface SidebarNavProps {
 export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
   const { user, signOut } = useAuth();
   const { t, i18n } = useTranslation();
+  const { isPremium } = useRole();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,7 +52,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
     i18n.changeLanguage(i18n.language === "tr" ? "en" : "tr");
   };
 
-  const renderNavItem = (item: typeof mainNavItems[0]) => {
+  const renderNavItem = (item: { icon: any; labelKey: string; path: string; premium?: boolean }) => {
     const isActive = location.pathname.startsWith(item.path);
     return (
       <button
@@ -61,6 +67,9 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
       >
         <item.icon className="w-[18px] h-[18px] shrink-0" />
         {!collapsed && <span className="flex-1 text-left">{t(item.labelKey)}</span>}
+        {!collapsed && item.premium && (
+          <Sparkles className="w-3 h-3 text-primary shrink-0" />
+        )}
       </button>
     );
   };
@@ -102,6 +111,20 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
         <div className="space-y-0.5">
           {managementNavItems.map(renderNavItem)}
         </div>
+
+        {isPremium && (
+          <>
+            {!collapsed && (
+              <p className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-widest text-primary/80 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> PREMIUM
+              </p>
+            )}
+            {collapsed && <div className="my-4 mx-2 h-px bg-sidebar-border" />}
+            <div className="space-y-0.5">
+              {premiumNavItems.map(renderNavItem)}
+            </div>
+          </>
+        )}
       </nav>
 
       {/* Language Toggle */}

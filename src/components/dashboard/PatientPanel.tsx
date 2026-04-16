@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Clock, CheckCircle, XCircle, CalendarDays, Link2, Check, Copy } from "lucide-react";
+import { Clock, CheckCircle, XCircle, CalendarDays, Link2, Check, Copy, Video } from "lucide-react";
 import { MiniSchedule } from "./MiniSchedule";
 import { RescheduleDrawer } from "./RescheduleDrawer";
+import { SendVideoDialog } from "@/components/video/SendVideoDialog";
+import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -35,7 +37,9 @@ export function PatientPanel({ patientId }: { patientId: string }) {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [acting, setActing] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const [showSendVideo, setShowSendVideo] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const { isPremium } = useRole();
 
   useEffect(() => {
     async function load() {
@@ -232,12 +236,31 @@ export function PatientPanel({ patientId }: { patientId: string }) {
           </AnimatePresence>
         </motion.button>
 
+        {isPremium && (
+          <motion.button
+            onClick={() => setShowSendVideo(true)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-card text-foreground font-semibold text-[12px] border border-primary/30 hover:border-primary/60 hover:bg-primary/5 transition-all"
+          >
+            <Video className="w-4 h-4 text-primary" />
+            Hastaya Video Gönder
+          </motion.button>
+        )}
+
         <RescheduleDrawer
           open={showReschedule}
           onOpenChange={setShowReschedule}
           patientId={patientId}
           patientName={patient?.name || ""}
           onSuccess={() => setPatient(prev => prev ? { ...prev, status: "rescheduled" } : null)}
+        />
+
+        <SendVideoDialog
+          open={showSendVideo}
+          onOpenChange={setShowSendVideo}
+          patientId={patientId}
+          patientName={patient?.name || ""}
         />
       </div>
     </div>

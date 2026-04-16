@@ -1,1 +1,4 @@
 project_id = "czqhorgsutnadznkibkb"
+
+[functions.process-video-translation]
+verify_jwt = false
