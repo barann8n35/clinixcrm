@@ -155,11 +155,11 @@ const TeamManagement = () => {
               return (
                 <div key={m.user_id} className="flex items-center gap-4 px-5 py-4 hover:bg-accent/30 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-primary">{(m.full_name || "?")[0].toUpperCase()}</span>
+                    <span className="text-sm font-bold text-primary">{((m.full_name || m.email || "?")[0] || "?").toUpperCase()}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{m.full_name || "—"}</p>
-                    {m.username && <p className="text-xs text-muted-foreground">@{m.username}</p>}
+                    <p className="text-sm font-semibold text-foreground truncate">{m.full_name || m.email || "—"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{m.email}{m.username ? ` · @${m.username}` : ""}</p>
                   </div>
                   <Badge variant="outline" className={`text-[10px] border ${roleInfo.color}`}>{roleInfo.label}</Badge>
                   <Select value={m.role} onValueChange={(v) => handleRoleChange(m.user_id, v)}>
