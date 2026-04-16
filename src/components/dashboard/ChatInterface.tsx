@@ -57,8 +57,27 @@ function TypingIndicator() {
   );
 }
 
+function formatDateLabel(date: Date, t: (k: string) => string): string {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (sameDay(date, today)) return t("inbox.today");
+  if (sameDay(date, yesterday)) return "Dün";
+  return date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+}
+
 function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string) => string; patientName?: string }) {
-  const time = format(new Date(msg.created_at), "HH:mm");
+  const msgDate = new Date(msg.created_at);
+  const time = format(msgDate, "HH:mm");
+  const fullDateTime = msgDate.toLocaleString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   const isOutgoing = msg.sender_type === "admin" || msg.sender_type === "doctor";
 
   const getConfig = () => {
