@@ -34,22 +34,21 @@ const TeamManagement = () => {
 
   async function fetchMembers() {
     setLoading(true);
-    // Get all profiles with their roles
-    const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, username");
-    const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-
-    const roleMap = new Map<string, string>();
-    (roles || []).forEach((r: any) => roleMap.set(r.user_id, r.role));
-
-    const memberList: TeamMember[] = (profiles || []).map((p: any) => ({
-      user_id: p.user_id,
-      full_name: p.full_name,
-      username: p.username,
-      email: "",
-      role: roleMap.get(p.user_id) || "pending",
+    const { data, error } = await supabase.rpc("admin_list_team_members");
+    if (error) {
+      toast.error("Ekip listesi alınamadı: " + error.message);
+      setMembers([]);
+      setLoading(false);
+      return;
+    }
+    const list: TeamMember[] = (Array.isArray(data) ? data : []).map((r: any) => ({
+      user_id: r.user_id,
+      full_name: r.full_name,
+      username: r.username,
+      email: r.email || "",
+      role: r.role || "pending",
     }));
-
-    setMembers(memberList);
+    setMembers(list);
     setLoading(false);
   }
 
@@ -110,11 +109,11 @@ const TeamManagement = () => {
               <motion.div key={m.user_id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                 className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/60">
                 <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-destructive">{(m.full_name || "?")[0].toUpperCase()}</span>
+                  <span className="text-sm font-bold text-destructive">{((m.full_name || m.email || "?")[0] || "?").toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{m.full_name || "—"}</p>
-                  {m.username && <p className="text-xs text-muted-foreground">@{m.username}</p>}
+                  <p className="text-sm font-semibold text-foreground truncate">{m.full_name || m.email || "—"}</p>
+                  <p className="text-xs text-muted-foreground truncate">{m.email}{m.username ? ` · @${m.username}` : ""}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" className="rounded-lg gap-1.5 bg-success hover:bg-success/90 text-white" disabled={updating === m.user_id}
@@ -156,11 +155,11 @@ const TeamManagement = () => {
               return (
                 <div key={m.user_id} className="flex items-center gap-4 px-5 py-4 hover:bg-accent/30 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-primary">{(m.full_name || "?")[0].toUpperCase()}</span>
+                    <span className="text-sm font-bold text-primary">{((m.full_name || m.email || "?")[0] || "?").toUpperCase()}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{m.full_name || "—"}</p>
-                    {m.username && <p className="text-xs text-muted-foreground">@{m.username}</p>}
+                    <p className="text-sm font-semibold text-foreground truncate">{m.full_name || m.email || "—"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{m.email}{m.username ? ` · @${m.username}` : ""}</p>
                   </div>
                   <Badge variant="outline" className={`text-[10px] border ${roleInfo.color}`}>{roleInfo.label}</Badge>
                   <Select value={m.role} onValueChange={(v) => handleRoleChange(m.user_id, v)}>
