@@ -274,8 +274,13 @@ const VideoStudio = () => {
                           <Languages className="w-3 h-3 text-muted-foreground shrink-0" />
                           <span className="font-medium text-foreground truncate flex-1">{t.target_language_label}</span>
                           <Badge variant="outline" className="text-[9px] py-0 px-1.5 h-4">
-                            {t.mode === "dub" ? <Mic className="w-2 h-2 mr-0.5" /> : <Subtitles className="w-2 h-2 mr-0.5" />}
-                            {t.mode === "dub" ? "Dublaj" : "Altyazı"}
+                            {t.mode === "lipsync" ? <Sparkles className="w-2 h-2 mr-0.5" /> :
+                             t.mode === "clone_dub" ? <Mic className="w-2 h-2 mr-0.5" /> :
+                             t.mode === "dub" ? <Mic className="w-2 h-2 mr-0.5" /> :
+                             <Subtitles className="w-2 h-2 mr-0.5" />}
+                            {t.mode === "lipsync" ? "Lip-Sync" :
+                             t.mode === "clone_dub" ? "Klon Dublaj" :
+                             t.mode === "dub" ? "Dublaj" : "Altyazı"}
                           </Badge>
                           {t.status === "completed" ? (
                             <div className="flex items-center gap-0.5">
@@ -284,13 +289,18 @@ const VideoStudio = () => {
                                   <Download className="w-3 h-3 text-success" />
                                 </a>
                               )}
-                              {t.output_url && t.mode === "dub" && (
+                              {t.lipsync_url && (
+                                <a href={t.lipsync_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Lip-sync video">
+                                  <Video className="w-3 h-3 text-success" />
+                                </a>
+                              )}
+                              {t.output_url && (t.mode === "dub" || t.mode === "clone_dub") && (
                                 <a href={t.output_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Sesi indir">
                                   <FileAudio className="w-3 h-3 text-success" />
                                 </a>
                               )}
-                              {t.output_url && (
-                                <button onClick={() => copyLink(t.output_url!)} className="p-0.5 hover:bg-muted rounded" title="Link kopyala">
+                              {(t.lipsync_url || t.output_url) && (
+                                <button onClick={() => copyLink(t.lipsync_url || t.output_url!)} className="p-0.5 hover:bg-muted rounded" title="Link kopyala">
                                   <Copy className="w-3 h-3 text-primary" />
                                 </button>
                               )}
