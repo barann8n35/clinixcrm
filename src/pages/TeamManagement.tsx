@@ -109,11 +109,11 @@ const TeamManagement = () => {
               <motion.div key={m.user_id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                 className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/60">
                 <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-destructive">{(m.full_name || "?")[0].toUpperCase()}</span>
+                  <span className="text-sm font-bold text-destructive">{((m.full_name || m.email || "?")[0] || "?").toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{m.full_name || "—"}</p>
-                  {m.username && <p className="text-xs text-muted-foreground">@{m.username}</p>}
+                  <p className="text-sm font-semibold text-foreground truncate">{m.full_name || m.email || "—"}</p>
+                  <p className="text-xs text-muted-foreground truncate">{m.email}{m.username ? ` · @${m.username}` : ""}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" className="rounded-lg gap-1.5 bg-success hover:bg-success/90 text-white" disabled={updating === m.user_id}
