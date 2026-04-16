@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type AppRole = "admin" | "staff" | "doctor" | "pending" | "premium";
+export type AppRole = "admin" | "staff" | "doctor" | "pending" | "premium" | "premium_plus";
 
 export function useRole() {
   const { user } = useAuth();
@@ -29,7 +29,8 @@ export function useRole() {
     isAdmin: roles.includes("admin"),
     isDoctor: roles.includes("doctor"),
     isStaff: roles.includes("staff"),
-    isPremium: roles.includes("premium") || roles.includes("admin"),
+    isPremium: roles.includes("premium") || roles.includes("premium_plus") || roles.includes("admin"),
+    isPremiumPlus: roles.includes("premium_plus") || roles.includes("admin"),
     hasRole: (role: AppRole) => roles.includes(role),
   };
 }

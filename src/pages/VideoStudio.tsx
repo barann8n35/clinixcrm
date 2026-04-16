@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Upload, Globe, Subtitles, Mic, Loader2, Download, Copy, Check,
-  Trash2, Plus, X, Sparkles, AlertCircle, Play, FileAudio, Languages
+  Trash2, Plus, X, Sparkles, AlertCircle, Play, FileAudio, Languages, Wand2, UserCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,10 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface Video { id: string; title: string; original_url: string; source_language: string; duration_seconds: number | null; file_size: number | null; status: string; created_at: string; }
-interface VideoTranslation { id: string; video_id: string; target_language: string; target_language_label: string; mode: "subtitle" | "dub"; status: string; output_url: string | null; subtitle_url: string | null; error_message: string | null; created_at: string; completed_at: string | null; }
+type TranslationMode = "subtitle" | "dub" | "clone_dub" | "lipsync";
+interface VideoTranslation { id: string; video_id: string; target_language: string; target_language_label: string; mode: TranslationMode; status: string; output_url: string | null; subtitle_url: string | null; lipsync_url: string | null; error_message: string | null; created_at: string; completed_at: string | null; voice_clone_id: string | null; }
+interface VoiceClone { id: string; name: string; elevenlabs_voice_id: string | null; status: string; }
 
 const PRESET_LANGS = [
   { code: "ar", label: "العربية", flag: "🇸🇦" },
@@ -50,27 +53,31 @@ const PremiumGate = () => (
 
 const VideoStudio = () => {
   const { user } = useAuth();
-  const { isPremium, loading: roleLoading } = useRole();
+  const { isPremium, isPremiumPlus, loading: roleLoading } = useRole();
   const [videos, setVideos] = useState<Video[]>([]);
   const [translations, setTranslations] = useState<VideoTranslation[]>([]);
+  const [voiceClones, setVoiceClones] = useState<VoiceClone[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showTranslateDialog, setShowTranslateDialog] = useState<Video | null>(null);
   const [selectedLangs, setSelectedLangs] = useState<{ code: string; label: string }[]>([]);
   const [customLang, setCustomLang] = useState({ code: "", label: "" });
-  const [mode, setMode] = useState<"subtitle" | "dub">("subtitle");
+  const [mode, setMode] = useState<TranslationMode>("subtitle");
+  const [selectedVoiceCloneId, setSelectedVoiceCloneId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     if (!user) return;
-    const [{ data: vids }, { data: trs }] = await Promise.all([
+    const [{ data: vids }, { data: trs }, { data: vcs }] = await Promise.all([
       supabase.from("videos").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("video_translations").select("*, videos!inner(user_id)").eq("videos.user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("voice_clones").select("id, name, elevenlabs_voice_id, status").eq("user_id", user.id).eq("status", "ready"),
     ]);
     setVideos((vids as Video[]) || []);
     setTranslations((trs as any[]) || []);
+    setVoiceClones((vcs as VoiceClone[]) || []);
     setLoading(false);
   };
 
@@ -136,6 +143,9 @@ const VideoStudio = () => {
 
   const startTranslation = async () => {
     if (!showTranslateDialog || selectedLangs.length === 0) { toast.error("En az bir hedef dil seçin"); return; }
+    if ((mode === "clone_dub" || mode === "lipsync") && !selectedVoiceCloneId) {
+      toast.error("Bu mod için bir ses klonu seçmelisiniz"); return;
+    }
     setSubmitting(true);
     try {
       // Insert one row per language
@@ -145,6 +155,7 @@ const VideoStudio = () => {
         target_language_label: l.label,
         mode,
         status: "pending",
+        voice_clone_id: (mode === "clone_dub" || mode === "lipsync") ? selectedVoiceCloneId : null,
       }));
       const { data: inserted, error } = await supabase.from("video_translations").insert(rows).select("id");
       if (error) throw error;
@@ -159,6 +170,7 @@ const VideoStudio = () => {
       toast.success(`${selectedLangs.length} dil için çeviri başlatıldı`);
       setShowTranslateDialog(null);
       setSelectedLangs([]);
+      setSelectedVoiceCloneId("");
       loadData();
     } catch (e: any) {
       toast.error("Başlatılamadı: " + e.message);
@@ -262,8 +274,13 @@ const VideoStudio = () => {
                           <Languages className="w-3 h-3 text-muted-foreground shrink-0" />
                           <span className="font-medium text-foreground truncate flex-1">{t.target_language_label}</span>
                           <Badge variant="outline" className="text-[9px] py-0 px-1.5 h-4">
-                            {t.mode === "dub" ? <Mic className="w-2 h-2 mr-0.5" /> : <Subtitles className="w-2 h-2 mr-0.5" />}
-                            {t.mode === "dub" ? "Dublaj" : "Altyazı"}
+                            {t.mode === "lipsync" ? <Sparkles className="w-2 h-2 mr-0.5" /> :
+                             t.mode === "clone_dub" ? <Mic className="w-2 h-2 mr-0.5" /> :
+                             t.mode === "dub" ? <Mic className="w-2 h-2 mr-0.5" /> :
+                             <Subtitles className="w-2 h-2 mr-0.5" />}
+                            {t.mode === "lipsync" ? "Lip-Sync" :
+                             t.mode === "clone_dub" ? "Klon Dublaj" :
+                             t.mode === "dub" ? "Dublaj" : "Altyazı"}
                           </Badge>
                           {t.status === "completed" ? (
                             <div className="flex items-center gap-0.5">
@@ -272,13 +289,18 @@ const VideoStudio = () => {
                                   <Download className="w-3 h-3 text-success" />
                                 </a>
                               )}
-                              {t.output_url && t.mode === "dub" && (
+                              {t.lipsync_url && (
+                                <a href={t.lipsync_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Lip-sync video">
+                                  <Video className="w-3 h-3 text-success" />
+                                </a>
+                              )}
+                              {t.output_url && (t.mode === "dub" || t.mode === "clone_dub") && (
                                 <a href={t.output_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Sesi indir">
                                   <FileAudio className="w-3 h-3 text-success" />
                                 </a>
                               )}
-                              {t.output_url && (
-                                <button onClick={() => copyLink(t.output_url!)} className="p-0.5 hover:bg-muted rounded" title="Link kopyala">
+                              {(t.lipsync_url || t.output_url) && (
+                                <button onClick={() => copyLink(t.lipsync_url || t.output_url!)} className="p-0.5 hover:bg-muted rounded" title="Link kopyala">
                                   <Copy className="w-3 h-3 text-primary" />
                                 </button>
                               )}
@@ -335,9 +357,57 @@ const VideoStudio = () => {
                     ${mode === "dub" ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
                   <Mic className={`w-5 h-5 ${mode === "dub" ? "text-primary" : "text-muted-foreground"}`} />
                   <span className="text-xs font-semibold">Dublaj (TTS)</span>
-                  <span className="text-[10px] text-muted-foreground">Premium ses</span>
+                  <span className="text-[10px] text-muted-foreground">Genel ses</span>
+                </button>
+                <button
+                  onClick={() => isPremiumPlus ? setMode("clone_dub") : toast.error("Bu özellik için Premium+ rolü gereklidir")}
+                  disabled={!isPremiumPlus}
+                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 relative
+                    ${!isPremiumPlus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] active:scale-95"}
+                    ${mode === "clone_dub" ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+                  <Mic className={`w-5 h-5 ${mode === "clone_dub" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-xs font-semibold flex items-center gap-1">Klon Dublaj
+                    <Sparkles className="w-2.5 h-2.5 text-primary" />
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">Kendi sesinle</span>
+                  <Badge variant="outline" className="absolute top-1 right-1 text-[8px] py-0 px-1 h-3.5 border-primary/40 bg-primary/5 text-primary">P+</Badge>
+                </button>
+                <button
+                  onClick={() => isPremiumPlus ? setMode("lipsync") : toast.error("Bu özellik için Premium+ rolü gereklidir")}
+                  disabled={!isPremiumPlus}
+                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 relative
+                    ${!isPremiumPlus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] active:scale-95"}
+                    ${mode === "lipsync" ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+                  <Sparkles className={`w-5 h-5 ${mode === "lipsync" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-xs font-semibold flex items-center gap-1">Lip-Sync
+                    <Sparkles className="w-2.5 h-2.5 text-primary" />
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">Dudak senkronu</span>
+                  <Badge variant="outline" className="absolute top-1 right-1 text-[8px] py-0 px-1 h-3.5 border-primary/40 bg-primary/5 text-primary">P+</Badge>
                 </button>
               </div>
+
+              {(mode === "clone_dub" || mode === "lipsync") && (
+                <div className="pt-2 space-y-1.5">
+                  <Label className="text-xs">Ses Klonu Seçin</Label>
+                  {voiceClones.length === 0 ? (
+                    <div className="text-[11px] p-3 rounded-lg border border-dashed border-warning/40 bg-warning/5 text-foreground">
+                      Henüz hazır ses klonunuz yok. <b>Ayarlar → Ses Klonum</b> sekmesinden bir ses klonu oluşturun.
+                    </div>
+                  ) : (
+                    <Select value={selectedVoiceCloneId} onValueChange={setSelectedVoiceCloneId}>
+                      <SelectTrigger className="rounded-lg">
+                        <SelectValue placeholder="Bir ses klonu seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {voiceClones.map(vc => (
+                          <SelectItem key={vc.id} value={vc.id}>{vc.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Languages */}

@@ -153,14 +153,14 @@ function buildSRT(segments: { start: string; end: string; text: string }[]): str
     .join("\n");
 }
 
-async function generateDubbedAudio(text: string): Promise<Uint8Array> {
+async function generateDubbedAudio(text: string, voiceId?: string): Promise<Uint8Array> {
   if (!ELEVENLABS_API_KEY) {
     throw new Error("ELEVENLABS_API_KEY not configured — required for dub mode");
   }
-  // George voice (multilingual)
-  const voiceId = "JBFqnCBsd6RMkjVDRZzb";
+  // Default: George multilingual; otherwise user's cloned voice
+  const useVoiceId = voiceId || "JBFqnCBsd6RMkjVDRZzb";
   const r = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+    `https://api.elevenlabs.io/v1/text-to-speech/${useVoiceId}?output_format=mp3_44100_128`,
     {
       method: "POST",
       headers: {
@@ -234,9 +234,23 @@ async function processTranslation(translationId: string) {
     const { data: srtUrl } = await admin.storage.from("clinic-videos").createSignedUrl(srtPath, 60 * 60 * 24 * 365);
     updates.subtitle_url = srtUrl?.signedUrl;
 
-    // Step 4: dub mode -> generate audio file
-    if (tr.mode === "dub") {
-      const mp3 = await generateDubbedAudio(translated_text);
+    // Step 4: dub / clone_dub / lipsync -> generate audio file
+    const needsAudio = tr.mode === "dub" || tr.mode === "clone_dub" || tr.mode === "lipsync";
+    if (needsAudio) {
+      let useVoiceId: string | undefined = undefined;
+      if (tr.mode === "clone_dub" || tr.mode === "lipsync") {
+        if (!tr.voice_clone_id) throw new Error("voice_clone_id missing for clone_dub/lipsync mode");
+        const { data: vc } = await admin
+          .from("voice_clones")
+          .select("elevenlabs_voice_id, status")
+          .eq("id", tr.voice_clone_id)
+          .maybeSingle();
+        if (!vc?.elevenlabs_voice_id || vc.status !== "ready") {
+          throw new Error("Voice clone not ready");
+        }
+        useVoiceId = vc.elevenlabs_voice_id;
+      }
+      const mp3 = await generateDubbedAudio(translated_text, useVoiceId);
       const audioPath = `${video.user_id}/dubs/${translationId}_${tr.target_language}.mp3`;
       const { error: aErr } = await admin.storage
         .from("clinic-videos")
@@ -249,6 +263,22 @@ async function processTranslation(translationId: string) {
     } else {
       // For subtitle mode, output = original video + SRT sidecar
       updates.output_url = video.original_url;
+    }
+
+    // For lipsync mode, defer completion to generate-lipsync function
+    if (tr.mode === "lipsync") {
+      updates.status = "processing"; // will be flipped by lipsync poller
+      await admin.from("video_translations").update(updates).eq("id", translationId);
+      // Trigger lipsync function
+      await fetch(`${SUPABASE_URL}/functions/v1/generate-lipsync`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ translation_id: translationId }),
+      });
+      return { ok: true, translationId, lipsyncStarted: true };
     }
 
     updates.status = "completed";
