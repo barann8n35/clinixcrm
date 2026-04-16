@@ -151,18 +151,20 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
             <LogOut className="w-4 h-4" />
           </button>
         ) : (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center shrink-0">
               <span className="text-sidebar-foreground font-semibold text-xs">
                 {user?.email?.slice(0, 2).toUpperCase() ?? "?"}
               </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium text-sidebar-foreground truncate">{user?.email ?? t("sidebar.notLoggedIn")}</p>
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <p className="text-[12px] font-medium text-sidebar-foreground truncate" title={user?.email ?? ""}>
+                {user?.email ?? t("sidebar.notLoggedIn")}
+              </p>
             </div>
             <button
               onClick={handleLogout}
-              className="p-1.5 rounded-md text-sidebar-muted hover:bg-sidebar-accent hover:text-destructive transition-colors"
+              className="p-1.5 rounded-md text-sidebar-muted hover:bg-sidebar-accent hover:text-destructive transition-colors shrink-0"
               title={t("sidebar.logout")}
             >
               <LogOut className="w-4 h-4" />
