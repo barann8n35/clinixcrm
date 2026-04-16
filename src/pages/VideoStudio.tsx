@@ -53,27 +53,31 @@ const PremiumGate = () => (
 
 const VideoStudio = () => {
   const { user } = useAuth();
-  const { isPremium, loading: roleLoading } = useRole();
+  const { isPremium, isPremiumPlus, loading: roleLoading } = useRole();
   const [videos, setVideos] = useState<Video[]>([]);
   const [translations, setTranslations] = useState<VideoTranslation[]>([]);
+  const [voiceClones, setVoiceClones] = useState<VoiceClone[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showTranslateDialog, setShowTranslateDialog] = useState<Video | null>(null);
   const [selectedLangs, setSelectedLangs] = useState<{ code: string; label: string }[]>([]);
   const [customLang, setCustomLang] = useState({ code: "", label: "" });
-  const [mode, setMode] = useState<"subtitle" | "dub">("subtitle");
+  const [mode, setMode] = useState<TranslationMode>("subtitle");
+  const [selectedVoiceCloneId, setSelectedVoiceCloneId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     if (!user) return;
-    const [{ data: vids }, { data: trs }] = await Promise.all([
+    const [{ data: vids }, { data: trs }, { data: vcs }] = await Promise.all([
       supabase.from("videos").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("video_translations").select("*, videos!inner(user_id)").eq("videos.user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("voice_clones").select("id, name, elevenlabs_voice_id, status").eq("user_id", user.id).eq("status", "ready"),
     ]);
     setVideos((vids as Video[]) || []);
     setTranslations((trs as any[]) || []);
+    setVoiceClones((vcs as VoiceClone[]) || []);
     setLoading(false);
   };
 
@@ -139,6 +143,9 @@ const VideoStudio = () => {
 
   const startTranslation = async () => {
     if (!showTranslateDialog || selectedLangs.length === 0) { toast.error("En az bir hedef dil seçin"); return; }
+    if ((mode === "clone_dub" || mode === "lipsync") && !selectedVoiceCloneId) {
+      toast.error("Bu mod için bir ses klonu seçmelisiniz"); return;
+    }
     setSubmitting(true);
     try {
       // Insert one row per language
@@ -148,6 +155,7 @@ const VideoStudio = () => {
         target_language_label: l.label,
         mode,
         status: "pending",
+        voice_clone_id: (mode === "clone_dub" || mode === "lipsync") ? selectedVoiceCloneId : null,
       }));
       const { data: inserted, error } = await supabase.from("video_translations").insert(rows).select("id");
       if (error) throw error;
@@ -162,6 +170,7 @@ const VideoStudio = () => {
       toast.success(`${selectedLangs.length} dil için çeviri başlatıldı`);
       setShowTranslateDialog(null);
       setSelectedLangs([]);
+      setSelectedVoiceCloneId("");
       loadData();
     } catch (e: any) {
       toast.error("Başlatılamadı: " + e.message);
