@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Upload, Globe, Subtitles, Mic, Loader2, Download, Copy, Check,
-  Trash2, Plus, X, Sparkles, AlertCircle, Play, FileAudio, Languages
+  Trash2, Plus, X, Sparkles, AlertCircle, Play, FileAudio, Languages, Wand2, UserCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,10 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface Video { id: string; title: string; original_url: string; source_language: string; duration_seconds: number | null; file_size: number | null; status: string; created_at: string; }
-interface VideoTranslation { id: string; video_id: string; target_language: string; target_language_label: string; mode: "subtitle" | "dub"; status: string; output_url: string | null; subtitle_url: string | null; error_message: string | null; created_at: string; completed_at: string | null; }
+type TranslationMode = "subtitle" | "dub" | "clone_dub" | "lipsync";
+interface VideoTranslation { id: string; video_id: string; target_language: string; target_language_label: string; mode: TranslationMode; status: string; output_url: string | null; subtitle_url: string | null; lipsync_url: string | null; error_message: string | null; created_at: string; completed_at: string | null; voice_clone_id: string | null; }
+interface VoiceClone { id: string; name: string; elevenlabs_voice_id: string | null; status: string; }
 
 const PRESET_LANGS = [
   { code: "ar", label: "العربية", flag: "🇸🇦" },
