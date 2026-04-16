@@ -434,6 +434,8 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          lipsync_job_id: string | null
+          lipsync_url: string | null
           mode: string
           output_url: string | null
           status: string
@@ -443,12 +445,15 @@ export type Database = {
           transcript_text: string | null
           translated_text: string | null
           video_id: string
+          voice_clone_id: string | null
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
+          lipsync_job_id?: string | null
+          lipsync_url?: string | null
           mode?: string
           output_url?: string | null
           status?: string
@@ -458,12 +463,15 @@ export type Database = {
           transcript_text?: string | null
           translated_text?: string | null
           video_id: string
+          voice_clone_id?: string | null
         }
         Update: {
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
+          lipsync_job_id?: string | null
+          lipsync_url?: string | null
           mode?: string
           output_url?: string | null
           status?: string
@@ -473,6 +481,7 @@ export type Database = {
           transcript_text?: string | null
           translated_text?: string | null
           video_id?: string
+          voice_clone_id?: string | null
         }
         Relationships: [
           {
@@ -480,6 +489,13 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_translations_voice_clone_id_fkey"
+            columns: ["voice_clone_id"]
+            isOneToOne: false
+            referencedRelation: "voice_clones"
             referencedColumns: ["id"]
           },
         ]
@@ -523,6 +539,42 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_clones: {
+        Row: {
+          created_at: string
+          elevenlabs_voice_id: string | null
+          error_message: string | null
+          id: string
+          name: string
+          sample_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          elevenlabs_voice_id?: string | null
+          error_message?: string | null
+          id?: string
+          name?: string
+          sample_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          elevenlabs_voice_id?: string | null
+          error_message?: string | null
+          id?: string
+          name?: string
+          sample_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -546,7 +598,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "staff" | "doctor" | "pending" | "premium"
+      app_role:
+        | "admin"
+        | "staff"
+        | "doctor"
+        | "pending"
+        | "premium"
+        | "premium_plus"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -674,7 +732,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff", "doctor", "pending", "premium"],
+      app_role: [
+        "admin",
+        "staff",
+        "doctor",
+        "pending",
+        "premium",
+        "premium_plus",
+      ],
     },
   },
 } as const
