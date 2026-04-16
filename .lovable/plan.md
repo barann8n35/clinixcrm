@@ -1,70 +1,84 @@
 
-Kullanıcı tüm 4 kritik kararı verdi. Tam premium paket onaylandı. Planı netleştirip uygulamaya hazır hale getiriyorum.
+Kullanıcı stratejik bir karar soruyor: lip-sync (dudak senkronu) + ses klonlama özelliğini standart pakete mi koymalı yoksa ekstra premium özellik olarak mı sunmalı?
 
-## Video Stüdyo — Uygulama Planı
+Bu bir kod değişikliği değil, ürün/iş modeli sorusu. Kısa ve net bir öneri sun, sonra teknik açıdan iki yolu da göster.
 
-Sağlık turizmi için premium video çeviri modülü. Kullanıcı seçimleri: **Hepsi mevcut (altyazı + TTS dublaj)**, **kullanıcı serbest dil ekleyebilir**, **yeni `premium` role**, **hem galeri hem hasta panelinden gönderim**.
+## Önerim: Ekstra Üst Katman (Premium+) Olarak Sun
 
-### Akış
+### Neden ekstra olmalı?
+
+**1. Maliyet farkı çok büyük**
+- Mevcut TTS dublaj (ElevenLabs `eleven_multilingual_v2`): ~$0.30/dakika video
+- Ses klonlama + lip-sync (ElevenLabs Voice Clone + HeyGen/Sync.so/D-ID): ~$2-4/dakika video
+- 10x maliyet farkı var. Standart pakete koyarsan ya fiyatı 10x artırırsın ya zarar edersin.
+
+**2. İşlem süresi farkı**
+- TTS dublaj: 1-2 dakika
+- Lip-sync: 5-15 dakika
+- Kullanıcı deneyimi açısından farklı bir kategori — ayrı UI/beklenti yönetimi gerekir.
+
+**3. Pazarlama avantajı**
+- "Premium" (mevcut) → sağlık turizmi kliniklerinin %80'i için yeterli
+- "Premium+" / "Studio Pro" → en üst segment, "doktorun kendi yüzü/sesiyle Arapça konuşuyor" demosuyla satış kapatır
+- Üç katmanlı yapı (Free / Premium / Premium+) klasik SaaS upsell hunisi
+
+**4. Teknik risk**
+- Lip-sync API'leri (HeyGen, Sync.so) hala olgunlaşıyor — bazı yüzlerde/açılarda hatalı sonuç verebilir
+- Standart pakete koyup bozuk çıktı → tüm ürünün premium algısı zedelenir
+- Ekstra katman → "beta" / "deneysel" rozetiyle sunabilirsin
+
+### Mimari (onaylarsan uygularım)
+
 ```text
-Yükle → Mod seç (Altyazı / Dublaj) → Hedef dilleri seç
-   → Transkribe (Lovable AI) → Çevir (Lovable AI)
-   → [Altyazı] SRT üret  veya  [Dublaj] ElevenLabs TTS + ses bindir
-   → Storage → Galeri / Hasta paneli "Video Gönder"
+app_role enum:
+  pending → user → premium → premium_plus (YENİ)
+
+Video modu seçimi:
+  ☐ Altyazı       (Premium)
+  ☐ TTS Dublaj    (Premium - genel ses)
+  ☐ Voice Clone   (Premium+ - kullanıcının kendi sesi)
+  ☐ Lip-Sync      (Premium+ - dudak senkronu)
 ```
 
-### 1. Veritabanı (migration)
-- `app_role` enum'una **`premium`** değeri ekle
-- `videos` tablosu: `id, user_id, title, original_url, source_language, duration_seconds, file_size, status, created_at`
-- `video_translations` tablosu: `id, video_id, target_language, target_language_label, mode ('subtitle'|'dub'), status ('pending'|'processing'|'completed'|'failed'), output_url, subtitle_url, transcript_text, translated_text, error_message, created_at, completed_at`
-- Storage bucket: **`clinic-videos`** (private)
-- RLS: kullanıcı yalnızca kendi `videos` ve `video_translations` kayıtlarına erişir; admin hepsini görür
-- Realtime: `video_translations` tablosuna publication eklenir (canlı progress için)
+### Teknik Plan (kısaca)
 
-### 2. Edge Functions
-- **`process-video-translation`** — orkestrasyon (transkribe → çevir → mod'a göre dallan)
-- **`transcribe-video`** — Lovable AI (Gemini multimodal) ile sesi metne çevir
-- **`translate-text`** — Lovable AI ile tıbbi terminoloji uyumlu çeviri + SRT formatı
-- **`generate-dubbed-audio`** — ElevenLabs `eleven_multilingual_v2` ile hedef dilde ses üret
-- Secret: **`ELEVENLABS_API_KEY`** (kullanıcıdan istenecek; sadece dublaj için gerekli — altyazı modu Lovable AI ile çalışır)
+**1. Veritabanı**
+- `app_role` enum'a `premium_plus` ekle
+- `voice_clones` tablosu: `id, user_id, elevenlabs_voice_id, sample_url, name, status` — kullanıcının klonlanmış sesini sakla
+- `video_translations.mode` enum: `subtitle | dub | clone_dub | lipsync`
 
-### 3. UI
+**2. Edge Functions (yeni)**
+- `clone-voice` — kullanıcı 1-3 dakikalık ses örneği yükler → ElevenLabs Voice Cloning API → `voice_id` döner
+- `process-video-translation` güncellemesi — `clone_dub` modunda kullanıcının kendi `voice_id`'sini kullan
+- `generate-lipsync` — Sync.so veya HeyGen API'ye dublajlı ses + orijinal video gönder → dudak senkronlu video al
 
-**Yeni sayfa: `/video-studio`**
-- Sürükle-bırak yükleme + önizleme
-- Mod toggle: **Altyazı** / **Dublaj** (her video için ayrı seçilebilir)
-- Hedef dil çoklu seçici:
-  - Hazır chip'ler: AR, EN, RU, DE, FR, FA, ES (sağlık turizmi standartı)
-  - **"+ Dil ekle"** butonu — kullanıcı kendi dil kodu/adı tanımlayabilir
-- İşlem kartları: canlı progress bar, status badge, hata gösterimi (realtime)
-- Tamamlanan videolar galerisi: önizleme oynatıcı, indir, link kopyala, sil
+**3. UI**
+- Settings altında yeni sekme: **"Ses Klonum"** — örnek kayıt yükle, klonu test et, sil
+- Video Studio'da mod seçici genişler:
+  - "🎙️ Kendi sesimle dublaj (Premium+)"
+  - "👄 Dudak senkronu (Premium+)"
+- Premium+ olmayan kullanıcıya kilitli buton + "Yükselt" CTA
 
-**Sidebar**
-- Yeni link: **"Video Stüdyo"** (Video ikonu + premium rozet)
+**4. Gerekli secret'lar**
+- `SYNC_SO_API_KEY` veya `HEYGEN_API_KEY` (lip-sync için — sen seçeceksin)
+- ElevenLabs zaten var (Voice Cloning aynı API key ile çalışır)
 
-**Hasta Paneli entegrasyonu (`PatientPanel.tsx`)**
-- "Video Gönder" butonu → modal açılır → kullanıcının galerisi listelenir → seçilen videonun linki WhatsApp mesajı olarak hastaya iletilir
+**5. Premium+ atama**
+- Team Management'ta admin elle atar (ilk versiyon)
+- Sonra Stripe ile self-service abonelik (Faz 3)
 
-### 4. Premium Erişim
-- `app_role` enum'a `premium` eklenir
-- `useRole` hook'una `isPremium` getter'ı eklenir
-- `/video-studio` route'u `isPremium || isAdmin` değilse "Premium" upgrade ekranı gösterir
-- Team Management sayfasında admin kullanıcılara `premium` rolü atayabilir
+### Açık Karar
 
-### 5. i18n
-- TR/EN çevirileri eklenir: "Video Stüdyo", "Yeni video yükle", "Hedef dilleri seç", "Altyazı modu", "Dublaj modu", "Dil ekle", "İşleniyor", "Tamamlandı" vb.
+Hangi lip-sync sağlayıcısı? Üç seçenek:
+- **Sync.so** — en yeni, en doğal sonuç, $1.5/dk
+- **HeyGen** — pazar lideri, kurumsal görünüm, $2-3/dk, daha katı kullanım koşulları
+- **D-ID** — daha ucuz ($0.50/dk) ama kalite biraz geride
 
-### Karar / Açık Konular
-- **ElevenLabs API Key**: kullanıcının https://elevenlabs.io üzerinden bir key alıp Lovable'a girmesi gerekecek. Onay sonrası `add_secret` ile isteyeceğim.
-- **Dosya boyutu sınırı**: ilk versiyonda 50MB üst sınır (Supabase Storage standart upload sınırı). Daha büyükler için resumable upload Faz 2'de.
-- **Süre sınırı**: ilk versiyonda 5 dakika video önerilir (transkripsiyon + çeviri + dublaj toplam ~10 dk işlem süresi).
+Onayını ver, hangi sağlayıcıyla gideceğimizi söyle, plana son şeklini verip uygulamaya geçeyim.
 
-### Uygulama Sırası
-1. Migration: `premium` role + `videos` + `video_translations` tabloları + `clinic-videos` bucket + RLS + realtime
-2. ElevenLabs API key talep et (sadece dublaj çalışsın diye gerekli)
-3. Edge functions deploy
-4. UI sayfası + sidebar link + premium gate
-5. Hasta paneline "Video Gönder" butonu
-6. i18n çevirileri
-
-Onaylarsan başlıyorum. Tek soru: **ElevenLabs hesabın hazır mı, yoksa hesap açma adımlarını da sana ileteyim mi?**
+<lov-actions>
+<lov-suggestion message="Premium+ katmanı olarak ekle. Ses klonlama + lip-sync için Sync.so kullan (en doğal sonuç, makul fiyat). Settings'e 'Ses Klonum' sekmesi ekle, Video Studio'da yeni mod seçenekleri olsun.">Premium+ olarak ekle (Sync.so ile)</lov-suggestion>
+<lov-suggestion message="Premium+ katmanı olarak ekle ama HeyGen API kullan — kurumsal kalite ve marka güveni daha önemli, fiyat farkını üstleniriz.">Premium+ olarak ekle (HeyGen ile)</lov-suggestion>
+<lov-suggestion message="Standart Premium pakete dahil et — fiyatlama karmaşıklığı istemiyorum, herkese tam paket. Sync.so ile entegre et.">Standart pakete dahil et</lov-suggestion>
+<lov-suggestion message="Şimdilik mevcut TTS dublajla devam edelim, lip-sync özelliğini ileride 10 gerçek müşteri talebi geldikten sonra ekleriz.">Şimdilik ekleme, beklesin</lov-suggestion>
+</lov-actions>
