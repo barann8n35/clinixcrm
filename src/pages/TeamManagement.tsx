@@ -26,6 +26,9 @@ const ROLE_LABELS: Record<string, { label: string; color: string; icon: typeof S
   pending: { label: "Onay Bekliyor", color: "bg-destructive/10 text-destructive border-destructive/20", icon: Clock },
 };
 
+const PRIMARY_ADMIN_EMAIL = "baran@clinix.com";
+const PREMIUM_ROLE_OPTIONS = new Set(["premium", "premium_plus"]);
+
 const TeamManagement = () => {
   const { isAdmin, loading: roleLoading } = useRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -54,12 +57,50 @@ const TeamManagement = () => {
 
   useEffect(() => { fetchMembers(); }, []);
 
-  async function handleRoleChange(userId: string, newRole: string) {
-    setUpdating(userId);
-    await supabase.from("user_roles").delete().eq("user_id", userId);
-    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any });
+  async function handleRoleChange(member: TeamMember, newRole: string) {
+    const normalizedEmail = member.email.trim().toLowerCase();
+    const isPrimaryAdmin = normalizedEmail === PRIMARY_ADMIN_EMAIL;
+    const isCurrentAdmin = member.role === "admin";
+    const isPremiumTarget = PREMIUM_ROLE_OPTIONS.has(newRole);
+
+    if (isPrimaryAdmin && newRole !== "admin") {
+      toast.error("Ana admin hesabı her zaman admin kalmalıdır.");
+      return;
+    }
+
+    if (isCurrentAdmin && isPremiumTarget) {
+      toast.info("Admin rolü zaten tüm Premium+ özelliklerini açar.");
+      return;
+    }
+
+    setUpdating(member.user_id);
+
+    const { error: deleteError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", member.user_id);
+
+    if (deleteError) {
+      setUpdating(null);
+      toast.error("Eski rol kaldırılamadı: " + deleteError.message);
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from("user_roles")
+      .insert({ user_id: member.user_id, role: newRole as any });
+
+    if (insertError) {
+      await supabase
+        .from("user_roles")
+        .insert({ user_id: member.user_id, role: member.role as any });
+
+      setUpdating(null);
+      toast.error("Rol güncellenemedi: " + insertError.message);
+      return;
+    }
+
     setUpdating(null);
-    if (error) { toast.error("Rol güncellenemedi: " + error.message); return; }
     toast.success("Rol güncellendi!");
     fetchMembers();
   }
@@ -117,12 +158,12 @@ const TeamManagement = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" className="rounded-lg gap-1.5 bg-success hover:bg-success/90 text-white" disabled={updating === m.user_id}
-                    onClick={() => handleRoleChange(m.user_id, "staff")}>
+                    onClick={() => handleRoleChange(m, "staff")}>
                     {updating === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
                     Onayla
                   </Button>
                   <Button size="sm" variant="destructive" className="rounded-lg gap-1.5" disabled={updating === m.user_id}
-                    onClick={() => handleRoleChange(m.user_id, "pending")}>
+                    onClick={() => handleRoleChange(m, "pending")}>
                     <UserX className="w-3.5 h-3.5" /> Reddet
                   </Button>
                 </div>
@@ -152,6 +193,10 @@ const TeamManagement = () => {
           <div className="divide-y divide-border/40">
             {activeMembers.map((m) => {
               const roleInfo = ROLE_LABELS[m.role] || ROLE_LABELS.pending;
+              const isPrimaryAdmin = m.email.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL;
+              const isAdminMember = m.role === "admin";
+              const lockRoleChange = isPrimaryAdmin && isAdminMember;
+
               return (
                 <div key={m.user_id} className="flex items-center gap-4 px-5 py-4 hover:bg-accent/30 transition-colors">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -161,8 +206,13 @@ const TeamManagement = () => {
                     <p className="text-sm font-semibold text-foreground truncate">{m.full_name || m.email || "—"}</p>
                     <p className="text-xs text-muted-foreground truncate">{m.email}{m.username ? ` · @${m.username}` : ""}</p>
                   </div>
-                  <Badge variant="outline" className={`text-[10px] border ${roleInfo.color}`}>{roleInfo.label}</Badge>
-                  <Select value={m.role} onValueChange={(v) => handleRoleChange(m.user_id, v)}>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className={`text-[10px] border ${roleInfo.color}`}>{roleInfo.label}</Badge>
+                    {isAdminMember && (
+                      <span className="text-[10px] font-medium text-muted-foreground">Tüm özellikler açık</span>
+                    )}
+                  </div>
+                  <Select value={m.role} onValueChange={(v) => handleRoleChange(m, v)} disabled={lockRoleChange || updating === m.user_id}>
                     <SelectTrigger className="w-[120px] h-8 text-xs rounded-lg">
                       <SelectValue />
                     </SelectTrigger>
@@ -170,11 +220,14 @@ const TeamManagement = () => {
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="doctor">Doktor</SelectItem>
                       <SelectItem value="staff">Personel</SelectItem>
-                      <SelectItem value="premium">Premium</SelectItem>
-                      <SelectItem value="premium_plus">Premium+</SelectItem>
+                      {!isAdminMember && <SelectItem value="premium">Premium</SelectItem>}
+                      {!isAdminMember && <SelectItem value="premium_plus">Premium+</SelectItem>}
                       <SelectItem value="pending">Beklemede</SelectItem>
                     </SelectContent>
                   </Select>
+                  {lockRoleChange && (
+                    <span className="text-[10px] font-medium text-muted-foreground shrink-0">Ana admin</span>
+                  )}
                 </div>
               );
             })}
