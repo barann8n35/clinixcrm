@@ -21,6 +21,7 @@ const ROLE_LABELS: Record<string, { label: string; color: string; icon: typeof S
   admin: { label: "Admin", color: "bg-primary/10 text-primary border-primary/20", icon: ShieldCheck },
   doctor: { label: "Doktor", color: "bg-success/10 text-success border-success/20", icon: UserCheck },
   staff: { label: "Personel", color: "bg-warning/10 text-warning border-warning/20", icon: Users },
+  premium: { label: "Premium", color: "bg-primary/10 text-primary border-primary/30", icon: ShieldCheck },
   pending: { label: "Onay Bekliyor", color: "bg-destructive/10 text-destructive border-destructive/20", icon: Clock },
 };
 
@@ -169,6 +170,7 @@ const TeamManagement = () => {
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="doctor">Doktor</SelectItem>
                       <SelectItem value="staff">Personel</SelectItem>
+                      <SelectItem value="premium">Premium</SelectItem>
                       <SelectItem value="pending">Beklemede</SelectItem>
                     </SelectContent>
                   </Select>

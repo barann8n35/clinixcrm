@@ -14,7 +14,8 @@
     "campaigns": "Campaigns",
     "calendar": "Calendar",
     "inventory": "Inventory",
-    "team": "Team Management"
+    "team": "Team Management",
+    "videoStudio": "Video Studio"
   },
   "dashboard": {
     "title": "Dashboard",

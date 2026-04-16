@@ -22,6 +22,7 @@ import Campaigns from "./pages/Campaigns";
 import CalendarPage from "./pages/CalendarPage";
 import Inventory from "./pages/Inventory";
 import TeamManagement from "./pages/TeamManagement";
+import VideoStudio from "./pages/VideoStudio";
 import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="settings" element={<Settings />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="team" element={<TeamManagement />} />
+              <Route path="video-studio" element={<VideoStudio />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
