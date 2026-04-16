@@ -428,6 +428,101 @@ export type Database = {
         }
         Relationships: []
       }
+      video_translations: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          mode: string
+          output_url: string | null
+          status: string
+          subtitle_url: string | null
+          target_language: string
+          target_language_label: string
+          transcript_text: string | null
+          translated_text: string | null
+          video_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          mode?: string
+          output_url?: string | null
+          status?: string
+          subtitle_url?: string | null
+          target_language: string
+          target_language_label: string
+          transcript_text?: string | null
+          translated_text?: string | null
+          video_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          mode?: string
+          output_url?: string | null
+          status?: string
+          subtitle_url?: string | null
+          target_language?: string
+          target_language_label?: string
+          transcript_text?: string | null
+          translated_text?: string | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_translations_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          file_size: number | null
+          id: string
+          original_url: string
+          source_language: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_size?: number | null
+          id?: string
+          original_url: string
+          source_language?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_size?: number | null
+          id?: string
+          original_url?: string
+          source_language?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -451,7 +546,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "staff" | "doctor" | "pending"
+      app_role: "admin" | "staff" | "doctor" | "pending" | "premium"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -579,7 +674,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff", "doctor", "pending"],
+      app_role: ["admin", "staff", "doctor", "pending", "premium"],
     },
   },
 } as const
