@@ -329,16 +329,32 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin px-4 md:px-8 py-4 md:py-5 space-y-3 md:space-y-4">
-        <div className="flex items-center gap-3 py-2">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-[11px] text-muted-foreground font-medium">{t("inbox.today")}</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
         <AnimatePresence initial={false}>
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} t={t} patientName={patient?.name} />
-          ))}
+          {messages.map((msg, idx) => {
+            const currentDate = new Date(msg.created_at);
+            const prevMsg = idx > 0 ? messages[idx - 1] : null;
+            const prevDate = prevMsg ? new Date(prevMsg.created_at) : null;
+            const showDateSeparator =
+              !prevDate ||
+              currentDate.getFullYear() !== prevDate.getFullYear() ||
+              currentDate.getMonth() !== prevDate.getMonth() ||
+              currentDate.getDate() !== prevDate.getDate();
+
+            return (
+              <div key={msg.id}>
+                {showDateSeparator && (
+                  <div className="flex items-center gap-3 py-2 my-2">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[11px] text-muted-foreground font-semibold px-2.5 py-1 rounded-full bg-muted/60 border border-border">
+                      {formatDateLabel(currentDate, t)}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
+                <MessageBubble msg={msg} t={t} patientName={patient?.name} />
+              </div>
+            );
+          })}
         </AnimatePresence>
 
         {showTyping && (
