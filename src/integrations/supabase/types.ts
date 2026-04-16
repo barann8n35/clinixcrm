@@ -256,8 +256,10 @@ export type Database = {
           created_at: string
           doctor: string | null
           event_id: string | null
+          facebook_id: string | null
           gender: string | null
           id: string
+          instagram_id: string | null
           internal_notes: string | null
           is_ai_active: boolean | null
           location: string | null
@@ -272,6 +274,7 @@ export type Database = {
           surname: string | null
           tags: Json | null
           updated_at: string
+          web_session_id: string | null
         }
         Insert: {
           age?: string | null
@@ -280,8 +283,10 @@ export type Database = {
           created_at?: string
           doctor?: string | null
           event_id?: string | null
+          facebook_id?: string | null
           gender?: string | null
           id: string
+          instagram_id?: string | null
           internal_notes?: string | null
           is_ai_active?: boolean | null
           location?: string | null
@@ -296,6 +301,7 @@ export type Database = {
           surname?: string | null
           tags?: Json | null
           updated_at?: string
+          web_session_id?: string | null
         }
         Update: {
           age?: string | null
@@ -304,8 +310,10 @@ export type Database = {
           created_at?: string
           doctor?: string | null
           event_id?: string | null
+          facebook_id?: string | null
           gender?: string | null
           id?: string
+          instagram_id?: string | null
           internal_notes?: string | null
           is_ai_active?: boolean | null
           location?: string | null
@@ -320,6 +328,7 @@ export type Database = {
           surname?: string | null
           tags?: Json | null
           updated_at?: string
+          web_session_id?: string | null
         }
         Relationships: []
       }
@@ -424,6 +433,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      handle_omnichannel_message: {
+        Args: {
+          p_external_id: string
+          p_message: string
+          p_name: string
+          p_platform: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
