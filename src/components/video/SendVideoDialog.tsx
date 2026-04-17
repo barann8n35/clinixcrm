@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Send, Video as VideoIcon, Languages, Subtitles, Mic, Loader2, Film } from "lucide-react";
 import { toast } from "sonner";
-import { burnSubtitlesToVideo } from "@/lib/burnSubtitles";
+import { burnSubtitlesToVideoCanvas } from "@/lib/canvasBurnSubtitles";
 
 interface Props {
   open: boolean;
