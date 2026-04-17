@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { burnSubtitlesToVideo, downloadBlob } from "@/lib/burnSubtitles";
+import { burnSubtitlesToVideo, muxAudioToVideo, downloadBlob } from "@/lib/burnSubtitles";
 
 interface Video { id: string; title: string; original_url: string; source_language: string; duration_seconds: number | null; file_size: number | null; status: string; created_at: string; }
 type TranslationMode = "subtitle" | "dub" | "clone_dub" | "lipsync";
@@ -205,11 +205,32 @@ const VideoStudio = () => {
         if (p.ratio !== undefined) setBurnProgress(Math.round(p.ratio * 100));
       });
       const safeTitle = videoTitle.replace(/[^\w\-]+/g, "_").slice(0, 40);
-      downloadBlob(blob, `${safeTitle}_${t.target_language}.mp4`);
-      toast.success("Altyazılı MP4 indirildi", { id: tId });
+      downloadBlob(blob, `${safeTitle}_${t.target_language}_altyazili.mp4`);
+      toast.success("Altyazılı MP4 indirildi (yüksek kalite)", { id: tId });
     } catch (e: any) {
       console.error(e);
       toast.error("Altyazı gömme başarısız: " + (e.message || e), { id: tId });
+    } finally {
+      setBurning(null);
+      setBurnProgress(0);
+    }
+  };
+
+  const downloadDubbedVideo = async (t: VideoTranslation, videoUrl: string, videoTitle: string) => {
+    if (!t.output_url) { toast.error("Dublaj sesi bulunamadı"); return; }
+    setBurning(t.id);
+    setBurnProgress(0);
+    const tId = toast.loading("Dublaj videoya birleştiriliyor... (1-2 dk)");
+    try {
+      const blob = await muxAudioToVideo(videoUrl, t.output_url, (p) => {
+        if (p.ratio !== undefined) setBurnProgress(Math.round(p.ratio * 100));
+      });
+      const safeTitle = videoTitle.replace(/[^\w\-]+/g, "_").slice(0, 40);
+      downloadBlob(blob, `${safeTitle}_${t.target_language}_dublaj.mp4`);
+      toast.success("Dublajlı MP4 indirildi", { id: tId });
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Dublaj birleştirme başarısız: " + (e.message || e), { id: tId });
     } finally {
       setBurning(null);
       setBurnProgress(0);
@@ -346,9 +367,21 @@ const VideoStudio = () => {
                                 </a>
                               )}
                               {t.output_url && (t.mode === "dub" || t.mode === "clone_dub") && (
-                                <a href={t.output_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Sesi indir">
-                                  <FileAudio className="w-3 h-3 text-success" />
-                                </a>
+                                <>
+                                  <button
+                                    onClick={() => downloadDubbedVideo(t, v.original_url, v.title)}
+                                    disabled={burning === t.id}
+                                    className="p-0.5 hover:bg-muted rounded disabled:opacity-50"
+                                    title="Dublajlı MP4 indir (videoya gömülü)"
+                                  >
+                                    {burning === t.id
+                                      ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                                      : <Film className="w-3 h-3 text-success" />}
+                                  </button>
+                                  <a href={t.output_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Sadece sesi indir (mp3)">
+                                    <FileAudio className="w-3 h-3 text-muted-foreground" />
+                                  </a>
+                                </>
                               )}
                               {(t.lipsync_url || t.output_url) && (
                                 <button onClick={() => copyLink(t.lipsync_url || t.output_url!)} className="p-0.5 hover:bg-muted rounded" title="Link kopyala">
