@@ -67,6 +67,8 @@ const VideoStudio = () => {
   const [mode, setMode] = useState<TranslationMode>("subtitle");
   const [selectedVoiceCloneId, setSelectedVoiceCloneId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [burning, setBurning] = useState<string | null>(null); // translation id being burned
+  const [burnProgress, setBurnProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
