@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Upload, Globe, Subtitles, Mic, Loader2, Download, Copy, Check,
-  Trash2, Plus, X, Sparkles, AlertCircle, Play, FileAudio, Languages, Wand2, UserCircle
+  Trash2, Plus, X, Sparkles, AlertCircle, Play, FileAudio, Languages, Wand2, UserCircle, Film
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { burnSubtitlesToVideo, downloadBlob } from "@/lib/burnSubtitles";
 
 interface Video { id: string; title: string; original_url: string; source_language: string; duration_seconds: number | null; file_size: number | null; status: string; created_at: string; }
 type TranslationMode = "subtitle" | "dub" | "clone_dub" | "lipsync";
@@ -66,6 +67,8 @@ const VideoStudio = () => {
   const [mode, setMode] = useState<TranslationMode>("subtitle");
   const [selectedVoiceCloneId, setSelectedVoiceCloneId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [burning, setBurning] = useState<string | null>(null); // translation id being burned
+  const [burnProgress, setBurnProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
@@ -192,6 +195,27 @@ const VideoStudio = () => {
     toast.success("Link kopyalandı");
   };
 
+  const downloadBurnedVideo = async (t: VideoTranslation, videoUrl: string, videoTitle: string) => {
+    if (!t.subtitle_url) { toast.error("Altyazı dosyası bulunamadı"); return; }
+    setBurning(t.id);
+    setBurnProgress(0);
+    const tId = toast.loading("Altyazı videoya gömülüyor... (1-3 dk sürebilir)");
+    try {
+      const blob = await burnSubtitlesToVideo(videoUrl, t.subtitle_url, (p) => {
+        if (p.ratio !== undefined) setBurnProgress(Math.round(p.ratio * 100));
+      });
+      const safeTitle = videoTitle.replace(/[^\w\-]+/g, "_").slice(0, 40);
+      downloadBlob(blob, `${safeTitle}_${t.target_language}.mp4`);
+      toast.success("Altyazılı MP4 indirildi", { id: tId });
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Altyazı gömme başarısız: " + (e.message || e), { id: tId });
+    } finally {
+      setBurning(null);
+      setBurnProgress(0);
+    }
+  };
+
   if (roleLoading) {
     return <div className="p-8"><Skeleton className="h-64 w-full rounded-2xl" /></div>;
   }
@@ -226,6 +250,21 @@ const VideoStudio = () => {
             <span className="text-sm font-semibold text-foreground">Video yükleniyor...</span>
           </div>
           <Progress value={uploadProgress} />
+        </motion.div>
+      )}
+
+      {burning && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-2xl p-4 border border-primary/30 shadow-card">
+          <div className="flex items-center gap-3 mb-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm font-semibold text-foreground">
+              Altyazı videoya gömülüyor — tarayıcıda işleniyor, sayfayı kapatmayın
+            </span>
+          </div>
+          <Progress value={burnProgress} />
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            İlk seferde FFmpeg motoru indirilir (~30 MB). Sonraki seferler çok daha hızlıdır.
+          </p>
         </motion.div>
       )}
 
@@ -284,9 +323,21 @@ const VideoStudio = () => {
                           </Badge>
                           {t.status === "completed" ? (
                             <div className="flex items-center gap-0.5">
+                              {t.subtitle_url && t.mode === "subtitle" && (
+                                <button
+                                  onClick={() => downloadBurnedVideo(t, v.original_url, v.title)}
+                                  disabled={burning === t.id}
+                                  className="p-0.5 hover:bg-muted rounded disabled:opacity-50"
+                                  title="Altyazılı MP4 indir (tarayıcıda işlenir)"
+                                >
+                                  {burning === t.id
+                                    ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                                    : <Film className="w-3 h-3 text-success" />}
+                                </button>
+                              )}
                               {t.subtitle_url && (
                                 <a href={t.subtitle_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="SRT indir">
-                                  <Download className="w-3 h-3 text-success" />
+                                  <Download className="w-3 h-3 text-muted-foreground" />
                                 </a>
                               )}
                               {t.lipsync_url && (
