@@ -1,0 +1,2 @@
+ALTER TABLE public.video_translations DROP CONSTRAINT IF EXISTS video_translations_mode_check;
+ALTER TABLE public.video_translations ADD CONSTRAINT video_translations_mode_check CHECK (mode IN ('subtitle', 'dub', 'clone_dub', 'lipsync'));
