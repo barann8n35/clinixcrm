@@ -253,6 +253,21 @@ const VideoStudio = () => {
         </motion.div>
       )}
 
+      {burning && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-2xl p-4 border border-primary/30 shadow-card">
+          <div className="flex items-center gap-3 mb-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm font-semibold text-foreground">
+              Altyazı videoya gömülüyor — tarayıcıda işleniyor, sayfayı kapatmayın
+            </span>
+          </div>
+          <Progress value={burnProgress} />
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            İlk seferde FFmpeg motoru indirilir (~30 MB). Sonraki seferler çok daha hızlıdır.
+          </p>
+        </motion.div>
+      )}
+
       {/* Empty state */}
       {!loading && videos.length === 0 && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
