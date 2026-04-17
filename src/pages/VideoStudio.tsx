@@ -195,6 +195,27 @@ const VideoStudio = () => {
     toast.success("Link kopyalandı");
   };
 
+  const downloadBurnedVideo = async (t: VideoTranslation, videoUrl: string, videoTitle: string) => {
+    if (!t.subtitle_url) { toast.error("Altyazı dosyası bulunamadı"); return; }
+    setBurning(t.id);
+    setBurnProgress(0);
+    const tId = toast.loading("Altyazı videoya gömülüyor... (1-3 dk sürebilir)");
+    try {
+      const blob = await burnSubtitlesToVideo(videoUrl, t.subtitle_url, (p) => {
+        if (p.ratio !== undefined) setBurnProgress(Math.round(p.ratio * 100));
+      });
+      const safeTitle = videoTitle.replace(/[^\w\-]+/g, "_").slice(0, 40);
+      downloadBlob(blob, `${safeTitle}_${t.target_language}.mp4`);
+      toast.success("Altyazılı MP4 indirildi", { id: tId });
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Altyazı gömme başarısız: " + (e.message || e), { id: tId });
+    } finally {
+      setBurning(null);
+      setBurnProgress(0);
+    }
+  };
+
   if (roleLoading) {
     return <div className="p-8"><Skeleton className="h-64 w-full rounded-2xl" /></div>;
   }
