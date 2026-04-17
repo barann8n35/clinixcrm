@@ -343,45 +343,54 @@ const VideoStudio = () => {
                              t.mode === "dub" ? "Dublaj" : "Altyazı"}
                           </Badge>
                           {t.status === "completed" ? (
-                            <div className="flex items-center gap-0.5">
-                              {t.subtitle_url && t.mode === "subtitle" && (
-                                <button
-                                  onClick={() => downloadBurnedVideo(t, v.original_url, v.title)}
-                                  disabled={burning === t.id}
-                                  className="p-0.5 hover:bg-muted rounded disabled:opacity-50"
-                                  title="Altyazılı MP4 indir (tarayıcıda işlenir)"
-                                >
-                                  {burning === t.id
-                                    ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                                    : <Film className="w-3 h-3 text-success" />}
-                                </button>
+                            <div className="flex items-center gap-1">
+                              {/* Subtitle mode: prominent "MP4 indir" + small SRT link */}
+                              {t.mode === "subtitle" && t.subtitle_url && (
+                                <>
+                                  <button
+                                    onClick={() => downloadBurnedVideo(t, v.original_url, v.title)}
+                                    disabled={burning === t.id}
+                                    className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-[10px] font-semibold hover:opacity-90 disabled:opacity-50 transition"
+                                    title="Altyazılı MP4 olarak indir"
+                                  >
+                                    {burning === t.id
+                                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                                      : <Film className="w-3 h-3" />}
+                                    MP4
+                                  </button>
+                                  <a href={t.subtitle_url} target="_blank" rel="noopener"
+                                    className="p-0.5 hover:bg-muted rounded" title="Sadece SRT dosyası (ileri seviye)">
+                                    <Download className="w-3 h-3 text-muted-foreground" />
+                                  </a>
+                                </>
                               )}
-                              {t.subtitle_url && (
-                                <a href={t.subtitle_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="SRT indir">
-                                  <Download className="w-3 h-3 text-muted-foreground" />
-                                </a>
-                              )}
-                              {t.lipsync_url && (
-                                <a href={t.lipsync_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Lip-sync video">
-                                  <Video className="w-3 h-3 text-success" />
-                                </a>
-                              )}
-                              {t.output_url && (t.mode === "dub" || t.mode === "clone_dub") && (
+                              {/* Dub modes: prominent "MP4 indir" + small mp3 link */}
+                              {(t.mode === "dub" || t.mode === "clone_dub") && t.output_url && (
                                 <>
                                   <button
                                     onClick={() => downloadDubbedVideo(t, v.original_url, v.title)}
                                     disabled={burning === t.id}
-                                    className="p-0.5 hover:bg-muted rounded disabled:opacity-50"
-                                    title="Dublajlı MP4 indir (videoya gömülü)"
+                                    className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-[10px] font-semibold hover:opacity-90 disabled:opacity-50 transition"
+                                    title="Dublajlı MP4 olarak indir"
                                   >
                                     {burning === t.id
-                                      ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                                      : <Film className="w-3 h-3 text-success" />}
+                                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                                      : <Film className="w-3 h-3" />}
+                                    MP4
                                   </button>
-                                  <a href={t.output_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Sadece sesi indir (mp3)">
+                                  <a href={t.output_url} target="_blank" rel="noopener"
+                                    className="p-0.5 hover:bg-muted rounded" title="Sadece ses (MP3)">
                                     <FileAudio className="w-3 h-3 text-muted-foreground" />
                                   </a>
                                 </>
+                              )}
+                              {/* Lipsync: direct video */}
+                              {t.lipsync_url && (
+                                <a href={t.lipsync_url} target="_blank" rel="noopener"
+                                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-[10px] font-semibold hover:opacity-90"
+                                  title="Lip-sync video indir">
+                                  <Video className="w-3 h-3" /> MP4
+                                </a>
                               )}
                               {(t.lipsync_url || t.output_url) && (
                                 <button onClick={() => copyLink(t.lipsync_url || t.output_url!)} className="p-0.5 hover:bg-muted rounded" title="Link kopyala">
