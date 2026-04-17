@@ -58,26 +58,23 @@ export function SendVideoDialog({ open, onOpenChange, patientId, patientName }: 
     if ((t.mode === "dub" || t.mode === "clone_dub") && t.output_url) return t.output_url;
     if (t.mode === "subtitle") {
       if (!t.subtitle_url) throw new Error("Altyazı dosyası yok");
-      // Burn-in once, cache to storage at burned/<translationId>.mp4
-      const path = `${t.videos.user_id}/burned/${t.id}.mp4`;
-      // Try existing first
+      // Burn-in once, cache to storage at burned/<translationId>.webm
+      const path = `${t.videos.user_id}/burned/${t.id}.webm`;
       const { data: existing } = await supabase.storage
         .from("clinic-videos")
         .createSignedUrl(path, 60 * 60 * 24 * 365);
       if (existing?.signedUrl) {
-        // Verify it actually exists by HEAD-ing the URL
         try {
           const head = await fetch(existing.signedUrl, { method: "HEAD" });
           if (head.ok) return existing.signedUrl;
-        } catch { /* fallthrough to regenerate */ }
+        } catch { /* regenerate */ }
       }
-      // Burn now
-      const blob = await burnSubtitlesToVideo(t.videos.original_url, t.subtitle_url, (p) => {
+      const blob = await burnSubtitlesToVideoCanvas(t.videos.original_url, t.subtitle_url, (p) => {
         if (p.ratio !== undefined) setBurnProgress(Math.round(p.ratio * 100));
       });
       const { error: upErr } = await supabase.storage
         .from("clinic-videos")
-        .upload(path, blob, { contentType: "video/mp4", upsert: true });
+        .upload(path, blob, { contentType: "video/webm", upsert: true });
       if (upErr) throw new Error("Yükleme: " + upErr.message);
       const { data: signed } = await supabase.storage
         .from("clinic-videos")
