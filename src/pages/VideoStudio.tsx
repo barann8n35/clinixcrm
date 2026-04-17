@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { burnSubtitlesToVideo, downloadBlob } from "@/lib/burnSubtitles";
+import { burnSubtitlesToVideo, muxAudioToVideo, downloadBlob } from "@/lib/burnSubtitles";
 
 interface Video { id: string; title: string; original_url: string; source_language: string; duration_seconds: number | null; file_size: number | null; status: string; created_at: string; }
 type TranslationMode = "subtitle" | "dub" | "clone_dub" | "lipsync";
