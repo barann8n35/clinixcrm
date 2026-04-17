@@ -205,11 +205,32 @@ const VideoStudio = () => {
         if (p.ratio !== undefined) setBurnProgress(Math.round(p.ratio * 100));
       });
       const safeTitle = videoTitle.replace(/[^\w\-]+/g, "_").slice(0, 40);
-      downloadBlob(blob, `${safeTitle}_${t.target_language}.mp4`);
-      toast.success("Altyazılı MP4 indirildi", { id: tId });
+      downloadBlob(blob, `${safeTitle}_${t.target_language}_altyazili.mp4`);
+      toast.success("Altyazılı MP4 indirildi (yüksek kalite)", { id: tId });
     } catch (e: any) {
       console.error(e);
       toast.error("Altyazı gömme başarısız: " + (e.message || e), { id: tId });
+    } finally {
+      setBurning(null);
+      setBurnProgress(0);
+    }
+  };
+
+  const downloadDubbedVideo = async (t: VideoTranslation, videoUrl: string, videoTitle: string) => {
+    if (!t.output_url) { toast.error("Dublaj sesi bulunamadı"); return; }
+    setBurning(t.id);
+    setBurnProgress(0);
+    const tId = toast.loading("Dublaj videoya birleştiriliyor... (1-2 dk)");
+    try {
+      const blob = await muxAudioToVideo(videoUrl, t.output_url, (p) => {
+        if (p.ratio !== undefined) setBurnProgress(Math.round(p.ratio * 100));
+      });
+      const safeTitle = videoTitle.replace(/[^\w\-]+/g, "_").slice(0, 40);
+      downloadBlob(blob, `${safeTitle}_${t.target_language}_dublaj.mp4`);
+      toast.success("Dublajlı MP4 indirildi", { id: tId });
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Dublaj birleştirme başarısız: " + (e.message || e), { id: tId });
     } finally {
       setBurning(null);
       setBurnProgress(0);
