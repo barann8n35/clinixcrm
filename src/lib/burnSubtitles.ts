@@ -1,6 +1,6 @@
-// Client-side subtitle burn-in using @ffmpeg/ffmpeg (wasm).
-// Vite + module workers require the ESM ffmpeg core. Prefer same-origin assets
-// under /public/ffmpeg and only fall back to CDN blobs if local files are unavailable.
+// Client-side video processing using @ffmpeg/ffmpeg (wasm).
+// - burnSubtitlesToVideo: hardcodes SRT into video (high quality, CRF 18)
+// - muxAudioToVideo: replaces audio track with dubbed audio (no re-encode of video)
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 
@@ -47,7 +47,11 @@ async function getFFmpeg(onLog?: (m: string) => void): Promise<FFmpeg> {
   if (loadPromise) return loadPromise;
   loadPromise = (async () => {
     const ff = new FFmpeg();
-    if (onLog) ff.on("log", ({ message }) => onLog(message));
+    ff.on("log", ({ message }) => {
+      if (onLog) onLog(message);
+      // Always log to console for debugging
+      console.log("[ffmpeg]", message);
+    });
     let lastErr: unknown = null;
     for (const source of CORE_SOURCES) {
       try {
@@ -61,7 +65,7 @@ async function getFFmpeg(onLog?: (m: string) => void): Promise<FFmpeg> {
     }
     loadPromise = null;
     throw new Error(
-      `FFmpeg motoru yüklenemedi. Tarayıcı bu cihazda ffmpeg çekirdeğini başlatamadı. Detay: ${(lastErr as Error)?.message || lastErr}`
+      `FFmpeg motoru yüklenemedi. Detay: ${(lastErr as Error)?.message || lastErr}`
     );
   })();
   return loadPromise;
@@ -73,9 +77,20 @@ export interface BurnProgress {
   message?: string;
 }
 
+// Strip UTF-8 BOM and normalize line endings — ffmpeg's libass is picky.
+async function fetchAndCleanSrt(srtUrl: string): Promise<Uint8Array> {
+  const res = await fetch(srtUrl);
+  if (!res.ok) throw new Error(`SRT indirilemedi: ${res.status}`);
+  let text = await res.text();
+  // Remove BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  // Normalize CRLF/CR -> LF
+  text = text.replace(/\r\n?/g, "\n").trim() + "\n";
+  return new TextEncoder().encode(text);
+}
+
 /**
- * Burns the SRT subtitle into the video and returns a Blob (MP4).
- * Uses libx264 + AAC re-encode (required for hardcoded subtitles).
+ * Burns SRT subtitle into the video. High quality (CRF 18), audio re-encoded to AAC.
  */
 export async function burnSubtitlesToVideo(
   videoUrl: string,
@@ -88,48 +103,110 @@ export async function burnSubtitlesToVideo(
   onProgress?.({ stage: "downloading", message: "Video & altyazı indiriliyor..." });
   const [videoData, srtData] = await Promise.all([
     fetchFile(videoUrl),
-    fetchFile(srtUrl),
+    fetchAndCleanSrt(srtUrl),
   ]);
 
   await ff.writeFile("input.mp4", videoData);
   await ff.writeFile("subs.srt", srtData);
 
-  onProgress?.({ stage: "encoding", message: "Altyazı videoya gömülüyor (re-encode)..." });
+  onProgress?.({ stage: "encoding", message: "Altyazı videoya gömülüyor (yüksek kalite)..." });
 
   const progressHandler = ({ progress }: { progress: number }) => {
-    onProgress?.({ stage: "encoding", ratio: progress });
+    onProgress?.({ stage: "encoding", ratio: Math.min(Math.max(progress, 0), 1) });
   };
   ff.on("progress", progressHandler);
 
-  // Hardcode subtitles. Force_style for readability over any background.
-  const filter = "subtitles=subs.srt:force_style='FontName=Arial,FontSize=20,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&,BorderStyle=1,Outline=2,Shadow=1,MarginV=24'";
-  await ff.exec([
-    "-i", "input.mp4",
-    "-vf", filter,
-    "-c:v", "libx264",
-    "-preset", "veryfast",
-    "-crf", "23",
-    "-c:a", "aac",
-    "-b:a", "128k",
-    "-movflags", "+faststart",
-    "output.mp4",
-  ]);
+  // Use ASS-style subtitle filter with explicit styling. Single quotes are critical.
+  // FontName=sans uses the default fontconfig fallback bundled with ffmpeg-core.
+  const filter = `subtitles=subs.srt:force_style='Fontname=sans,Fontsize=22,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=1,Outline=2,Shadow=1,MarginV=30,Alignment=2'`;
 
-  ff.off("progress", progressHandler);
+  try {
+    await ff.exec([
+      "-i", "input.mp4",
+      "-vf", filter,
+      "-c:v", "libx264",
+      "-preset", "medium",
+      "-crf", "18",            // visually lossless
+      "-pix_fmt", "yuv420p",   // broad compatibility
+      "-c:a", "aac",
+      "-b:a", "192k",
+      "-movflags", "+faststart",
+      "output.mp4",
+    ]);
+  } finally {
+    ff.off("progress", progressHandler);
+  }
 
   const data = await ff.readFile("output.mp4");
-  // Cleanup virtual fs
   try {
     await ff.deleteFile("input.mp4");
     await ff.deleteFile("subs.srt");
     await ff.deleteFile("output.mp4");
-  } catch {
-    // ignore cleanup errors
-  }
+  } catch { /* ignore */ }
 
   onProgress?.({ stage: "done" });
   const u8 = data as Uint8Array;
-  // Copy into a fresh ArrayBuffer to satisfy strict BlobPart typing across TS lib targets.
+  const ab = new ArrayBuffer(u8.byteLength);
+  new Uint8Array(ab).set(u8);
+  return new Blob([ab], { type: "video/mp4" });
+}
+
+/**
+ * Replaces the audio track of a video with a new audio file (e.g. TTS dub).
+ * Video stream is copied (no quality loss, fast). Audio re-encoded to AAC.
+ * If the dub is shorter/longer than the video, output matches the shorter stream.
+ */
+export async function muxAudioToVideo(
+  videoUrl: string,
+  audioUrl: string,
+  onProgress?: (p: BurnProgress) => void
+): Promise<Blob> {
+  onProgress?.({ stage: "loading", message: "FFmpeg yükleniyor..." });
+  const ff = await getFFmpeg();
+
+  onProgress?.({ stage: "downloading", message: "Video & ses indiriliyor..." });
+  const [videoData, audioData] = await Promise.all([
+    fetchFile(videoUrl),
+    fetchFile(audioUrl),
+  ]);
+
+  await ff.writeFile("input.mp4", videoData);
+  await ff.writeFile("dub.mp3", audioData);
+
+  onProgress?.({ stage: "encoding", message: "Dublaj videoya birleştiriliyor..." });
+
+  const progressHandler = ({ progress }: { progress: number }) => {
+    onProgress?.({ stage: "encoding", ratio: Math.min(Math.max(progress, 0), 1) });
+  };
+  ff.on("progress", progressHandler);
+
+  try {
+    // -map 0:v copies video, -map 1:a uses new audio. -c:v copy = no quality loss.
+    await ff.exec([
+      "-i", "input.mp4",
+      "-i", "dub.mp3",
+      "-map", "0:v:0",
+      "-map", "1:a:0",
+      "-c:v", "copy",
+      "-c:a", "aac",
+      "-b:a", "192k",
+      "-shortest",
+      "-movflags", "+faststart",
+      "output.mp4",
+    ]);
+  } finally {
+    ff.off("progress", progressHandler);
+  }
+
+  const data = await ff.readFile("output.mp4");
+  try {
+    await ff.deleteFile("input.mp4");
+    await ff.deleteFile("dub.mp3");
+    await ff.deleteFile("output.mp4");
+  } catch { /* ignore */ }
+
+  onProgress?.({ stage: "done" });
+  const u8 = data as Uint8Array;
   const ab = new ArrayBuffer(u8.byteLength);
   new Uint8Array(ab).set(u8);
   return new Blob([ab], { type: "video/mp4" });
