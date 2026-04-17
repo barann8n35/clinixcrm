@@ -77,94 +77,40 @@ export interface BurnProgress {
   message?: string;
 }
 
-// Strip UTF-8 BOM and normalize line endings.
-async function fetchAndCleanSrtText(srtUrl: string): Promise<string> {
+// Strip UTF-8 BOM and normalize line endings. Returns Uint8Array for FFmpeg FS.
+async function fetchAndCleanSrt(srtUrl: string): Promise<{ text: string; bytes: Uint8Array }> {
   const res = await fetch(srtUrl);
   if (!res.ok) throw new Error(`SRT indirilemedi: ${res.status}`);
   let text = await res.text();
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   text = text.replace(/\r\n?/g, "\n").trim() + "\n";
-  return text;
-}
-
-interface SrtCue {
-  start: number; // seconds
-  end: number;
-  text: string;
-}
-
-function srtTimeToSec(t: string): number {
-  // 00:00:01,234
-  const m = t.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
-  if (!m) return 0;
-  return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+m[4]) / 1000;
-}
-
-function parseSrt(text: string): SrtCue[] {
-  const blocks = text.split(/\n\n+/);
-  const cues: SrtCue[] = [];
-  for (const block of blocks) {
-    const lines = block.split("\n").filter(l => l.trim().length > 0);
-    if (lines.length < 2) continue;
-    // First line may be index, second is timing — or first is timing.
-    const timingLine = lines.find(l => l.includes("-->"));
-    if (!timingLine) continue;
-    const [s, e] = timingLine.split("-->").map(x => x.trim());
-    const textLines = lines.slice(lines.indexOf(timingLine) + 1);
-    if (textLines.length === 0) continue;
-    cues.push({
-      start: srtTimeToSec(s),
-      end: srtTimeToSec(e),
-      text: textLines.join(" ").trim(),
-    });
+  // Quick sanity check — at least one timing arrow.
+  if (!text.includes("-->")) {
+    throw new Error("SRT dosyası geçersiz formatta (timing satırı bulunamadı)");
   }
-  return cues;
+  const bytes = new TextEncoder().encode(text);
+  return { text, bytes };
 }
 
-// Escape text for ffmpeg drawtext filter.
-// Special chars in drawtext: \ : ' , [ ] ; %
-function escapeDrawtext(s: string): string {
-  return s
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\u2019")    // smart quote — drawtext can't escape ' easily
-    .replace(/:/g, "\\:")
-    .replace(/,/g, "\\,")
-    .replace(/%/g, "\\%")
-    .replace(/\[/g, "\\[")
-    .replace(/\]/g, "\\]");
+// Count cues for logging only.
+function countCues(text: string): number {
+  return (text.match(/-->/g) || []).length;
 }
 
-// Wrap long text to multiple lines (~40 chars max per line).
-function wrapText(text: string, maxChars = 42): string {
-  const words = text.split(/\s+/);
-  const lines: string[] = [];
-  let current = "";
-  for (const w of words) {
-    if ((current + " " + w).trim().length > maxChars) {
-      if (current) lines.push(current);
-      current = w;
-    } else {
-      current = (current + " " + w).trim();
-    }
-  }
-  if (current) lines.push(current);
-  return lines.join("\n");
-}
-
-// Build a drawtext filter chain from SRT cues. No fontconfig/libass required.
-function buildDrawtextFilter(cues: SrtCue[]): string {
-  if (cues.length === 0) return "null";
-  const filters = cues.map(cue => {
-    const wrapped = wrapText(cue.text);
-    const escaped = escapeDrawtext(wrapped);
-    // White text, black box background, bottom-centered.
-    return `drawtext=text='${escaped}':fontcolor=white:fontsize=24:box=1:boxcolor=black@0.6:boxborderw=10:x=(w-text_w)/2:y=h-text_h-40:line_spacing=4:enable='between(t,${cue.start.toFixed(3)},${cue.end.toFixed(3)})'`;
-  });
-  return filters.join(",");
+// Cache: ensure font is written to FFmpeg FS only once per instance.
+let fontWritten = false;
+async function ensureFont(ff: FFmpeg) {
+  if (fontWritten) return;
+  const res = await fetch("/fonts/NotoSans-Regular.ttf");
+  if (!res.ok) throw new Error(`Font indirilemedi: ${res.status}`);
+  const buf = new Uint8Array(await res.arrayBuffer());
+  await ff.writeFile("NotoSans-Regular.ttf", buf);
+  fontWritten = true;
 }
 
 /**
- * Burns SRT subtitle into the video. High quality (CRF 18), audio re-encoded to AAC.
+ * Burns SRT subtitle into the video using libass `subtitles` filter with a
+ * bundled TTF font (Türkçe karakter destekli). High quality (CRF 18).
  */
 export async function burnSubtitlesToVideo(
   videoUrl: string,
@@ -173,30 +119,47 @@ export async function burnSubtitlesToVideo(
 ): Promise<Blob> {
   onProgress?.({ stage: "loading", message: "FFmpeg yükleniyor..." });
   const ff = await getFFmpeg();
+  await ensureFont(ff);
 
   onProgress?.({ stage: "downloading", message: "Video & altyazı indiriliyor..." });
-  const [videoData, srtText] = await Promise.all([
+  const [videoData, srt] = await Promise.all([
     fetchFile(videoUrl),
-    fetchAndCleanSrtText(srtUrl),
+    fetchAndCleanSrt(srtUrl),
   ]);
 
-  const cues = parseSrt(srtText);
-  if (cues.length === 0) {
+  const cueCount = countCues(srt.text);
+  if (cueCount === 0) {
     throw new Error("Altyazı dosyası boş veya okunamadı (SRT parse hatası)");
   }
-  console.log(`[burn] ${cues.length} altyazı segmenti bulundu`);
+  console.log(`[burn] ${cueCount} altyazı segmenti bulundu`);
 
   await ff.writeFile("input.mp4", videoData);
+  await ff.writeFile("subs.srt", srt.bytes);
 
-  onProgress?.({ stage: "encoding", message: `Altyazı videoya gömülüyor (${cues.length} satır)...` });
+  onProgress?.({ stage: "encoding", message: `Altyazı videoya gömülüyor (${cueCount} satır)...` });
 
   const progressHandler = ({ progress }: { progress: number }) => {
     onProgress?.({ stage: "encoding", ratio: Math.min(Math.max(progress, 0), 1) });
   };
   ff.on("progress", progressHandler);
 
-  // Build a drawtext filter chain — uses ffmpeg's built-in default font, no fontconfig/libass needed.
-  const filter = buildDrawtextFilter(cues);
+  // libass force_style: white text, opaque box at bottom-center.
+  // Colors are &HBBGGRR (BGR hex). Alignment 2 = bottom-center, BorderStyle 4 = box.
+  const style = [
+    "FontName=NotoSans",
+    "Fontsize=22",
+    "PrimaryColour=&H00FFFFFF",
+    "OutlineColour=&H00000000",
+    "BackColour=&H99000000",
+    "BorderStyle=4",
+    "Outline=1",
+    "Shadow=0",
+    "Alignment=2",
+    "MarginV=40",
+  ].join(",");
+
+  // fontsdir tells libass where to find the TTF — works without fontconfig.
+  const filter = `subtitles=subs.srt:fontsdir=.:force_style='${style}'`;
 
   try {
     await ff.exec([
@@ -204,7 +167,7 @@ export async function burnSubtitlesToVideo(
       "-vf", filter,
       "-c:v", "libx264",
       "-preset", "medium",
-      "-crf", "18",            // visually lossless
+      "-crf", "18",
       "-pix_fmt", "yuv420p",
       "-c:a", "aac",
       "-b:a", "192k",
@@ -216,8 +179,12 @@ export async function burnSubtitlesToVideo(
   }
 
   const data = await ff.readFile("output.mp4");
+  if (!data || (data as Uint8Array).byteLength === 0) {
+    throw new Error("FFmpeg çıktısı boş — encoding başarısız oldu");
+  }
   try {
     await ff.deleteFile("input.mp4");
+    await ff.deleteFile("subs.srt");
     await ff.deleteFile("output.mp4");
   } catch { /* ignore */ }
 
