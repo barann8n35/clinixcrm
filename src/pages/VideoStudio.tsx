@@ -308,9 +308,21 @@ const VideoStudio = () => {
                           </Badge>
                           {t.status === "completed" ? (
                             <div className="flex items-center gap-0.5">
+                              {t.subtitle_url && t.mode === "subtitle" && (
+                                <button
+                                  onClick={() => downloadBurnedVideo(t, v.original_url, v.title)}
+                                  disabled={burning === t.id}
+                                  className="p-0.5 hover:bg-muted rounded disabled:opacity-50"
+                                  title="Altyazılı MP4 indir (tarayıcıda işlenir)"
+                                >
+                                  {burning === t.id
+                                    ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                                    : <Film className="w-3 h-3 text-success" />}
+                                </button>
+                              )}
                               {t.subtitle_url && (
                                 <a href={t.subtitle_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="SRT indir">
-                                  <Download className="w-3 h-3 text-success" />
+                                  <Download className="w-3 h-3 text-muted-foreground" />
                                 </a>
                               )}
                               {t.lipsync_url && (
