@@ -97,8 +97,20 @@ function countCues(text: string): number {
   return (text.match(/-->/g) || []).length;
 }
 
+// Cache: ensure font is written to FFmpeg FS only once per instance.
+let fontWritten = false;
+async function ensureFont(ff: FFmpeg) {
+  if (fontWritten) return;
+  const res = await fetch("/fonts/NotoSans-Regular.ttf");
+  if (!res.ok) throw new Error(`Font indirilemedi: ${res.status}`);
+  const buf = new Uint8Array(await res.arrayBuffer());
+  await ff.writeFile("NotoSans-Regular.ttf", buf);
+  fontWritten = true;
+}
+
 /**
- * Burns SRT subtitle into the video. High quality (CRF 18), audio re-encoded to AAC.
+ * Burns SRT subtitle into the video using libass `subtitles` filter with a
+ * bundled TTF font (Türkçe karakter destekli). High quality (CRF 18).
  */
 export async function burnSubtitlesToVideo(
   videoUrl: string,
@@ -107,30 +119,47 @@ export async function burnSubtitlesToVideo(
 ): Promise<Blob> {
   onProgress?.({ stage: "loading", message: "FFmpeg yükleniyor..." });
   const ff = await getFFmpeg();
+  await ensureFont(ff);
 
   onProgress?.({ stage: "downloading", message: "Video & altyazı indiriliyor..." });
-  const [videoData, srtText] = await Promise.all([
+  const [videoData, srt] = await Promise.all([
     fetchFile(videoUrl),
-    fetchAndCleanSrtText(srtUrl),
+    fetchAndCleanSrt(srtUrl),
   ]);
 
-  const cues = parseSrt(srtText);
-  if (cues.length === 0) {
+  const cueCount = countCues(srt.text);
+  if (cueCount === 0) {
     throw new Error("Altyazı dosyası boş veya okunamadı (SRT parse hatası)");
   }
-  console.log(`[burn] ${cues.length} altyazı segmenti bulundu`);
+  console.log(`[burn] ${cueCount} altyazı segmenti bulundu`);
 
   await ff.writeFile("input.mp4", videoData);
+  await ff.writeFile("subs.srt", srt.bytes);
 
-  onProgress?.({ stage: "encoding", message: `Altyazı videoya gömülüyor (${cues.length} satır)...` });
+  onProgress?.({ stage: "encoding", message: `Altyazı videoya gömülüyor (${cueCount} satır)...` });
 
   const progressHandler = ({ progress }: { progress: number }) => {
     onProgress?.({ stage: "encoding", ratio: Math.min(Math.max(progress, 0), 1) });
   };
   ff.on("progress", progressHandler);
 
-  // Build a drawtext filter chain — uses ffmpeg's built-in default font, no fontconfig/libass needed.
-  const filter = buildDrawtextFilter(cues);
+  // libass force_style: white text, opaque box at bottom-center.
+  // Colors are &HBBGGRR (BGR hex). Alignment 2 = bottom-center, BorderStyle 4 = box.
+  const style = [
+    "FontName=NotoSans",
+    "Fontsize=22",
+    "PrimaryColour=&H00FFFFFF",
+    "OutlineColour=&H00000000",
+    "BackColour=&H99000000",
+    "BorderStyle=4",
+    "Outline=1",
+    "Shadow=0",
+    "Alignment=2",
+    "MarginV=40",
+  ].join(",");
+
+  // fontsdir tells libass where to find the TTF — works without fontconfig.
+  const filter = `subtitles=subs.srt:fontsdir=.:force_style='${style}'`;
 
   try {
     await ff.exec([
@@ -138,7 +167,7 @@ export async function burnSubtitlesToVideo(
       "-vf", filter,
       "-c:v", "libx264",
       "-preset", "medium",
-      "-crf", "18",            // visually lossless
+      "-crf", "18",
       "-pix_fmt", "yuv420p",
       "-c:a", "aac",
       "-b:a", "192k",
@@ -150,8 +179,12 @@ export async function burnSubtitlesToVideo(
   }
 
   const data = await ff.readFile("output.mp4");
+  if (!data || (data as Uint8Array).byteLength === 0) {
+    throw new Error("FFmpeg çıktısı boş — encoding başarısız oldu");
+  }
   try {
     await ff.deleteFile("input.mp4");
+    await ff.deleteFile("subs.srt");
     await ff.deleteFile("output.mp4");
   } catch { /* ignore */ }
 
