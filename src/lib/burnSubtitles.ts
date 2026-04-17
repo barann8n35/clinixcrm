@@ -85,7 +85,11 @@ export async function burnSubtitlesToVideo(
   }
 
   onProgress?.({ stage: "done" });
-  return new Blob([data as Uint8Array], { type: "video/mp4" });
+  const u8 = data as Uint8Array;
+  // Copy into a fresh ArrayBuffer to satisfy strict BlobPart typing across TS lib targets.
+  const ab = new ArrayBuffer(u8.byteLength);
+  new Uint8Array(ab).set(u8);
+  return new Blob([ab], { type: "video/mp4" });
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
