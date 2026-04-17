@@ -16,7 +16,8 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { burnSubtitlesToVideo, muxAudioToVideo, downloadBlob } from "@/lib/burnSubtitles";
+import { muxAudioToVideo, downloadBlob } from "@/lib/burnSubtitles";
+import { burnSubtitlesToVideoCanvas } from "@/lib/canvasBurnSubtitles";
 
 interface Video { id: string; title: string; original_url: string; source_language: string; duration_seconds: number | null; file_size: number | null; status: string; created_at: string; }
 type TranslationMode = "subtitle" | "dub" | "clone_dub" | "lipsync";
@@ -199,14 +200,14 @@ const VideoStudio = () => {
     if (!t.subtitle_url) { toast.error("Altyazı dosyası bulunamadı"); return; }
     setBurning(t.id);
     setBurnProgress(0);
-    const tId = toast.loading("Altyazı videoya gömülüyor... (1-3 dk sürebilir)");
+    const tId = toast.loading("Altyazı videoya gömülüyor... (videonun süresi kadar sürer)");
     try {
-      const blob = await burnSubtitlesToVideo(videoUrl, t.subtitle_url, (p) => {
+      const blob = await burnSubtitlesToVideoCanvas(videoUrl, t.subtitle_url, (p) => {
         if (p.ratio !== undefined) setBurnProgress(Math.round(p.ratio * 100));
       });
       const safeTitle = videoTitle.replace(/[^\w\-]+/g, "_").slice(0, 40);
-      downloadBlob(blob, `${safeTitle}_${t.target_language}_altyazili.mp4`);
-      toast.success("Altyazılı MP4 indirildi (yüksek kalite)", { id: tId });
+      downloadBlob(blob, `${safeTitle}_${t.target_language}_altyazili.webm`);
+      toast.success("Altyazılı video indirildi (WebM, yüksek kalite)", { id: tId });
     } catch (e: any) {
       console.error(e);
       toast.error("Altyazı gömme başarısız: " + (e.message || e), { id: tId });

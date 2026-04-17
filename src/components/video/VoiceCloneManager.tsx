@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Mic, Upload, Loader2, Trash2, CheckCircle2, AlertCircle, Sparkles, Volume2, Square } from "lucide-react";
+import { Mic, Upload, Loader2, Trash2, CheckCircle2, AlertCircle, Sparkles, Volume2, Square, RotateCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/hooks/useRole";
@@ -127,6 +127,18 @@ const VoiceCloneManager = () => {
     }
   };
 
+  const retryClone = async (id: string) => {
+    try {
+      await supabase.from("voice_clones").update({ status: "pending", error_message: null }).eq("id", id);
+      const { error } = await supabase.functions.invoke("clone-voice", { body: { clone_id: id } });
+      if (error) throw error;
+      toast.success("Klonlama yeniden başlatıldı");
+      load();
+    } catch (e: any) {
+      toast.error("Hata: " + e.message);
+    }
+  };
+
   const deleteClone = async (id: string) => {
     if (!confirm("Bu ses klonu silinecek. Emin misiniz?")) return;
     const { error } = await supabase.from("voice_clones").delete().eq("id", id);
@@ -221,7 +233,13 @@ const VoiceCloneManager = () => {
                   </p>
                 </div>
                 {c.status === "pending" && (
-                  <Badge variant="outline" className="text-[10px] gap-1"><Loader2 className="w-3 h-3 animate-spin" /> İşleniyor</Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline" className="text-[10px] gap-1"><Loader2 className="w-3 h-3 animate-spin" /> İşleniyor</Badge>
+                    <Button size="sm" variant="ghost" onClick={() => retryClone(c.id)}
+                      className="h-7 px-2 rounded-lg" title="Yeniden Dene">
+                      <RotateCw className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 )}
                 {c.status === "ready" && (
                   <Badge variant="outline" className="text-[10px] gap-1 border-success/30 text-success bg-success/5">
