@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Upload, Globe, Subtitles, Mic, Loader2, Download, Copy, Check,
-  Trash2, Plus, X, Sparkles, AlertCircle, Play, FileAudio, Languages, Wand2, UserCircle
+  Trash2, Plus, X, Sparkles, AlertCircle, Play, FileAudio, Languages, Wand2, UserCircle, Film
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { burnSubtitlesToVideo, downloadBlob } from "@/lib/burnSubtitles";
 
 interface Video { id: string; title: string; original_url: string; source_language: string; duration_seconds: number | null; file_size: number | null; status: string; created_at: string; }
 type TranslationMode = "subtitle" | "dub" | "clone_dub" | "lipsync";
