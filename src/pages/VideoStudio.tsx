@@ -367,9 +367,21 @@ const VideoStudio = () => {
                                 </a>
                               )}
                               {t.output_url && (t.mode === "dub" || t.mode === "clone_dub") && (
-                                <a href={t.output_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Sesi indir">
-                                  <FileAudio className="w-3 h-3 text-success" />
-                                </a>
+                                <>
+                                  <button
+                                    onClick={() => downloadDubbedVideo(t, v.original_url, v.title)}
+                                    disabled={burning === t.id}
+                                    className="p-0.5 hover:bg-muted rounded disabled:opacity-50"
+                                    title="Dublajlı MP4 indir (videoya gömülü)"
+                                  >
+                                    {burning === t.id
+                                      ? <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                                      : <Film className="w-3 h-3 text-success" />}
+                                  </button>
+                                  <a href={t.output_url} target="_blank" rel="noopener" className="p-0.5 hover:bg-muted rounded" title="Sadece sesi indir (mp3)">
+                                    <FileAudio className="w-3 h-3 text-muted-foreground" />
+                                  </a>
+                                </>
                               )}
                               {(t.lipsync_url || t.output_url) && (
                                 <button onClick={() => copyLink(t.lipsync_url || t.output_url!)} className="p-0.5 hover:bg-muted rounded" title="Link kopyala">
