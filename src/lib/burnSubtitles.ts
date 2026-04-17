@@ -6,7 +6,21 @@ import { fetchFile, toBlobURL } from "@ffmpeg/util";
 let ffmpegInstance: FFmpeg | null = null;
 let loadPromise: Promise<FFmpeg> | null = null;
 
-const CORE_BASE = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+// 0.12.6 UMD bundle is the most reliable single-thread build for Vite + browsers
+// without SharedArrayBuffer / cross-origin isolation. jsDelivr is primary
+// (more permissive CORS); unpkg is fallback.
+const CORE_BASES = [
+  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd",
+  "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd",
+];
+
+async function loadCoreFromBase(base: string, ff: FFmpeg) {
+  const [coreURL, wasmURL] = await Promise.all([
+    toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
+    toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+  ]);
+  await ff.load({ coreURL, wasmURL });
+}
 
 async function getFFmpeg(onLog?: (m: string) => void): Promise<FFmpeg> {
   if (ffmpegInstance) return ffmpegInstance;
@@ -14,12 +28,21 @@ async function getFFmpeg(onLog?: (m: string) => void): Promise<FFmpeg> {
   loadPromise = (async () => {
     const ff = new FFmpeg();
     if (onLog) ff.on("log", ({ message }) => onLog(message));
-    await ff.load({
-      coreURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.wasm`, "application/wasm"),
-    });
-    ffmpegInstance = ff;
-    return ff;
+    let lastErr: unknown = null;
+    for (const base of CORE_BASES) {
+      try {
+        await loadCoreFromBase(base, ff);
+        ffmpegInstance = ff;
+        return ff;
+      } catch (e) {
+        lastErr = e;
+        console.warn(`[ffmpeg] failed to load core from ${base}:`, e);
+      }
+    }
+    loadPromise = null;
+    throw new Error(
+      `FFmpeg motoru yüklenemedi. İnternet bağlantınızı kontrol edin. Detay: ${(lastErr as Error)?.message || lastErr}`
+    );
   })();
   return loadPromise;
 }
