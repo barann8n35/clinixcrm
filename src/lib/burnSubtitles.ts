@@ -1,24 +1,44 @@
 // Client-side subtitle burn-in using @ffmpeg/ffmpeg (wasm).
-// Loads ffmpeg-core lazily from a CDN and burns an SRT file onto an MP4.
+// Vite + module workers require the ESM ffmpeg core. Prefer same-origin assets
+// under /public/ffmpeg and only fall back to CDN blobs if local files are unavailable.
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 
 let ffmpegInstance: FFmpeg | null = null;
 let loadPromise: Promise<FFmpeg> | null = null;
 
-// 0.12.6 UMD bundle is the most reliable single-thread build for Vite + browsers
-// without SharedArrayBuffer / cross-origin isolation. jsDelivr is primary
-// (more permissive CORS); unpkg is fallback.
-const CORE_BASES = [
-  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd",
-  "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd",
+type CoreSource = {
+  coreURL: string;
+  wasmURL: string;
+  cors: "same-origin" | "cross-origin";
+};
+
+const CORE_SOURCES: CoreSource[] = [
+  {
+    coreURL: "/ffmpeg/ffmpeg-core.js",
+    wasmURL: "/ffmpeg/ffmpeg-core.wasm",
+    cors: "same-origin",
+  },
+  {
+    coreURL: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.js",
+    wasmURL: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm",
+    cors: "cross-origin",
+  },
+  {
+    coreURL: "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.js",
+    wasmURL: "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm",
+    cors: "cross-origin",
+  },
 ];
 
-async function loadCoreFromBase(base: string, ff: FFmpeg) {
-  const [coreURL, wasmURL] = await Promise.all([
-    toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-    toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
-  ]);
+async function loadCore(source: CoreSource, ff: FFmpeg) {
+  const [coreURL, wasmURL] = source.cors === "same-origin"
+    ? [source.coreURL, source.wasmURL]
+    : await Promise.all([
+        toBlobURL(source.coreURL, "text/javascript"),
+        toBlobURL(source.wasmURL, "application/wasm"),
+      ]);
+
   await ff.load({ coreURL, wasmURL });
 }
 
@@ -29,19 +49,19 @@ async function getFFmpeg(onLog?: (m: string) => void): Promise<FFmpeg> {
     const ff = new FFmpeg();
     if (onLog) ff.on("log", ({ message }) => onLog(message));
     let lastErr: unknown = null;
-    for (const base of CORE_BASES) {
+    for (const source of CORE_SOURCES) {
       try {
-        await loadCoreFromBase(base, ff);
+        await loadCore(source, ff);
         ffmpegInstance = ff;
         return ff;
       } catch (e) {
         lastErr = e;
-        console.warn(`[ffmpeg] failed to load core from ${base}:`, e);
+        console.warn(`[ffmpeg] failed to load core from ${source.coreURL}:`, e);
       }
     }
     loadPromise = null;
     throw new Error(
-      `FFmpeg motoru yüklenemedi. İnternet bağlantınızı kontrol edin. Detay: ${(lastErr as Error)?.message || lastErr}`
+      `FFmpeg motoru yüklenemedi. Tarayıcı bu cihazda ffmpeg çekirdeğini başlatamadı. Detay: ${(lastErr as Error)?.message || lastErr}`
     );
   })();
   return loadPromise;
