@@ -77,90 +77,24 @@ export interface BurnProgress {
   message?: string;
 }
 
-// Strip UTF-8 BOM and normalize line endings.
-async function fetchAndCleanSrtText(srtUrl: string): Promise<string> {
+// Strip UTF-8 BOM and normalize line endings. Returns Uint8Array for FFmpeg FS.
+async function fetchAndCleanSrt(srtUrl: string): Promise<{ text: string; bytes: Uint8Array }> {
   const res = await fetch(srtUrl);
   if (!res.ok) throw new Error(`SRT indirilemedi: ${res.status}`);
   let text = await res.text();
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   text = text.replace(/\r\n?/g, "\n").trim() + "\n";
-  return text;
-}
-
-interface SrtCue {
-  start: number; // seconds
-  end: number;
-  text: string;
-}
-
-function srtTimeToSec(t: string): number {
-  // 00:00:01,234
-  const m = t.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
-  if (!m) return 0;
-  return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+m[4]) / 1000;
-}
-
-function parseSrt(text: string): SrtCue[] {
-  const blocks = text.split(/\n\n+/);
-  const cues: SrtCue[] = [];
-  for (const block of blocks) {
-    const lines = block.split("\n").filter(l => l.trim().length > 0);
-    if (lines.length < 2) continue;
-    // First line may be index, second is timing — or first is timing.
-    const timingLine = lines.find(l => l.includes("-->"));
-    if (!timingLine) continue;
-    const [s, e] = timingLine.split("-->").map(x => x.trim());
-    const textLines = lines.slice(lines.indexOf(timingLine) + 1);
-    if (textLines.length === 0) continue;
-    cues.push({
-      start: srtTimeToSec(s),
-      end: srtTimeToSec(e),
-      text: textLines.join(" ").trim(),
-    });
+  // Quick sanity check — at least one timing arrow.
+  if (!text.includes("-->")) {
+    throw new Error("SRT dosyası geçersiz formatta (timing satırı bulunamadı)");
   }
-  return cues;
+  const bytes = new TextEncoder().encode(text);
+  return { text, bytes };
 }
 
-// Escape text for ffmpeg drawtext filter.
-// Special chars in drawtext: \ : ' , [ ] ; %
-function escapeDrawtext(s: string): string {
-  return s
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\u2019")    // smart quote — drawtext can't escape ' easily
-    .replace(/:/g, "\\:")
-    .replace(/,/g, "\\,")
-    .replace(/%/g, "\\%")
-    .replace(/\[/g, "\\[")
-    .replace(/\]/g, "\\]");
-}
-
-// Wrap long text to multiple lines (~40 chars max per line).
-function wrapText(text: string, maxChars = 42): string {
-  const words = text.split(/\s+/);
-  const lines: string[] = [];
-  let current = "";
-  for (const w of words) {
-    if ((current + " " + w).trim().length > maxChars) {
-      if (current) lines.push(current);
-      current = w;
-    } else {
-      current = (current + " " + w).trim();
-    }
-  }
-  if (current) lines.push(current);
-  return lines.join("\n");
-}
-
-// Build a drawtext filter chain from SRT cues. No fontconfig/libass required.
-function buildDrawtextFilter(cues: SrtCue[]): string {
-  if (cues.length === 0) return "null";
-  const filters = cues.map(cue => {
-    const wrapped = wrapText(cue.text);
-    const escaped = escapeDrawtext(wrapped);
-    // White text, black box background, bottom-centered.
-    return `drawtext=text='${escaped}':fontcolor=white:fontsize=24:box=1:boxcolor=black@0.6:boxborderw=10:x=(w-text_w)/2:y=h-text_h-40:line_spacing=4:enable='between(t,${cue.start.toFixed(3)},${cue.end.toFixed(3)})'`;
-  });
-  return filters.join(",");
+// Count cues for logging only.
+function countCues(text: string): number {
+  return (text.match(/-->/g) || []).length;
 }
 
 /**
