@@ -77,7 +77,7 @@ const VideoStudio = () => {
     const [{ data: vids }, { data: trs }, { data: vcs }] = await Promise.all([
       supabase.from("videos").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("video_translations").select("*, videos!inner(user_id)").eq("videos.user_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("voice_clones").select("id, name, elevenlabs_voice_id, status").eq("user_id", user.id).eq("status", "ready"),
+      supabase.from("voice_clones").select("id, name, elevenlabs_voice_id, status").eq("user_id", user.id).order("created_at", { ascending: false }),
     ]);
     setVideos((vids as Video[]) || []);
     setTranslations((trs as any[]) || []);
