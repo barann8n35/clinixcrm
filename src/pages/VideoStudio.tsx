@@ -515,27 +515,30 @@ const VideoStudio = () => {
                 </button>
               </div>
 
-              {(mode === "clone_dub" || mode === "lipsync") && (
-                <div className="pt-2 space-y-1.5">
-                  <Label className="text-xs">Ses Klonu Seçin</Label>
-                  {voiceClones.length === 0 ? (
-                    <div className="text-[11px] p-3 rounded-lg border border-dashed border-warning/40 bg-warning/5 text-foreground">
-                      Henüz hazır ses klonunuz yok. <b>Ayarlar → Ses Klonum</b> sekmesinden bir ses klonu oluşturun.
-                    </div>
-                  ) : (
-                    <Select value={selectedVoiceCloneId} onValueChange={setSelectedVoiceCloneId}>
-                      <SelectTrigger className="rounded-lg">
-                        <SelectValue placeholder="Bir ses klonu seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {voiceClones.map(vc => (
-                          <SelectItem key={vc.id} value={vc.id}>{vc.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              )}
+              {(mode === "clone_dub" || mode === "lipsync") && (() => {
+                const readyClones = voiceClones.filter(vc => vc.status === "ready");
+                return (
+                  <div className="pt-2 space-y-1.5">
+                    <Label className="text-xs">Ses Klonu Seçin</Label>
+                    {readyClones.length === 0 ? (
+                      <div className="text-[11px] p-3 rounded-lg border border-dashed border-warning/40 bg-warning/5 text-foreground">
+                        Henüz hazır ses klonunuz yok. <b>Ayarlar → Ses Klonum</b> sekmesinden bir ses klonu oluşturun.
+                      </div>
+                    ) : (
+                      <Select value={selectedVoiceCloneId} onValueChange={setSelectedVoiceCloneId}>
+                        <SelectTrigger className="rounded-lg">
+                          <SelectValue placeholder="Bir ses klonu seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {readyClones.map(vc => (
+                            <SelectItem key={vc.id} value={vc.id}>{vc.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Languages */}
