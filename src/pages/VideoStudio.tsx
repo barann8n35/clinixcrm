@@ -85,16 +85,50 @@ const VideoStudio = () => {
     setLoading(false);
   };
 
+  // Track previously seen translation statuses to detect transitions (pending/processing → completed/failed)
+  const prevStatusRef = useRef<Map<string, string>>(new Map());
+  const prevVoiceStatusRef = useRef<Map<string, string>>(new Map());
+
   useEffect(() => {
     if (!user) return;
     loadData();
     const ch = supabase
-      .channel("video-translations-rt")
+      .channel("video-studio-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "video_translations" }, () => loadData())
       .on("postgres_changes", { event: "*", schema: "public", table: "videos" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "voice_clones" }, () => loadData())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user]);
+
+  // Notify user (toast) when a translation transitions to completed/failed live
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    translations.forEach(t => {
+      const before = prev.get(t.id);
+      if (before && before !== t.status) {
+        if (t.status === "completed") {
+          const modeLabel = t.mode === "lipsync" ? "Lip-Sync" : t.mode === "clone_dub" ? "Klon Dublaj" : t.mode === "dub" ? "Dublaj" : "Altyazı";
+          toast.success(`✅ ${t.target_language_label} ${modeLabel} hazır!`, { duration: 6000 });
+        } else if (t.status === "failed") {
+          toast.error(`❌ ${t.target_language_label} çevirisi başarısız: ${t.error_message || "Bilinmeyen hata"}`, { duration: 8000 });
+        }
+      }
+      prev.set(t.id, t.status);
+    });
+  }, [translations]);
+
+  // Notify when voice clone finishes
+  useEffect(() => {
+    const prev = prevVoiceStatusRef.current;
+    voiceClones.forEach(vc => {
+      const before = prev.get(vc.id);
+      if (before && before !== vc.status && vc.status === "ready") {
+        toast.success(`🎤 Ses klonu "${vc.name}" hazır!`, { duration: 6000 });
+      }
+      prev.set(vc.id, vc.status);
+    });
+  }, [voiceClones]);
 
   const handleUpload = async (file: File) => {
     if (!user) return;
