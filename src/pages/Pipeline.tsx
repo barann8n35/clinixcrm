@@ -220,19 +220,25 @@ const Pipeline = () => {
       if (!valuesRef.current[p.id]) {
         valuesRef.current[p.id] = Math.floor(Math.random() * 20000) + 3000;
       }
+      if (!priorityRef.current[p.id]) {
+        priorityRef.current[p.id] = i % 3 === 0 ? "urgent" : i % 3 === 1 ? "medium" : "low";
+      }
       const col = columnForStatus(p.status);
+      if (col === "postOp" && postOpDaysRef.current[p.id] === undefined) {
+        postOpDaysRef.current[p.id] = Math.floor(Math.random() * 7) + 1;
+      }
       const card: PipelineCard = {
         id: p.id,
         name: p.name,
         value: valuesRef.current[p.id],
-        priority: i % 3 === 0 ? "urgent" : i % 3 === 1 ? "medium" : "low",
+        priority: priorityRef.current[p.id],
         platform: p.platform,
         date: new Date(p.created_at).toLocaleDateString("tr-TR", {
           day: "numeric",
           month: "short",
           year: "numeric",
         }),
-        postOpDays: col === "postOp" ? Math.floor(Math.random() * 7) + 1 : undefined,
+        postOpDays: col === "postOp" ? postOpDaysRef.current[p.id] : undefined,
       };
       stages[col].push(card);
     });
