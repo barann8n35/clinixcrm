@@ -196,6 +196,9 @@ const Pipeline = () => {
     postOp: [],
   });
   const valuesRef = useRef<Record<string, number>>({});
+  const priorityRef = useRef<Record<string, "urgent" | "medium" | "low">>({});
+  const postOpDaysRef = useRef<Record<string, number>>({});
+  const suppressRealtimeUntilRef = useRef<number>(0);
   const [celebrateId, setCelebrateId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -218,19 +221,25 @@ const Pipeline = () => {
       if (!valuesRef.current[p.id]) {
         valuesRef.current[p.id] = Math.floor(Math.random() * 20000) + 3000;
       }
+      if (!priorityRef.current[p.id]) {
+        priorityRef.current[p.id] = i % 3 === 0 ? "urgent" : i % 3 === 1 ? "medium" : "low";
+      }
       const col = columnForStatus(p.status);
+      if (col === "postOp" && postOpDaysRef.current[p.id] === undefined) {
+        postOpDaysRef.current[p.id] = Math.floor(Math.random() * 7) + 1;
+      }
       const card: PipelineCard = {
         id: p.id,
         name: p.name,
         value: valuesRef.current[p.id],
-        priority: i % 3 === 0 ? "urgent" : i % 3 === 1 ? "medium" : "low",
+        priority: priorityRef.current[p.id],
         platform: p.platform,
         date: new Date(p.created_at).toLocaleDateString("tr-TR", {
           day: "numeric",
           month: "short",
           year: "numeric",
         }),
-        postOpDays: col === "postOp" ? Math.floor(Math.random() * 7) + 1 : undefined,
+        postOpDays: col === "postOp" ? postOpDaysRef.current[p.id] : undefined,
       };
       stages[col].push(card);
     });
@@ -245,6 +254,8 @@ const Pipeline = () => {
     const channel = supabase
       .channel("pipeline-patients-realtime")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "patients" }, () => {
+        // Skip realtime reload if we just made an optimistic drag update
+        if (Date.now() < suppressRealtimeUntilRef.current) return;
         loadData();
       })
       .subscribe();
@@ -283,6 +294,7 @@ const Pipeline = () => {
           setTimeout(() => setCelebrateId(null), 1200);
         }
 
+        suppressRealtimeUntilRef.current = Date.now() + 3000;
         supabase
           .from("patients")
           .update({ status: statusForColumn[dstKey] })
