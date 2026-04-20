@@ -254,6 +254,8 @@ const Pipeline = () => {
     const channel = supabase
       .channel("pipeline-patients-realtime")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "patients" }, () => {
+        // Skip realtime reload if we just made an optimistic drag update
+        if (Date.now() < suppressRealtimeUntilRef.current) return;
         loadData();
       })
       .subscribe();
