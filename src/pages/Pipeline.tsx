@@ -198,6 +198,7 @@ const Pipeline = () => {
   const valuesRef = useRef<Record<string, number>>({});
   const priorityRef = useRef<Record<string, "urgent" | "medium" | "low">>({});
   const postOpDaysRef = useRef<Record<string, number>>({});
+  const suppressRealtimeUntilRef = useRef<number>(0);
   const [celebrateId, setCelebrateId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
