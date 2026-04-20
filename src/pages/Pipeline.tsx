@@ -294,6 +294,7 @@ const Pipeline = () => {
           setTimeout(() => setCelebrateId(null), 1200);
         }
 
+        suppressRealtimeUntilRef.current = Date.now() + 3000;
         supabase
           .from("patients")
           .update({ status: statusForColumn[dstKey] })
