@@ -49,16 +49,20 @@ function sortByUrgency(list: Notification[]) {
 
 export function NotificationBell() {
   const { personalNotifications, globalNotifications, unreadCount, markAllRead, dismissNotification, addNotification } = useNotifications();
+  const { canPostGlobal } = useRole();
+  const { toast } = useToast();
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [reminderText, setReminderText] = useState("");
   const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
   const [reminderTime, setReminderTime] = useState("09:00");
+  const [reminderScope, setReminderScope] = useState<"personal" | "global">("personal");
+  const [submitting, setSubmitting] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-  const handleAddReminder = () => {
-    if (!reminderText.trim()) return;
+  const handleAddReminder = async () => {
+    if (!reminderText.trim() || submitting) return;
     let remindAtISO: string | null = null;
     if (reminderDate) {
       const [h, m] = reminderTime.split(":").map(Number);
@@ -66,15 +70,31 @@ export function NotificationBell() {
       dt.setHours(h, m, 0, 0);
       remindAtISO = dt.toISOString();
     }
-    addNotification({
+    setSubmitting(true);
+    const scope = canPostGlobal ? reminderScope : "personal";
+    const res = await addNotification({
       type: "reminder",
-      title: "🔔 Hatırlatıcı",
+      title: scope === "global" ? "📣 Genel Hatırlatıcı" : "🔔 Hatırlatıcı",
       description: reminderText,
       remind_at: remindAtISO,
+      scope,
+    });
+    setSubmitting(false);
+    if (!res.ok) {
+      toast({
+        title: "Hatırlatıcı eklenemedi",
+        description: res.error ?? "Bilinmeyen hata",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: scope === "global" ? "Tüm ekibe gönderildi" : "Kişisel hatırlatıcı eklendi",
     });
     setReminderText("");
     setReminderDate(undefined);
     setReminderTime("09:00");
+    setReminderScope("personal");
     setShowAddReminder(false);
   };
 
