@@ -1,4 +1,4 @@
-import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing, UserPlus, CalendarIcon, X } from "lucide-react";
+import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing, UserPlus, CalendarIcon, X, Users, User as UserIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications, type Notification } from "@/contexts/NotificationContext";
 import { useState } from "react";
@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { useRole } from "@/hooks/useRole";
+import { useToast } from "@/hooks/use-toast";
 
 const typeConfig: Record<string, { icon: typeof Bell; color: string; bg: string }> = {
   appointment: { icon: CalendarCheck, color: "text-primary", bg: "bg-primary/10" },
