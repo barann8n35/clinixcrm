@@ -14,6 +14,7 @@ export interface Notification {
   created_at?: string;
   remind_at?: string | null;
   user_id?: string | null;
+  scope?: "personal" | "global";
 }
 
 interface AddNotificationInput
