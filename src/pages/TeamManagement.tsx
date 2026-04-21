@@ -221,6 +221,7 @@ const TeamManagement = () => {
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="doctor">Doktor</SelectItem>
                       <SelectItem value="staff">Personel</SelectItem>
+                      <SelectItem value="asistan">Asistan</SelectItem>
                       {!isAdminMember && <SelectItem value="premium">Premium</SelectItem>}
                       {!isAdminMember && <SelectItem value="premium_plus">Premium+</SelectItem>}
                       <SelectItem value="pending">Beklemede</SelectItem>
