@@ -135,12 +135,14 @@ export function NotificationBell() {
           key={n.id}
           onClick={() => handleNotificationClick(n)}
           className={cn(
-            "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-250 cursor-pointer hover:bg-accent/50 relative group",
+            "w-full flex items-start gap-3 px-4 py-3 text-left cursor-pointer hover:bg-accent/50 relative group overflow-hidden",
             !n.read && "bg-primary/[0.03]",
             uStyle?.border,
-            isDismissing && "opacity-0 max-h-0 py-0 overflow-hidden"
+            isDismissing
+              ? "opacity-0 max-h-0 py-0 pointer-events-none"
+              : "opacity-100 max-h-40"
           )}
-          style={{ transition: "opacity 250ms, max-height 250ms, padding 250ms" }}
+          style={{ transition: "opacity 280ms ease, max-height 280ms ease, padding 280ms ease" }}
         >
           <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5", iconBg)}>
             <Icon className={cn("h-4 w-4", iconColor)} />
