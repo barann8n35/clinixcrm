@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_reminders_sent: {
+        Row: {
+          appointment_id: string
+          id: string
+          reminder_type: string
+          sent_at: string
+        }
+        Insert: {
+          appointment_id: string
+          id?: string
+          reminder_type: string
+          sent_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          id?: string
+          reminder_type?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           created_at: string
