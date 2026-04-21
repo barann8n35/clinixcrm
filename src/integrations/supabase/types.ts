@@ -214,6 +214,7 @@ export type Database = {
           patient_id: string | null
           read: boolean
           remind_at: string | null
+          scope: string
           title: string
           type: string
           user_id: string | null
@@ -225,6 +226,7 @@ export type Database = {
           patient_id?: string | null
           read?: boolean
           remind_at?: string | null
+          scope?: string
           title: string
           type?: string
           user_id?: string | null
@@ -236,6 +238,7 @@ export type Database = {
           patient_id?: string | null
           read?: boolean
           remind_at?: string | null
+          scope?: string
           title?: string
           type?: string
           user_id?: string | null

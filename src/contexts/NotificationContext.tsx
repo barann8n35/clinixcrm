@@ -14,6 +14,7 @@ export interface Notification {
   created_at?: string;
   remind_at?: string | null;
   user_id?: string | null;
+  scope?: "personal" | "global";
 }
 
 interface AddNotificationInput
@@ -57,6 +58,7 @@ function mapNotification(n: any): Notification {
     created_at: n.created_at,
     remind_at: n.remind_at,
     user_id: n.user_id,
+    scope: (n.scope as "personal" | "global") ?? (n.user_id ? "personal" : "global"),
   };
 }
 
@@ -74,24 +76,28 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     userIdRef.current = user.id;
 
-    // Fetch personal notifications (user_id = current user)
-    const { data: personal } = await supabase
+    const { data: mine } = await supabase
       .from("notifications")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(100);
 
-    // Fetch global notifications (user_id is null)
-    const { data: global } = await supabase
+    const { data: legacyGlobal } = await supabase
       .from("notifications")
       .select("*")
       .is("user_id", null)
       .order("created_at", { ascending: false })
       .limit(50);
 
-    if (personal) setPersonalNotifications(personal.map(mapNotification));
-    if (global) setGlobalNotifications(global.map(mapNotification));
+    const mapped = (mine ?? []).map(mapNotification);
+    const legacyMapped = (legacyGlobal ?? []).map(mapNotification);
+
+    setPersonalNotifications(mapped.filter((n) => n.scope === "personal"));
+    setGlobalNotifications([
+      ...mapped.filter((n) => n.scope === "global"),
+      ...legacyMapped,
+    ]);
   }, []);
 
   useEffect(() => {
@@ -106,13 +112,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         (payload) => {
           if (payload.eventType === "INSERT") {
             const n = mapNotification(payload.new);
-            if (n.user_id && n.user_id === userIdRef.current) {
-              setPersonalNotifications((prev) => [n, ...prev]);
-            } else if (!n.user_id) {
+            // Realtime delivers all rows on the channel; filter to current user (or legacy NULL)
+            if (n.user_id && n.user_id !== userIdRef.current) return;
+            if (n.scope === "global") {
               setGlobalNotifications((prev) => [n, ...prev]);
+            } else {
+              setPersonalNotifications((prev) => [n, ...prev]);
             }
           } else if (payload.eventType === "UPDATE") {
             const updated = mapNotification(payload.new);
+            if (updated.user_id && updated.user_id !== userIdRef.current) return;
             const updateInList = (prev: Notification[]) =>
               prev.map((item) => (item.id === updated.id ? updated : item));
             setPersonalNotifications(updateInList);
@@ -199,6 +208,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       description: n.description,
       patient_id: n.patient_id || null,
       remind_at: n.remind_at || null,
+      scope: "personal",
     } as any);
     if (error) return { ok: false, error: error.message };
     return { ok: true };
