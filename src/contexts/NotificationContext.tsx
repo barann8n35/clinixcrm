@@ -16,6 +16,12 @@ export interface Notification {
   user_id?: string | null;
 }
 
+interface AddNotificationInput
+  extends Omit<Notification, "id" | "time" | "read"> {
+  remind_at?: string | null;
+  scope?: "personal" | "global";
+}
+
 interface NotificationContextType {
   personalNotifications: Notification[];
   globalNotifications: Notification[];
@@ -23,7 +29,7 @@ interface NotificationContextType {
   markAllRead: () => void;
   toggleRead: (id: string) => void;
   dismissNotification: (id: string) => void;
-  addNotification: (n: Omit<Notification, "id" | "time" | "read"> & { remind_at?: string | null }) => void;
+  addNotification: (n: AddNotificationInput) => Promise<{ ok: boolean; error?: string }>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
