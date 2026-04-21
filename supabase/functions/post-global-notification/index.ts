@@ -118,8 +118,15 @@ Deno.serve(async (req) => {
     const { error: insErr } = await admin.from("notifications").insert(rows);
     if (insErr) throw insErr;
 
+    // Fan out a single OneSignal push to all subscribed users
+    const pushResult = await sendOneSignalToAll(
+      title.trim(),
+      description ?? title.trim(),
+      { scope: "global", type: type ?? "reminder", patient_id: patient_id ?? null },
+    );
+
     return new Response(
-      JSON.stringify({ ok: true, inserted: rows.length }),
+      JSON.stringify({ ok: true, inserted: rows.length, push: pushResult }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err: any) {
