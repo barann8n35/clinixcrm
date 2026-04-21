@@ -227,14 +227,46 @@ export function NotificationBell() {
 
         {showAddReminder && (
           <div className="px-4 py-3 border-b border-border/60 bg-muted/30 space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Yeni Hatırlatıcı</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Yeni Hatırlatıcı</span>
+              </div>
+              {canPostGlobal && (
+                <div className="flex items-center bg-background border border-border/60 rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setReminderScope("personal")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 h-6 rounded-md text-[10px] font-medium transition-all",
+                      reminderScope === "personal"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <UserIcon className="w-3 h-3" />
+                    Bana Özel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReminderScope("global")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 h-6 rounded-md text-[10px] font-medium transition-all",
+                      reminderScope === "global"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Users className="w-3 h-3" />
+                    Tüm Ekip
+                  </button>
+                </div>
+              )}
             </div>
             <Input
               value={reminderText}
               onChange={(e) => setReminderText(e.target.value)}
-              placeholder="Örn: Yarın MR sonucunu sor"
+              placeholder={reminderScope === "global" ? "Tüm ekibe gidecek mesaj…" : "Örn: Yarın MR sonucunu sor"}
               className="h-8 text-[12px] rounded-lg"
               onKeyDown={(e) => e.key === "Enter" && handleAddReminder()}
             />
@@ -257,8 +289,8 @@ export function NotificationBell() {
                 </PopoverContent>
               </Popover>
               <TimePicker value={reminderTime} onChange={setReminderTime} />
-              <Button size="sm" onClick={handleAddReminder} className="h-8 px-3 rounded-lg text-[11px]">
-                Ekle
+              <Button size="sm" onClick={handleAddReminder} disabled={submitting} className="h-8 px-3 rounded-lg text-[11px]">
+                {submitting ? "..." : "Ekle"}
               </Button>
             </div>
           </div>
