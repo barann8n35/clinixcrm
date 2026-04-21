@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.check-reminders]
 verify_jwt = false
+
+[functions.test-shift-appointment]
+verify_jwt = false
