@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.clone-voice]
 verify_jwt = false
+
+[functions.check-appointment-reminders]
+verify_jwt = false
+
+[functions.check-reminders]
+verify_jwt = false
