@@ -208,6 +208,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       description: n.description,
       patient_id: n.patient_id || null,
       remind_at: n.remind_at || null,
+      scope: "personal",
     } as any);
     if (error) return { ok: false, error: error.message };
     return { ok: true };

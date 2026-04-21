@@ -71,6 +71,7 @@ Deno.serve(async (req) => {
       patient_id: patient_id ?? null,
       remind_at: remind_at ?? null,
       read: false,
+      scope: "global",
     }));
 
     if (rows.length === 0) {
