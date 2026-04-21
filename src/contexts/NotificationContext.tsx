@@ -112,13 +112,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         (payload) => {
           if (payload.eventType === "INSERT") {
             const n = mapNotification(payload.new);
-            if (n.user_id && n.user_id === userIdRef.current) {
-              setPersonalNotifications((prev) => [n, ...prev]);
-            } else if (!n.user_id) {
+            // Realtime delivers all rows on the channel; filter to current user (or legacy NULL)
+            if (n.user_id && n.user_id !== userIdRef.current) return;
+            if (n.scope === "global") {
               setGlobalNotifications((prev) => [n, ...prev]);
+            } else {
+              setPersonalNotifications((prev) => [n, ...prev]);
             }
           } else if (payload.eventType === "UPDATE") {
             const updated = mapNotification(payload.new);
+            if (updated.user_id && updated.user_id !== userIdRef.current) return;
             const updateInList = (prev: Notification[]) =>
               prev.map((item) => (item.id === updated.id ? updated : item));
             setPersonalNotifications(updateInList);
