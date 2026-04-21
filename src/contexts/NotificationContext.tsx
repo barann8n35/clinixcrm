@@ -168,10 +168,31 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }, 300);
   };
 
-  const addNotification = async (n: Omit<Notification, "id" | "time" | "read"> & { remind_at?: string | null }) => {
+  const addNotification = async (
+    n: AddNotificationInput,
+  ): Promise<{ ok: boolean; error?: string }> => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("notifications").insert({
+    if (!user) return { ok: false, error: "Oturum yok" };
+
+    if (n.scope === "global") {
+      const { data, error } = await supabase.functions.invoke(
+        "post-global-notification",
+        {
+          body: {
+            type: n.type ?? "reminder",
+            title: n.title,
+            description: n.description,
+            patient_id: n.patient_id ?? null,
+            remind_at: n.remind_at ?? null,
+          },
+        },
+      );
+      if (error) return { ok: false, error: error.message };
+      if ((data as any)?.error) return { ok: false, error: (data as any).error };
+      return { ok: true };
+    }
+
+    const { error } = await supabase.from("notifications").insert({
       user_id: user.id,
       type: n.type,
       title: n.title,
@@ -179,6 +200,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       patient_id: n.patient_id || null,
       remind_at: n.remind_at || null,
     } as any);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
   };
 
   return (
