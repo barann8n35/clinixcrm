@@ -5,6 +5,41 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ONESIGNAL_APP_ID = "5b86f320-c33b-4c3d-8c00-d3f4b7d44c07";
+
+async function sendOneSignalToAll(title: string, message: string, data: Record<string, unknown>) {
+  const apiKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
+  if (!apiKey) {
+    console.warn("[post-global-notification] ONESIGNAL_REST_API_KEY missing — skipping push");
+    return { skipped: true };
+  }
+  try {
+    const res = await fetch("https://onesignal.com/api/v1/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        Authorization: `Basic ${apiKey}`,
+      },
+      body: JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        included_segments: ["Subscribed Users"],
+        headings: { en: title, tr: title },
+        contents: { en: message, tr: message },
+        data,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error("[post-global-notification] OneSignal error", res.status, json);
+      return { ok: false, status: res.status, body: json };
+    }
+    return { ok: true, body: json };
+  } catch (err) {
+    console.error("[post-global-notification] OneSignal fetch failed", err);
+    return { ok: false, error: String(err) };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
