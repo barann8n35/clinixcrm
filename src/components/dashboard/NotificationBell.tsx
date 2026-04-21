@@ -100,15 +100,9 @@ export function NotificationBell() {
 
   const handleDismiss = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    // Trigger collapse animation locally; context handles its own removal after delay
     setDismissingIds((prev) => new Set(prev).add(id));
-    setTimeout(() => {
-      dismissNotification(id);
-      setDismissingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    }, 250);
+    dismissNotification(id);
   };
 
   const handleNotificationClick = (n: Notification) => {
