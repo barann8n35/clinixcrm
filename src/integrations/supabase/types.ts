@@ -612,6 +612,10 @@ export type Database = {
           username: string
         }[]
       }
+      can_post_global_notification: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       handle_omnichannel_message: {
         Args: {
           p_external_id: string

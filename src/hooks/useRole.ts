@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type AppRole = "admin" | "staff" | "doctor" | "pending" | "premium" | "premium_plus";
+export type AppRole = "admin" | "staff" | "doctor" | "pending" | "premium" | "premium_plus" | "asistan";
 
 export function useRole() {
   const { user } = useAuth();
@@ -23,14 +23,25 @@ export function useRole() {
     fetchRoles();
   }, [user]);
 
+  const isStaff = roles.includes("staff");
+  const isAdmin = roles.includes("admin");
+
   return {
     roles,
     loading,
-    isAdmin: roles.includes("admin"),
+    isAdmin,
     isDoctor: roles.includes("doctor"),
-    isStaff: roles.includes("staff"),
-    isPremium: roles.includes("premium") || roles.includes("premium_plus") || roles.includes("admin"),
-    isPremiumPlus: roles.includes("premium_plus") || roles.includes("admin"),
+    isStaff,
+    isAsistan: roles.includes("asistan"),
+    isPremium: roles.includes("premium") || roles.includes("premium_plus") || isAdmin,
+    isPremiumPlus: roles.includes("premium_plus") || isAdmin,
+    // Yetkili: staff dışındaki tüm onaylı roller (genel hatırlatıcı ekleme yetkisi)
+    canPostGlobal:
+      isAdmin ||
+      roles.includes("doctor") ||
+      roles.includes("asistan") ||
+      roles.includes("premium") ||
+      roles.includes("premium_plus"),
     hasRole: (role: AppRole) => roles.includes(role),
   };
 }

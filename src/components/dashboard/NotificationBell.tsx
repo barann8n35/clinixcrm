@@ -1,4 +1,4 @@
-import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing, UserPlus, CalendarIcon, X } from "lucide-react";
+import { Bell, Plus, CalendarCheck, UserX, MessageSquare, AlertTriangle, Clock, BellRing, UserPlus, CalendarIcon, X, Users, User as UserIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications, type Notification } from "@/contexts/NotificationContext";
 import { useState } from "react";
@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { useRole } from "@/hooks/useRole";
+import { useToast } from "@/hooks/use-toast";
 
 const typeConfig: Record<string, { icon: typeof Bell; color: string; bg: string }> = {
   appointment: { icon: CalendarCheck, color: "text-primary", bg: "bg-primary/10" },
@@ -47,16 +49,20 @@ function sortByUrgency(list: Notification[]) {
 
 export function NotificationBell() {
   const { personalNotifications, globalNotifications, unreadCount, markAllRead, dismissNotification, addNotification } = useNotifications();
+  const { canPostGlobal } = useRole();
+  const { toast } = useToast();
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [reminderText, setReminderText] = useState("");
   const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
   const [reminderTime, setReminderTime] = useState("09:00");
+  const [reminderScope, setReminderScope] = useState<"personal" | "global">("personal");
+  const [submitting, setSubmitting] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-  const handleAddReminder = () => {
-    if (!reminderText.trim()) return;
+  const handleAddReminder = async () => {
+    if (!reminderText.trim() || submitting) return;
     let remindAtISO: string | null = null;
     if (reminderDate) {
       const [h, m] = reminderTime.split(":").map(Number);
@@ -64,15 +70,31 @@ export function NotificationBell() {
       dt.setHours(h, m, 0, 0);
       remindAtISO = dt.toISOString();
     }
-    addNotification({
+    setSubmitting(true);
+    const scope = canPostGlobal ? reminderScope : "personal";
+    const res = await addNotification({
       type: "reminder",
-      title: "🔔 Hatırlatıcı",
+      title: scope === "global" ? "📣 Genel Hatırlatıcı" : "🔔 Hatırlatıcı",
       description: reminderText,
       remind_at: remindAtISO,
+      scope,
+    });
+    setSubmitting(false);
+    if (!res.ok) {
+      toast({
+        title: "Hatırlatıcı eklenemedi",
+        description: res.error ?? "Bilinmeyen hata",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: scope === "global" ? "Tüm ekibe gönderildi" : "Kişisel hatırlatıcı eklendi",
     });
     setReminderText("");
     setReminderDate(undefined);
     setReminderTime("09:00");
+    setReminderScope("personal");
     setShowAddReminder(false);
   };
 
@@ -205,14 +227,46 @@ export function NotificationBell() {
 
         {showAddReminder && (
           <div className="px-4 py-3 border-b border-border/60 bg-muted/30 space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Yeni Hatırlatıcı</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Yeni Hatırlatıcı</span>
+              </div>
+              {canPostGlobal && (
+                <div className="flex items-center bg-background border border-border/60 rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setReminderScope("personal")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 h-6 rounded-md text-[10px] font-medium transition-all",
+                      reminderScope === "personal"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <UserIcon className="w-3 h-3" />
+                    Bana Özel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReminderScope("global")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 h-6 rounded-md text-[10px] font-medium transition-all",
+                      reminderScope === "global"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Users className="w-3 h-3" />
+                    Tüm Ekip
+                  </button>
+                </div>
+              )}
             </div>
             <Input
               value={reminderText}
               onChange={(e) => setReminderText(e.target.value)}
-              placeholder="Örn: Yarın MR sonucunu sor"
+              placeholder={reminderScope === "global" ? "Tüm ekibe gidecek mesaj…" : "Örn: Yarın MR sonucunu sor"}
               className="h-8 text-[12px] rounded-lg"
               onKeyDown={(e) => e.key === "Enter" && handleAddReminder()}
             />
@@ -235,8 +289,8 @@ export function NotificationBell() {
                 </PopoverContent>
               </Popover>
               <TimePicker value={reminderTime} onChange={setReminderTime} />
-              <Button size="sm" onClick={handleAddReminder} className="h-8 px-3 rounded-lg text-[11px]">
-                Ekle
+              <Button size="sm" onClick={handleAddReminder} disabled={submitting} className="h-8 px-3 rounded-lg text-[11px]">
+                {submitting ? "..." : "Ekle"}
               </Button>
             </div>
           </div>
