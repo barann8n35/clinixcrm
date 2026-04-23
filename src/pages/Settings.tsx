@@ -319,8 +319,14 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
+        {/* Sesli Asistan Tab */}
+        <TabsContent value="ses-asistan">
+          <VoiceAgentTab />
+        </TabsContent>
+
         {/* Ses Klonum Tab */}
         <TabsContent value="ses-klonum">
+
           <Card className="border-border/60 shadow-card rounded-2xl">
             <CardHeader>
               <CardTitle className="text-lg font-display flex items-center gap-2">
