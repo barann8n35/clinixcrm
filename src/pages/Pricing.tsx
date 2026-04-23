@@ -29,7 +29,9 @@ const PLANS: Plan[] = [
     features: [
       { text: "Hasta CRM ve kayıtlar", included: true },
       { text: "Manuel takvim & randevu yönetimi", included: true },
-      { text: "Stok takibi ve ekip yönetimi", included: true },
+      { text: "Tüm Tıbbi Branşlara Uyumlu Modüler Altyapı", included: true },
+      { text: "Gelişmiş Randevu Raporlaması", included: true },
+      { text: "SMS/Whatsapp Randevu Hatırlatıcı", included: true },
       { text: "Temel hatırlatmalar (push & e-posta)", included: true },
       { text: "WhatsApp AI Bot", included: false },
       { text: "RAG Bilgi Bankası otomatik cevap", included: false },
