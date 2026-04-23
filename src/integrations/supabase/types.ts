@@ -737,6 +737,42 @@ export type Database = {
         }
         Relationships: []
       }
+      widget_settings: {
+        Row: {
+          ask_phone: boolean
+          clinic_name: string
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          primary_color: string
+          updated_at: string
+          welcome_message: string
+        }
+        Insert: {
+          ask_phone?: boolean
+          clinic_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          primary_color?: string
+          updated_at?: string
+          welcome_message?: string
+        }
+        Update: {
+          ask_phone?: boolean
+          clinic_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          primary_color?: string
+          updated_at?: string
+          welcome_message?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
