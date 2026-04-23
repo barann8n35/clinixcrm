@@ -9,13 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download, CheckCircle2, Clock, Mic, PhoneCall } from "lucide-react";
+import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download, CheckCircle2, Clock, Mic, PhoneCall, Globe } from "lucide-react";
 import { usePWA } from "@/hooks/use-pwa";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import VoiceCloneManager from "@/components/video/VoiceCloneManager";
 import VoiceAgentTab from "@/components/settings/VoiceAgentTab";
+import WidgetSettingsTab from "@/components/settings/WidgetSettingsTab";
 import { FeatureLock } from "@/components/premium/FeatureLock";
 import { useRole } from "@/hooks/useRole";
 
@@ -139,6 +140,7 @@ const Settings = () => {
           <TabsTrigger value="hazir-yanitlar" className="gap-2"><Zap className="h-4 w-4 hidden sm:block" />Hazır Yanıtlar</TabsTrigger>
           <TabsTrigger value="ses-asistan" className="gap-2"><PhoneCall className="h-4 w-4 hidden sm:block" />Sesli Asistan</TabsTrigger>
           <TabsTrigger value="ses-klonum" className="gap-2"><Mic className="h-4 w-4 hidden sm:block" />Ses Klonum</TabsTrigger>
+          <TabsTrigger value="web-widget" className="gap-2"><Globe className="h-4 w-4 hidden sm:block" />Web Widget</TabsTrigger>
           <TabsTrigger value="mobil" className="gap-2"><Smartphone className="h-4 w-4 hidden sm:block" />Mobil & Bildirim</TabsTrigger>
         </TabsList>
 
@@ -351,6 +353,11 @@ const Settings = () => {
               <VoiceCloneManager />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Web Widget Tab */}
+        <TabsContent value="web-widget">
+          <WidgetSettingsTab />
         </TabsContent>
 
         {/* Mobil & Bildirim Tab */}

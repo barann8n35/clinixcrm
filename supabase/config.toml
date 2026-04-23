@@ -30,3 +30,9 @@ verify_jwt = false
 [functions.trigger-appointment-calls]
 verify_jwt = false
 
+[functions.widget-message]
+verify_jwt = false
+
+[functions.widget-replies]
+verify_jwt = false
+
