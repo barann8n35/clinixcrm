@@ -72,6 +72,24 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
   const [apptDate, setApptDate] = useState<Date | undefined>(undefined);
   const [apptTime, setApptTime] = useState("09:00");
   const [apptType, setApptType] = useState("Muayene");
+  const [calling, setCalling] = useState(false);
+
+  const handleCallPatient = async () => {
+    if (!patient?.phone) {
+      toast.error("Bu hastanın telefon numarası yok.");
+      return;
+    }
+    setCalling(true);
+    const { data, error } = await supabase.functions.invoke("place-outbound-call", {
+      body: { patient_id: patient.id, call_type: "manual" },
+    });
+    setCalling(false);
+    if (error || (data as any)?.error) {
+      toast.error(error?.message ?? (data as any)?.error ?? "Arama başlatılamadı");
+      return;
+    }
+    toast.success("📞 Arama başlatıldı");
+  };
 
   const fetchPatient = useCallback(async (id: string) => {
     setLoading(true);
