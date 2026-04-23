@@ -24,6 +24,7 @@ import Inventory from "./pages/Inventory";
 import TeamManagement from "./pages/TeamManagement";
 import VideoStudio from "./pages/VideoStudio";
 import Pricing from "./pages/Pricing";
+import Widget from "./pages/Widget";
 import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
@@ -51,6 +52,7 @@ const App = () => (
           <OneSignalClickHandler />
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/widget" element={<Widget />} />
             <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
