@@ -258,6 +258,22 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
               <CheckCircle2 className="w-4 h-4 fill-emerald-500/20" />
             </div>
           )}
+          {!editing && patient?.phone && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200"
+                  onClick={handleCallPatient}
+                  disabled={calling}
+                >
+                  {calling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Phone className="w-4 h-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p className="text-xs">Asistan ile ara</p></TooltipContent>
+            </Tooltip>
+          )}
           {!editing ? (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={startEdit}>
               <Edit3 className="w-4 h-4" />
