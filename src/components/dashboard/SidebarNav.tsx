@@ -1,4 +1,4 @@
-import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles } from "lucide-react";
+import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles, Crown } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +34,7 @@ interface SidebarNavProps {
 export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
   const { user, signOut } = useAuth();
   const { t, i18n } = useTranslation();
-  const { isPremium } = useRole();
+  const { isPremium, isPremiumPlus } = useRole();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -116,7 +116,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
           <>
             {!collapsed && (
               <p className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-widest text-primary/80 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> PREMIUM
+                <Sparkles className="w-3 h-3" /> {isPremiumPlus ? "PREMIUM+ VIP" : "PREMIUM"}
               </p>
             )}
             {collapsed && <div className="my-4 mx-2 h-px bg-sidebar-border" />}
@@ -124,6 +124,31 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
               {premiumNavItems.map(renderNavItem)}
             </div>
           </>
+        )}
+
+        {/* Upgrade CTA for non-premium users */}
+        {!isPremium && !collapsed && (
+          <button
+            onClick={() => handleNav("/pricing")}
+            className="mt-6 w-full rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-3 py-3 text-left transition-all hover:border-primary/60 hover:scale-[1.02] active:scale-95"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Crown className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Yükselt</span>
+            </div>
+            <p className="text-[11px] text-sidebar-muted leading-snug">
+              WhatsApp AI bot ve sesli sekreter için Premium paketleri keşfet.
+            </p>
+          </button>
+        )}
+        {!isPremium && collapsed && (
+          <button
+            onClick={() => handleNav("/pricing")}
+            className="mt-4 w-full flex justify-center p-2 rounded-lg text-primary hover:bg-sidebar-accent/50 transition-colors"
+            title="Yükselt"
+          >
+            <Crown className="w-4 h-4" />
+          </button>
         )}
       </nav>
 
