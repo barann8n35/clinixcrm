@@ -16,6 +16,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import VoiceCloneManager from "@/components/video/VoiceCloneManager";
 import VoiceAgentTab from "@/components/settings/VoiceAgentTab";
+import { FeatureLock } from "@/components/premium/FeatureLock";
+import { useRole } from "@/hooks/useRole";
 
 interface QuickReply {
   id: string;
@@ -29,6 +31,7 @@ const Settings = () => {
   const [instagramEnabled, setInstagramEnabled] = useState(false);
   const { canInstall, isInstalled, install } = usePWA();
   const { loading: notifLoading, connectionStatus, requestPermission } = usePushNotifications();
+  const { isPremiumPlus } = useRole();
 
   // Quick replies state
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
@@ -319,9 +322,17 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        {/* Sesli Asistan Tab */}
+        {/* Sesli Asistan Tab — Premium+ */}
         <TabsContent value="ses-asistan">
-          <VoiceAgentTab />
+          {isPremiumPlus ? (
+            <VoiceAgentTab />
+          ) : (
+            <FeatureLock
+              tier="premium_plus"
+              featureName="Sesli AI Asistan"
+              description="7/24 telefonları açan, randevu alan, doktorun kendi sesiyle dış arama yapan dijital sekreter. Premium+ paketine dahildir."
+            />
+          )}
         </TabsContent>
 
         {/* Ses Klonum Tab */}
