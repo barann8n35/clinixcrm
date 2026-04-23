@@ -134,6 +134,7 @@ const Settings = () => {
           <TabsTrigger value="klinik" className="gap-2"><Building2 className="h-4 w-4 hidden sm:block" />Klinik</TabsTrigger>
           <TabsTrigger value="entegrasyonlar" className="gap-2"><Plug className="h-4 w-4 hidden sm:block" />Entegrasyonlar</TabsTrigger>
           <TabsTrigger value="hazir-yanitlar" className="gap-2"><Zap className="h-4 w-4 hidden sm:block" />Hazır Yanıtlar</TabsTrigger>
+          <TabsTrigger value="ses-asistan" className="gap-2"><PhoneCall className="h-4 w-4 hidden sm:block" />Sesli Asistan</TabsTrigger>
           <TabsTrigger value="ses-klonum" className="gap-2"><Mic className="h-4 w-4 hidden sm:block" />Ses Klonum</TabsTrigger>
           <TabsTrigger value="mobil" className="gap-2"><Smartphone className="h-4 w-4 hidden sm:block" />Mobil & Bildirim</TabsTrigger>
         </TabsList>
