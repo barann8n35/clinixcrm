@@ -54,6 +54,8 @@ const PLANS: Plan[] = [
       { text: "WhatsApp Business AI Bot", included: true },
       { text: "n8n ile otomatik randevu alma", included: true },
       { text: "RAG Bilgi Bankası ile akıllı cevaplar", included: true },
+      { text: "Yapay Zeka Destekli Klinik Bilgi Bankası (SSS Otomatik Yanıt)", included: true },
+      { text: "Video Stüdyo: AI Destekli Çoklu Dil Altyazı Çevirisi", included: true },
       { text: "Instagram & Facebook entegrasyonu", included: true },
       { text: "Kampanya ve toplu mesaj", included: true },
       { text: "Sesli AI Asistan (Twilio)", included: false },
