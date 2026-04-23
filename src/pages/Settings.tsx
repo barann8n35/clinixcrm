@@ -355,6 +355,11 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
+        {/* Web Widget Tab */}
+        <TabsContent value="web-widget">
+          <WidgetSettingsTab />
+        </TabsContent>
+
         {/* Mobil & Bildirim Tab */}
         <TabsContent value="mobil">
           <div className="space-y-4">
