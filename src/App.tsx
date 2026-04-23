@@ -23,6 +23,7 @@ import CalendarPage from "./pages/CalendarPage";
 import Inventory from "./pages/Inventory";
 import TeamManagement from "./pages/TeamManagement";
 import VideoStudio from "./pages/VideoStudio";
+import Pricing from "./pages/Pricing";
 import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
@@ -50,6 +51,7 @@ const App = () => (
           <OneSignalClickHandler />
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
