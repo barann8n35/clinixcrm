@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download, CheckCircle2, Clock, Mic } from "lucide-react";
+import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download, CheckCircle2, Clock, Mic, PhoneCall } from "lucide-react";
 import { usePWA } from "@/hooks/use-pwa";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import VoiceCloneManager from "@/components/video/VoiceCloneManager";
+import VoiceAgentTab from "@/components/settings/VoiceAgentTab";
 
 interface QuickReply {
   id: string;
@@ -133,6 +134,7 @@ const Settings = () => {
           <TabsTrigger value="klinik" className="gap-2"><Building2 className="h-4 w-4 hidden sm:block" />Klinik</TabsTrigger>
           <TabsTrigger value="entegrasyonlar" className="gap-2"><Plug className="h-4 w-4 hidden sm:block" />Entegrasyonlar</TabsTrigger>
           <TabsTrigger value="hazir-yanitlar" className="gap-2"><Zap className="h-4 w-4 hidden sm:block" />Hazır Yanıtlar</TabsTrigger>
+          <TabsTrigger value="ses-asistan" className="gap-2"><PhoneCall className="h-4 w-4 hidden sm:block" />Sesli Asistan</TabsTrigger>
           <TabsTrigger value="ses-klonum" className="gap-2"><Mic className="h-4 w-4 hidden sm:block" />Ses Klonum</TabsTrigger>
           <TabsTrigger value="mobil" className="gap-2"><Smartphone className="h-4 w-4 hidden sm:block" />Mobil & Bildirim</TabsTrigger>
         </TabsList>
@@ -317,8 +319,14 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
+        {/* Sesli Asistan Tab */}
+        <TabsContent value="ses-asistan">
+          <VoiceAgentTab />
+        </TabsContent>
+
         {/* Ses Klonum Tab */}
         <TabsContent value="ses-klonum">
+
           <Card className="border-border/60 shadow-card rounded-2xl">
             <CardHeader>
               <CardTitle className="text-lg font-display flex items-center gap-2">

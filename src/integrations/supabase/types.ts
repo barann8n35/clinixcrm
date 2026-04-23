@@ -563,6 +563,144 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_agent_settings: {
+        Row: {
+          agent_persona: string
+          auto_call_appointment_reminders: boolean
+          auto_call_new_leads: boolean
+          auto_call_unanswered_messages: boolean
+          call_window_end: string
+          call_window_start: string
+          clinic_name: string
+          created_at: string
+          daily_call_limit: number
+          doctor_name: string
+          greeting_message: string
+          id: string
+          language: string
+          unanswered_threshold_minutes: number
+          updated_at: string
+          voice_id: string
+        }
+        Insert: {
+          agent_persona?: string
+          auto_call_appointment_reminders?: boolean
+          auto_call_new_leads?: boolean
+          auto_call_unanswered_messages?: boolean
+          call_window_end?: string
+          call_window_start?: string
+          clinic_name?: string
+          created_at?: string
+          daily_call_limit?: number
+          doctor_name?: string
+          greeting_message?: string
+          id?: string
+          language?: string
+          unanswered_threshold_minutes?: number
+          updated_at?: string
+          voice_id?: string
+        }
+        Update: {
+          agent_persona?: string
+          auto_call_appointment_reminders?: boolean
+          auto_call_new_leads?: boolean
+          auto_call_unanswered_messages?: boolean
+          call_window_end?: string
+          call_window_start?: string
+          clinic_name?: string
+          created_at?: string
+          daily_call_limit?: number
+          doctor_name?: string
+          greeting_message?: string
+          id?: string
+          language?: string
+          unanswered_threshold_minutes?: number
+          updated_at?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
+      voice_calls: {
+        Row: {
+          appointment_id: string | null
+          call_type: string
+          completed_at: string | null
+          conversation_id: string | null
+          created_at: string
+          direction: string
+          duration_seconds: number | null
+          error_message: string | null
+          from_number: string | null
+          id: string
+          initiated_by: string | null
+          patient_id: string | null
+          recording_url: string | null
+          status: string
+          summary: string | null
+          to_number: string | null
+          transcript: string | null
+          twilio_call_sid: string | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          call_type?: string
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          direction: string
+          duration_seconds?: number | null
+          error_message?: string | null
+          from_number?: string | null
+          id?: string
+          initiated_by?: string | null
+          patient_id?: string | null
+          recording_url?: string | null
+          status?: string
+          summary?: string | null
+          to_number?: string | null
+          transcript?: string | null
+          twilio_call_sid?: string | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          call_type?: string
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          direction?: string
+          duration_seconds?: number | null
+          error_message?: string | null
+          from_number?: string | null
+          id?: string
+          initiated_by?: string | null
+          patient_id?: string | null
+          recording_url?: string | null
+          status?: string
+          summary?: string | null
+          to_number?: string | null
+          transcript?: string | null
+          twilio_call_sid?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_calls_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_calls_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voice_clones: {
         Row: {
           created_at: string

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Edit3, Save, CalendarIcon, CheckCircle2 } from "lucide-react";
+import { X, Edit3, Save, CalendarIcon, CheckCircle2, Phone, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +72,24 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
   const [apptDate, setApptDate] = useState<Date | undefined>(undefined);
   const [apptTime, setApptTime] = useState("09:00");
   const [apptType, setApptType] = useState("Muayene");
+  const [calling, setCalling] = useState(false);
+
+  const handleCallPatient = async () => {
+    if (!patient?.phone) {
+      toast.error("Bu hastanın telefon numarası yok.");
+      return;
+    }
+    setCalling(true);
+    const { data, error } = await supabase.functions.invoke("place-outbound-call", {
+      body: { patient_id: patient.id, call_type: "manual" },
+    });
+    setCalling(false);
+    if (error || (data as any)?.error) {
+      toast.error(error?.message ?? (data as any)?.error ?? "Arama başlatılamadı");
+      return;
+    }
+    toast.success("📞 Arama başlatıldı");
+  };
 
   const fetchPatient = useCallback(async (id: string) => {
     setLoading(true);
@@ -239,6 +257,22 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
             <div className="h-8 w-8 flex items-center justify-center text-emerald-600">
               <CheckCircle2 className="w-4 h-4 fill-emerald-500/20" />
             </div>
+          )}
+          {!editing && patient?.phone && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200"
+                  onClick={handleCallPatient}
+                  disabled={calling}
+                >
+                  {calling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Phone className="w-4 h-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p className="text-xs">Asistan ile ara</p></TooltipContent>
+            </Tooltip>
           )}
           {!editing ? (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={startEdit}>

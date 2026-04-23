@@ -20,3 +20,13 @@ verify_jwt = false
 
 [functions.post-global-notification]
 verify_jwt = false
+
+[functions.voice-twiml-handler]
+verify_jwt = false
+
+[functions.voice-status-webhook]
+verify_jwt = false
+
+[functions.trigger-appointment-calls]
+verify_jwt = false
+
