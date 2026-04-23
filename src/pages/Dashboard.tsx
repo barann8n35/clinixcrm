@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/chart";
 import { PieChart, Pie, Cell } from "recharts";
 import { PatientDetailModal } from "@/components/patients/PatientDetailModal";
+import { OnboardingWizard } from "@/components/premium/OnboardingWizard";
 
 interface DashboardStats {
   todayAppointments: number;
@@ -203,6 +204,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-6 md:p-8 space-y-6 h-full overflow-auto gradient-mesh">
+      <OnboardingWizard />
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">{t("dashboard.title")}</h1>
