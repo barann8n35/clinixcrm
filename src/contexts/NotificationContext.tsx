@@ -141,18 +141,29 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [fetchNotifications]);
 
   const markAllRead = async () => {
+    const unreadIds = allNotifications.filter((n) => !n.read).map((n) => n.id);
     setPersonalNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setGlobalNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-        .from("notifications")
-        .update({ read: true } as any)
-        .eq("user_id", user.id)
-        .eq("read", false);
-      // For global notifications, we mark them read by updating where user_id is null
-      // Note: RLS may prevent this for global notifications - that's okay
-    }
+    if (unreadIds.length === 0) return;
+    // Update by IDs so we cover both personal and (RLS-permitted) global rows
+    await supabase
+      .from("notifications")
+      .update({ read: true } as any)
+      .in("id", unreadIds);
+  };
+
+  const clearAll = async () => {
+    const ids = allNotifications.map((n) => n.id);
+    setPersonalNotifications([]);
+    setGlobalNotifications([]);
+    setDismissedIds(new Set());
+    if (ids.length === 0) return { ok: true };
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .in("id", ids);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
   };
 
   const toggleRead = async (id: string) => {
