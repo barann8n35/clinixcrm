@@ -30,6 +30,7 @@ interface NotificationContextType {
   markAllRead: () => void;
   toggleRead: (id: string) => void;
   dismissNotification: (id: string) => void;
+  clearAll: () => Promise<{ ok: boolean; error?: string }>;
   addNotification: (n: AddNotificationInput) => Promise<{ ok: boolean; error?: string }>;
 }
 
