@@ -36,12 +36,28 @@ function formatTr(dateStr: string): string {
   return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
 }
 
-async function sendOneSignalToAll(title: string, message: string, patientId: string) {
+/**
+ * Sends a OneSignal push targeted at SPECIFIC subscription IDs (not segments).
+ * Uses a stable `external_id` (collapse_id) per appointment+kind so duplicates
+ * arriving on the same device replace each other instead of stacking.
+ */
+async function sendOneSignalToSubscriptions(
+  subscriptionIds: string[],
+  title: string,
+  message: string,
+  patientId: string,
+  collapseId: string,
+) {
   const restKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
   if (!restKey) {
-    console.warn("[check-appointment-reminders] ONESIGNAL_REST_API_KEY not set, skipping push");
+    console.warn("[push] ONESIGNAL_REST_API_KEY not set, skipping");
     return { skipped: true };
   }
+  if (!subscriptionIds.length) {
+    console.warn("[push] no subscriptions, skipping");
+    return { skipped: true };
+  }
+
   const res = await fetch("https://api.onesignal.com/notifications", {
     method: "POST",
     headers: {
@@ -50,10 +66,14 @@ async function sendOneSignalToAll(title: string, message: string, patientId: str
     },
     body: JSON.stringify({
       app_id: ONESIGNAL_APP_ID,
-      included_segments: ["All"],
+      include_subscription_ids: subscriptionIds,
+      // Replace any prior push with the same collapse_id on the device
+      web_push_topic: collapseId,
+      // 1 hour TTL — stale notifications expire on the device
+      ttl: 3600,
       headings: { en: title, tr: title },
       contents: { en: message, tr: message },
-      data: { patientId, type: "appointment_reminder" },
+      data: { patientId, type: "appointment_reminder", collapseId },
       url: `https://clinixcrm.lovable.app/patients?patientId=${patientId}`,
     }),
   });
@@ -67,10 +87,7 @@ async function sendOneSignalToAll(title: string, message: string, patientId: str
 
 async function notifyN8nWhatsapp(payload: Record<string, unknown>) {
   const url = Deno.env.get("N8N_APPOINTMENT_REMINDER_WEBHOOK_URL");
-  if (!url) {
-    console.warn("[check-appointment-reminders] N8N webhook URL not set, skipping WhatsApp");
-    return { skipped: true };
-  }
+  if (!url) return { skipped: true };
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -95,12 +112,13 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const now = new Date();
-    // Window for 24h reminder: between 23h45m and 24h15m from now
-    const t24Min = new Date(now.getTime() + (23 * 60 + 45) * 60 * 1000).toISOString();
-    const t24Max = new Date(now.getTime() + (24 * 60 + 15) * 60 * 1000).toISOString();
-    // Window for 1h reminder: between 45m and 75m from now
+    // Cron runs every 15 min → use a 15-min lookahead window per kind
+    // 24h reminder window: now+23h45m → now+24h00m  (15 min wide)
+    const t24Min = new Date(now.getTime() + 23 * 60 * 60 * 1000 + 45 * 60 * 1000).toISOString();
+    const t24Max = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    // 1h reminder window: now+45m → now+60m
     const t1Min = new Date(now.getTime() + 45 * 60 * 1000).toISOString();
-    const t1Max = new Date(now.getTime() + 75 * 60 * 1000).toISOString();
+    const t1Max = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
 
     const fetchWindow = async (min: string, max: string) => {
       const { data, error } = await supabase
@@ -108,7 +126,7 @@ Deno.serve(async (req) => {
         .select("id, scheduled_at, type, doctor, status, patient_id")
         .eq("status", "upcoming")
         .gte("scheduled_at", min)
-        .lte("scheduled_at", max);
+        .lt("scheduled_at", max);
       if (error) throw error;
       return (data ?? []) as AppointmentRow[];
     };
@@ -126,47 +144,55 @@ Deno.serve(async (req) => {
     if (allAppts.length === 0) {
       return new Response(
         JSON.stringify({ message: "No appointments in window", processed: 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Filter out already-sent reminders
+    // Filter out already-sent (defense-in-depth; insert below has unique guard)
     const apptIds = Array.from(new Set(allAppts.map((a) => a.id)));
-    const { data: sentRows, error: sentErr } = await supabase
+    const { data: sentRows } = await supabase
       .from("appointment_reminders_sent")
       .select("appointment_id, reminder_type")
       .in("appointment_id", apptIds);
-    if (sentErr) throw sentErr;
     const sentSet = new Set(
-      (sentRows ?? []).map((r: any) => `${r.appointment_id}:${r.reminder_type}`)
+      (sentRows ?? []).map((r: any) => `${r.appointment_id}:${r.reminder_type}`),
     );
 
-    const pending = allAppts.filter(
-      (a) => !sentSet.has(`${a.id}:${a._kind}`)
-    );
-
+    const pending = allAppts.filter((a) => !sentSet.has(`${a.id}:${a._kind}`));
     if (pending.length === 0) {
       return new Response(
         JSON.stringify({ message: "All reminders already sent", processed: 0 }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Fetch patient info
+    // Patient info
     const patientIds = Array.from(new Set(pending.map((a) => a.patient_id)));
-    const { data: patientsData, error: patErr } = await supabase
+    const { data: patientsData } = await supabase
       .from("patients")
       .select("id, name, phone, platform")
       .in("id", patientIds);
-    if (patErr) throw patErr;
     const patientMap = new Map<string, PatientRow>(
-      (patientsData ?? []).map((p: any) => [p.id, p])
+      (patientsData ?? []).map((p: any) => [p.id, p]),
     );
 
-    // Fetch all users for in-app notifications
-    const { data: { users }, error: usersErr } = await supabase.auth.admin.listUsers();
-    if (usersErr) throw usersErr;
-    const userIds = (users ?? []).map((u) => u.id);
+    // Active staff (only those with role assigned, not 'pending')
+    const { data: activeRoles } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .neq("role", "pending");
+    const activeUserIds = Array.from(
+      new Set((activeRoles ?? []).map((r: any) => r.user_id as string)),
+    );
+
+    // Push subscriptions for active users only
+    const { data: subs } = await supabase
+      .from("push_subscriptions")
+      .select("user_id, endpoint")
+      .in("user_id", activeUserIds.length ? activeUserIds : ["__none__"]);
+    const subscriptionIds = Array.from(
+      new Set((subs ?? []).map((s: any) => s.endpoint as string).filter(Boolean)),
+    );
 
     let processed = 0;
     const errors: string[] = [];
@@ -178,16 +204,28 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // 1) CLAIM the reminder slot FIRST — if this fails (unique violation),
+      // another concurrent run already handled it; skip silently.
+      const { error: claimErr } = await supabase
+        .from("appointment_reminders_sent")
+        .insert({ appointment_id: appt.id, reminder_type: appt._kind });
+      if (claimErr) {
+        // Likely 23505 unique_violation → already sent
+        console.info(`[skip] ${appt.id}:${appt._kind} already claimed`);
+        continue;
+      }
+
       const when = formatTr(appt.scheduled_at);
       const isOneHour = appt._kind === "1h";
       const titleEmoji = isOneHour ? "⏰" : "📅";
       const window = isOneHour ? "1 saat sonra" : "Yarın";
-      const title = `${titleEmoji} Randevu Hatırlatıcı: ${patient.name}`;
+      const title = `${titleEmoji} Randevu: ${patient.name}`;
       const description = `${patient.name} için ${window} (${when}) ${appt.type} randevusu var. Doktor: ${appt.doctor}`;
+      const collapseId = `appt-${appt.id}-${appt._kind}`;
 
-      // 1) In-app notifications for all staff
-      if (userIds.length > 0) {
-        const rows = userIds.map((uid) => ({
+      // 2) In-app notifications for active staff only
+      if (activeUserIds.length > 0) {
+        const rows = activeUserIds.map((uid) => ({
           user_id: uid,
           type: "appointment",
           title,
@@ -198,14 +236,20 @@ Deno.serve(async (req) => {
         const { error: insErr } = await supabase.from("notifications").insert(rows);
         if (insErr) {
           console.error("notifications insert error", insErr);
-          errors.push(`notifications: ${insErr.message}`);
+          errors.push(`notif: ${insErr.message}`);
         }
       }
 
-      // 2) Push to all subscribed devices
-      await sendOneSignalToAll(title, description, patient.id);
+      // 3) Push only to subscribed devices (not "All" segment)
+      await sendOneSignalToSubscriptions(
+        subscriptionIds,
+        title,
+        description,
+        patient.id,
+        collapseId,
+      );
 
-      // 3) WhatsApp to patient via n8n
+      // 4) WhatsApp via n8n
       if (patient.phone) {
         await notifyN8nWhatsapp({
           event: "appointment_reminder",
@@ -224,27 +268,18 @@ Deno.serve(async (req) => {
         });
       }
 
-      // 4) Mark as sent
-      const { error: markErr } = await supabase
-        .from("appointment_reminders_sent")
-        .insert({ appointment_id: appt.id, reminder_type: appt._kind });
-      if (markErr) {
-        console.error("mark sent error", markErr);
-        errors.push(`mark: ${markErr.message}`);
-      } else {
-        processed++;
-      }
+      processed++;
     }
 
     return new Response(
       JSON.stringify({ message: "Processed", processed, errors }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err: any) {
     console.error("check-appointment-reminders fatal", err);
     return new Response(
       JSON.stringify({ error: err?.message ?? "unknown" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
