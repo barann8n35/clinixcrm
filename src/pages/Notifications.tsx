@@ -1,4 +1,5 @@
-import { Bell, CalendarCheck, UserX, MessageSquare, AlertTriangle, CheckCheck, BellRing, UserPlus, Clock } from "lucide-react";
+import { Bell, CalendarCheck, UserX, MessageSquare, AlertTriangle, CheckCheck, BellRing, UserPlus, Clock, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,7 @@ function getRemindUrgency(remind_at?: string | null): "overdue" | "soon" | null 
 }
 
 const Notifications = () => {
-  const { personalNotifications, globalNotifications, unreadCount, markAllRead, toggleRead } = useNotifications();
+  const { personalNotifications, globalNotifications, unreadCount, markAllRead, toggleRead, clearAll } = useNotifications();
   const notifications = [...personalNotifications, ...globalNotifications];
 
   const sorted = [...notifications].sort((a, b) => {
@@ -38,21 +39,37 @@ const Notifications = () => {
     return va - vb;
   });
 
+  const handleClearAll = async () => {
+    if (notifications.length === 0) return;
+    if (!confirm(`${notifications.length} bildirimi silmek istiyor musunuz?`)) return;
+    const res = await clearAll();
+    if (res.ok) toast.success("Tüm bildirimler temizlendi");
+    else toast.error(res.error || "Temizlenemedi");
+  };
+
   return (
     <div className="p-4 md:p-8 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-display font-bold text-foreground">Bildirimler</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {unreadCount > 0 ? `${unreadCount} okunmamış bildirim` : "Tüm bildirimler okundu"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={markAllRead} className="gap-2">
-            <CheckCheck className="h-4 w-4" />
-            Tümünü okundu işaretle
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={markAllRead} className="gap-2">
+              <CheckCheck className="h-4 w-4" />
+              Tümünü okundu işaretle
+            </Button>
+          )}
+          {notifications.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={handleClearAll} className="gap-2 text-destructive hover:text-destructive">
+              <Trash2 className="h-4 w-4" />
+              Tümünü temizle
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">
