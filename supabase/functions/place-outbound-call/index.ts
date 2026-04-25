@@ -134,6 +134,10 @@ Deno.serve(async (req) => {
     const twilioJson = await twilioRes.json();
 
     if (!twilioRes.ok) {
+      const twilioCode = twilioJson?.code;
+      const twilioMsg = twilioJson?.message ?? "Twilio call failed";
+      const isUnverified = twilioCode === 21219 || twilioCode === 21608;
+
       await admin
         .from("voice_calls")
         .update({
@@ -141,9 +145,19 @@ Deno.serve(async (req) => {
           error_message: `Twilio ${twilioRes.status}: ${JSON.stringify(twilioJson)}`,
         })
         .eq("id", callId);
+
+      // Return 200 with structured error so the frontend doesn't blank-screen
       return new Response(
-        JSON.stringify({ error: "Twilio call failed", details: twilioJson }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          ok: false,
+          fallback: true,
+          error: isUnverified ? "UNVERIFIED_NUMBER" : "TWILIO_FAILED",
+          message: isUnverified
+            ? "Bu numara Twilio deneme hesabında doğrulanmamış. Twilio Console > Verified Caller IDs üzerinden doğrulayın veya hesabı yükseltin."
+            : twilioMsg,
+          details: twilioJson,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
