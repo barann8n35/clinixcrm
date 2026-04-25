@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const mainNavItems = [
   { icon: LayoutDashboard, labelKey: "sidebar.dashboard", path: "/dashboard" },
@@ -94,8 +95,9 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
       </div>
 
       {/* Main Nav */}
-      <nav className={`flex-1 overflow-y-auto overflow-x-hidden pb-4 ${collapsed ? "px-1.5" : "px-3"}`}>
-        {!collapsed && (
+      <ScrollArea className="flex-1">
+        <nav className={`pb-4 ${collapsed ? "px-1.5" : "px-3"}`}>
+          {!collapsed && (
           <p className="px-3 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-group-label">
             {t("sidebar.mainMenu")}
           </p>
@@ -153,6 +155,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
           </button>
         )}
       </nav>
+      </ScrollArea>
 
       {/* Language Toggle */}
       <div className={`${collapsed ? "px-2 py-2 flex justify-center" : "px-4 py-2"}`}>
