@@ -19,7 +19,7 @@ interface AppointmentRow {
 }
 
 async function callPatient(
-  admin: ReturnType<typeof createClient>,
+  admin: any,
   appt: AppointmentRow,
   patient: { name: string; phone: string | null },
   callType: "appointment_reminder_24h" | "appointment_reminder_1h",

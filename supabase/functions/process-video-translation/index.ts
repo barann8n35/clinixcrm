@@ -1,6 +1,8 @@
 // Orchestrates video translation: transcribe → translate → (subtitle SRT) or (TTS dub)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
