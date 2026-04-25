@@ -26,6 +26,7 @@ async function sendOneSignalToAll(title: string, message: string, data: Record<s
         headings: { en: title, tr: title },
         contents: { en: message, tr: message },
         data,
+        web_push_topic: crypto.randomUUID(),
       }),
     });
     const json = await res.json().catch(() => ({}));

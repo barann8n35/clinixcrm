@@ -67,8 +67,8 @@ async function sendOneSignalToSubscriptions(
     body: JSON.stringify({
       app_id: ONESIGNAL_APP_ID,
       include_subscription_ids: subscriptionIds,
-      // Replace any prior push with the same collapse_id on the device
-      web_push_topic: collapseId,
+      // Use a unique topic so notifications don't get stuck waiting for the previous one to be dismissed
+      web_push_topic: crypto.randomUUID(),
       // 1 hour TTL — stale notifications expire on the device
       ttl: 3600,
       headings: { en: title, tr: title },

@@ -25,6 +25,7 @@ import TeamManagement from "./pages/TeamManagement";
 import VideoStudio from "./pages/VideoStudio";
 import Pricing from "./pages/Pricing";
 import Widget from "./pages/Widget";
+import SecurityDashboard from "./pages/SecurityDashboard";
 import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="team" element={<TeamManagement />} />
               <Route path="video-studio" element={<VideoStudio />} />
               <Route path="pricing" element={<Pricing />} />
+              <Route path="security" element={<SecurityDashboard />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

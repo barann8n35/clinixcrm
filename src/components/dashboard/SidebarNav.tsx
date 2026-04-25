@@ -1,4 +1,4 @@
-import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles, Crown, Tag } from "lucide-react";
+import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles, Crown, Tag, ShieldCheck } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,7 @@ const mainNavItems = [
 const managementNavItems = [
   { icon: Package, labelKey: "sidebar.inventory", path: "/inventory" },
   { icon: UsersRound, labelKey: "sidebar.team", path: "/team" },
+  { icon: ShieldCheck, labelKey: "Güvenlik & KVKK", path: "/security" },
   { icon: BookOpen, labelKey: "sidebar.knowledgeBase", path: "/knowledge-base" },
   { icon: Tag, labelKey: "sidebar.pricing", path: "/pricing" },
   { icon: Settings, labelKey: "sidebar.settings", path: "/settings" },

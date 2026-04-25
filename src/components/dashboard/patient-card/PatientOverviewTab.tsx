@@ -1,4 +1,4 @@
-import { Phone, MapPin, AlertCircle, Tag, X, Plus, StickyNote, CreditCard, Bell, CalendarIcon, Save, Clock } from "lucide-react";
+import { Phone, MapPin, AlertCircle, Tag, X, Plus, StickyNote, CreditCard, Bell, CalendarIcon, Save, Clock, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -143,6 +143,34 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
 
   return (
     <div className="space-y-5 p-1">
+      {/* AI Quick Summary (Premium Glassmorphism) */}
+      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="relative overflow-hidden rounded-2xl p-4 border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent shadow-[0_4px_24px_-8px_rgba(99,102,241,0.2)]">
+        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+          <Sparkles className="w-16 h-16 text-indigo-500" />
+        </div>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h4 className="text-[12px] font-bold text-indigo-950 dark:text-indigo-200 tracking-tight">AI Hızlı Hasta Özeti</h4>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[13px] leading-relaxed text-indigo-900/80 dark:text-indigo-200/80 font-medium">
+            {patient?.complaint ? `Ana şikayeti: ${patient.complaint}.` : "Henüz belirgin bir şikayet kaydedilmemiş."}
+            {patient?.status === "pending" && " Hasta şu an bekleme aşamasında, aksiyon bekliyor."}
+            {patient?.status === "approved" && " Hastanın işlemleri onaylanmış durumda."}
+          </p>
+          <div className="bg-indigo-500/10 rounded-lg p-2.5 border border-indigo-500/10">
+            <p className="text-[11px] font-semibold text-indigo-800 dark:text-indigo-300">
+              ⚡ Aksiyon Önerisi:
+            </p>
+            <p className="text-[11px] text-indigo-900/70 dark:text-indigo-200/70 mt-0.5">
+              {patient?.status === "pending" ? "Hastayla iletişime geçip randevu gününü kesinleştirin." : "Rutin takibe devam edin, geçmiş notları kontrol edin."}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Contact Info */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl border border-border bg-card p-4 space-y-3">
         <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">İletişim Bilgileri</h4>
