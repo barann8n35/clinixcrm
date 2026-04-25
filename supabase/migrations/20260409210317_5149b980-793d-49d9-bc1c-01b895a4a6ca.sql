@@ -1,0 +1,1 @@
+ALTER TABLE public.notifications ADD COLUMN remind_at timestamp with time zone DEFAULT NULL;

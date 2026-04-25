@@ -1,0 +1,797 @@
+{
+  "updatedAt": "2026-04-20T20:50:37.398Z",
+  "createdAt": "2026-04-20T20:50:22.848Z",
+  "id": "0ZfKKYZD7ndex8NH",
+  "name": "Clinix — Video Studio Pipeline",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "0367b883-c417-4409-8a76-e7091474ad96",
+      "name": "Every 1 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1584,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/video_translations",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*,videos(id,user_id,title,original_url,source_language),voice_clones(id,elevenlabs_voice_id,name)"
+            },
+            {
+              "name": "status",
+              "value": "eq.pending"
+            },
+            {
+              "name": "order",
+              "value": "created_at.asc"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ea0ea057-e865-4a5e-bf60-b14d42d36157",
+      "name": "Fetch pending translations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1376,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "77521bac-51bc-48b1-a8eb-b8e7d3b41fe6",
+      "name": "Split into jobs",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=={{ $env.SUPABASE_URL }}/rest/v1/video_translations?id=eq.{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"processing\",\n  \"error_message\": null\n}",
+        "options": {}
+      },
+      "id": "74000819-4773-4116-84c3-e71549e1f20e",
+      "name": "Mark processing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -976,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.videos.original_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "42c98fbc-5e8c-436f-81be-5159da6de9f3",
+      "name": "Download source video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -768,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "response_format",
+              "value": "verbose_json"
+            },
+            {
+              "name": "language",
+              "value": "={{ $('Mark processing').item.json.videos.source_language }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "604dbb77-3311-4652-a1fc-8e306404a182",
+      "name": "Whisper transcription",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -576,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ai.gateway.lovable.dev/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LOVABLE_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/gemini-2.5-flash\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a professional medical translator. Translate while preserving medical terminology, tone and segment structure. Output VALID JSON only with shape {\\\"segments\\\":[{\\\"start\\\":number,\\\"end\\\":number,\\\"text\\\":string}]}.\"},\n    {\"role\": \"user\", \"content\": \"Translate the following transcript segments to {{ $('Mark processing').item.json.target_language_label }} ({{ $('Mark processing').item.json.target_language }}). Keep timestamps. Segments JSON:\\n\\n{{ JSON.stringify($json.segments) }}\"}\n  ],\n  \"response_format\": {\"type\": \"json_object\"}\n}",
+        "options": {}
+      },
+      "id": "8b8e6a95-d4d3-4d2d-9b97-b80e21ea19e6",
+      "name": "Translate (Lovable AI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -368,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build SRT from translated segments\nconst raw = $json.choices[0].message.content;\nconst parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;\nconst segs = parsed.segments || [];\n\nconst pad = (n, l = 2) => String(n).padStart(l, '0');\nconst toTs = (s) => {\n  const h = Math.floor(s / 3600);\n  const m = Math.floor((s % 3600) / 60);\n  const sec = Math.floor(s % 60);\n  const ms = Math.round((s - Math.floor(s)) * 1000);\n  return `${pad(h)}:${pad(m)}:${pad(sec)},${pad(ms, 3)}`;\n};\n\nconst srt = segs.map((seg, i) => `${i + 1}\\n${toTs(seg.start)} --> ${toTs(seg.end)}\\n${seg.text}\\n`).join('\\n');\nconst translatedText = segs.map(s => s.text).join(' ');\n\nreturn [{\n  json: {\n    srt,\n    translatedText,\n    segments: segs,\n  },\n  binary: {\n    srt: {\n      data: Buffer.from(srt, 'utf-8').toString('base64'),\n      mimeType: 'application/x-subrip',\n      fileName: `subtitle_${$('Mark processing').item.json.target_language}.srt`,\n    }\n  }\n}];"
+      },
+      "id": "68f6307c-a0bb-419e-b961-18498e824a87",
+      "name": "Build SRT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=={{ $env.SUPABASE_URL }}/storage/v1/object/clinic-videos/{{ $('Mark processing').item.json.videos.user_id }}/translations/{{ $('Mark processing').item.json.id }}/subtitle_{{ $('Mark processing').item.json.target_language }}.srt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/x-subrip"
+            },
+            {
+              "name": "x-upsert",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "srt",
+        "options": {}
+      },
+      "id": "b0a8bb4b-3f4b-420a-a0ac-348757c77f2f",
+      "name": "Upload SRT to Storage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        32,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=={{ $env.SUPABASE_URL }}/storage/v1/object/sign/clinic-videos/{{ $('Mark processing').item.json.videos.user_id }}/translations/{{ $('Mark processing').item.json.id }}/subtitle_{{ $('Mark processing').item.json.target_language }}.srt",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"expiresIn\": 31536000\n}",
+        "options": {}
+      },
+      "id": "1632cab5-479b-41ac-bbdf-b36fbcc9bcc3",
+      "name": "Sign SRT URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "is-dub",
+              "leftValue": "={{ $('Mark processing').item.json.mode }}",
+              "rightValue": "dub",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "is-clone",
+              "leftValue": "={{ $('Mark processing').item.json.mode }}",
+              "rightValue": "clone_dub",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "ab16bbfe-a56e-4410-93d7-c27bbf9c30b8",
+      "name": "Needs dub?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        32,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $('Mark processing').item.json.voice_clones?.elevenlabs_voice_id || '21m00Tcm4TlvDq8ikWAM' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $env.ELEVENLABS_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "audio/mpeg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": {{ JSON.stringify($('Build SRT').item.json.translatedText) }},\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"voice_settings\": {\"stability\": 0.5, \"similarity_boost\": 0.75}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "audio"
+            }
+          }
+        }
+      },
+      "id": "5676cbe6-384c-4b60-81f6-1e661325c07c",
+      "name": "ElevenLabs TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=={{ $env.SUPABASE_URL }}/storage/v1/object/clinic-videos/{{ $('Mark processing').item.json.videos.user_id }}/translations/{{ $('Mark processing').item.json.id }}/dub_{{ $('Mark processing').item.json.target_language }}.mp3",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "audio/mpeg"
+            },
+            {
+              "name": "x-upsert",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "audio",
+        "options": {}
+      },
+      "id": "1d80e73d-8ba5-44c6-ba3c-2ea51b79559b",
+      "name": "Upload dub audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        432,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=={{ $env.SUPABASE_URL }}/storage/v1/object/sign/clinic-videos/{{ $('Mark processing').item.json.videos.user_id }}/translations/{{ $('Mark processing').item.json.id }}/dub_{{ $('Mark processing').item.json.target_language }}.mp3",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"expiresIn\": 31536000\n}",
+        "options": {}
+      },
+      "id": "9a460f02-da54-4725-bdcc-0e018dfffd78",
+      "name": "Sign dub URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge subtitle + dub URLs and prepare PATCH body\nconst srtSign = $('Sign SRT URL').item?.json;\nconst dubSign = $('Sign dub URL').item?.json;\nconst tr = $('Mark processing').item.json;\nconst SUPABASE_URL = $env.SUPABASE_URL;\n\nconst subtitle_url = srtSign?.signedURL ? `${SUPABASE_URL}/storage/v1${srtSign.signedURL}` : null;\nconst output_url = dubSign?.signedURL ? `${SUPABASE_URL}/storage/v1${dubSign.signedURL}` : null;\n\nreturn [{\n  json: {\n    id: tr.id,\n    update: {\n      status: 'completed',\n      completed_at: new Date().toISOString(),\n      transcript_text: $('Whisper transcription').item.json.text,\n      translated_text: $('Build SRT').item.json.translatedText,\n      subtitle_url,\n      output_url,\n    }\n  }\n}];"
+      },
+      "id": "bd411348-fd31-4e7f-be27-a8f327724676",
+      "name": "Build update payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=={{ $env.SUPABASE_URL }}/rest/v1/video_translations?id=eq.{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.update) }}",
+        "options": {}
+      },
+      "id": "5de3a89f-bfc4-4279-a3e6-8423d11a0849",
+      "name": "Mark completed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        -32
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "503fbb40-0955-4b77-8802-aad63fb6da34",
+      "name": "On error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1584,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=={{ $env.SUPABASE_URL }}/rest/v1/video_translations?id=eq.{{ $json.execution.lastNodeExecuted ? ($('Mark processing').item?.json?.id || '') : '' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"failed\",\n  \"error_message\": {{ JSON.stringify($json.execution?.error?.message || 'unknown error') }}\n}",
+        "options": {}
+      },
+      "id": "49df2fa0-33df-49b3-b8d2-257763f42199",
+      "name": "Mark failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1376,
+        272
+      ]
+    }
+  ],
+  "connections": {
+    "Every 1 min": {
+      "main": [
+        [
+          {
+            "node": "Fetch pending translations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch pending translations": {
+      "main": [
+        [
+          {
+            "node": "Split into jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into jobs": {
+      "main": [
+        [
+          {
+            "node": "Mark processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark processing": {
+      "main": [
+        [
+          {
+            "node": "Download source video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download source video": {
+      "main": [
+        [
+          {
+            "node": "Whisper transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper transcription": {
+      "main": [
+        [
+          {
+            "node": "Translate (Lovable AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translate (Lovable AI)": {
+      "main": [
+        [
+          {
+            "node": "Build SRT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build SRT": {
+      "main": [
+        [
+          {
+            "node": "Upload SRT to Storage",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Needs dub?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload SRT to Storage": {
+      "main": [
+        [
+          {
+            "node": "Sign SRT URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign SRT URL": {
+      "main": [
+        [
+          {
+            "node": "Build update payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs dub?": {
+      "main": [
+        [
+          {
+            "node": "ElevenLabs TTS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build update payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs TTS": {
+      "main": [
+        [
+          {
+            "node": "Upload dub audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload dub audio": {
+      "main": [
+        [
+          {
+            "node": "Sign dub URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign dub URL": {
+      "main": [
+        [
+          {
+            "node": "Build update payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build update payload": {
+      "main": [
+        [
+          {
+            "node": "Mark completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On error": {
+      "main": [
+        [
+          {
+            "node": "Mark failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "434e0afe-87dc-4662-94e3-652a5a38013e",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-20T20:50:22.854Z",
+      "createdAt": "2026-04-20T20:50:22.854Z",
+      "role": "workflow:owner",
+      "workflowId": "0ZfKKYZD7ndex8NH",
+      "projectId": "xTJC6KMxiYpWkBfK"
+    }
+  ],
+  "activeVersion": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-20T20:50:21.171Z",
+      "createdAt": "2026-04-20T20:50:21.171Z",
+      "id": "VoHah2HeZLPK5aES",
+      "name": "video-studio"
+    },
+    {
+      "updatedAt": "2026-04-20T20:50:21.177Z",
+      "createdAt": "2026-04-20T20:50:21.177Z",
+      "id": "W1uUI4Hu8qnCAgTS",
+      "name": "clinix"
+    }
+  ]
+}

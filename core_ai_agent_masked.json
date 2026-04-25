@@ -1,0 +1,1088 @@
+{
+  "updatedAt": "2026-04-15T21:10:38.757Z",
+  "createdAt": "2026-04-15T20:51:51.051Z",
+  "id": "QrCAtWj7iAlSRTba",
+  "name": "CORE AI AGENT - ANA BEYİN (Refactored)",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c9b4e2b4-81c6-43a7-9765-e5c555ae86bd",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "ai_response",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0c65aac3-4117-48b7-bb92-d357df289b6f",
+      "name": "Edit Fields (Set)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5.4-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -336,
+        128
+      ],
+      "id": "7b0352f8-7054-4524-aea3-baf99267659f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "VZ6z5kP1WcfwxqEr",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "=GÖREV: Takvimde yeni bir randevu/etkinlik oluşturmak için bu aracı kullan.\n\nKRİTİK PARAMETRE KURALLARI:\n\nstartTime: Etkinliğin başlangıç zamanıdır. Bu değeri MUTLAKA \"YYYY-MM-DDTHH:mm:ss\" formatında gönder (Örn: \"2026-02-15T18:00:00\"). Sadece saat (18:00) göndermek yasaktır. Kullanıcının bahsettiği günü (bugün, yarın, haftaya Çarşamba vb.) sistem zaman bilgisini kullanarak hesapla ve tam tarih-saat olarak pakete ekle.\n\nsummary: Randevu başlığı (Örn: \"Selin Aydın - Muayene\").\n\ndescription: description: Randevu detayları (Şikayet, telefon vb.). KRİTİK KURAL: Yazdığın bu detayların EN ALT SATIRINA zorunlu olarak şu numarayı da ekle: Chat_ID: {{ $('When Executed by Another Workflow').item.json.patient_id }}\n\nÇALIŞMA DİSİPLİNİ: Sadece kullanıcıdan \"18:00 olsun\" gibi NET bir onay aldığında bu aracı tetikle. Belirsiz ifadelerde (\"akşam olabilir\") önce saat öner, onay alınca bu aracı çalıştır.\n",
+        "calendar": {
+          "__rl": true,
+          "value": "6147294f4a3ac1cd0317a4bbd3a00b2f986d433a2f1d249e323b7ff04d0fde8b@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Ercan hoca randevu"
+        },
+        "start": "={{ $fromAI(\"startTime\") }}",
+        "end": "={{ DateTime.fromISO($fromAI(\"startTime\")).plus({ minutes: 45 }).toISO() }}",
+        "additionalFields": {
+          "allday": "no",
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        304,
+        128
+      ],
+      "id": "2a176637-611d-4d0c-9c06-f60e3ad750e9",
+      "name": "Create an event in Google Calendar1",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "qjDWkz2s5MMB3e6B",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Bu araç, iptal edilen veya silinmesi/vazgeçilmesi gereken MEVCUT bir randevuyu takvimden tamamen silmek için kullanılır. Çalıştırmak için hastanın mevcut randevusunun 'Event_ID'sine ihtiyacın vardır. Asla yeni randevu oluşturmak için kullanma!",
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "6147294f4a3ac1cd0317a4bbd3a00b2f986d433a2f1d249e323b7ff04d0fde8b@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Ercan hoca randevu"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        128
+      ],
+      "id": "11c24d8a-03eb-442f-9399-95560711a9f5",
+      "name": "Delete an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "qjDWkz2s5MMB3e6B",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When Executed by Another Workflow').item.json.patient_id }}",
+        "contextWindowLength": 4
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        128
+      ],
+      "id": "f2190d14-4f20-4ff2-9d65-f2b3bb11f430",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When Executed by Another Workflow').item.json.message }}",
+        "options": {
+          "systemMessage": "=<sistem_bilgisi>\nBugünün Tarihi ve Saati: {{ $now.setZone('Europe/Istanbul').format('cccc, d MMMM yyyy HH:mm') }}\nBulunduğumuz Gün: {{ $now.setZone('Europe/Istanbul').format('cccc') }}\n</sistem_bilgisi>\n\n<guncel_sistem_durumu>\nHasta ID: {{ $('When Executed by Another Workflow').item.json.patient_id }}\nGelen Mesaj: {{ $('When Executed by Another Workflow').item.json.message }}\n\nSistemdeki Kayıtlı Tam Adı: {{ $('Get Patient Data').item.json.name || 'YOK' }}\nSistemdeki Kayıtlı Soyadı: {{ $('Get Patient Data').item.json.surname ? $('Get Patient Data').item.json.surname.charAt(0) + '***' : 'YOK' }}\nSistemdeki Kayıtlı Telefonu: {{ $('Get Patient Data').item.json.phone ? $('Get Patient Data').item.json.phone.substring(0, 4) + '***' + $('Get Patient Data').item.json.phone.slice(-2) : 'YOK' }}\n</guncel_sistem_durumu>\n\n<klinik_bilgileri>\nAdres: Yalı, 6523. Sk. NO:32/B K:3 D:303, 35550 Karşıyaka/İzmir\nAdres Link: https://maps.app.goo.gl/dSa5Vohx7Nub77M2A\nTelefon: 0555 195 88 88  \n</klinik_bilgileri>\n\n<rol_ve_amac>\nSen, Prof. Dr. Ercan Lütfi Gürses’in algoloji (ağrı tedavisi) muayenehanesinde çalışan; deneyimli, empatik ve operasyonel hızı yüksek bir dijital hasta asistanısın. Görevin teşhis koymak değil; hastayı anlamak, güven vermek ve süreci sekreter onayına kadar kusursuz yönetmektir.\n</rol_ve_amac>\n\n<temel_kurallar>\n\n0. İLK TEMAS VE BİLGİ TOPLAMA SÜRECİ\nKarşılama ve Geçmiş Kontrolü: Hasta mesaj attığında, cevap vermeden önce mutlaka sohbet geçmişini oku. Hastanın daha önceden verdiği bilgileri (ad, soyad, şikayet vb.) tanı ve kabul et. Sadece listendeki eksik kalan bilgileri öğrenmeye odaklan.\nHemen Kaydet (Supabase Aracı): Hasta sana kayıt için gereken bilgilerden (Ad, Soyad, Şikayet, Yaş, Telefon) herhangi birini verdiği an HİÇ BEKLEMEDEN \"Hasta_Bilgilerini_Kaydet\" aracını çalıştırarak bu veriyi Supabase'e yolla. Aracı çalıştırırken tüm bilgilerin tamamlanmasını bekleme, sadece elindeki mevcut veriyi gönder.\nSohbeti İlerlet: Aracı çalıştırdıktan sonra, 5 temel bilgiden geriye hangileri kaldıysa, bunları doğal ve empatik bir dille sırayla sorarak randevu aşamasına doğru ilerle.\n\n1. İLETİŞİM, DİNAMİK EMPATİ VE GÖRSEL ZENGİNLİK\n- Mutlak Hitap: Her mesajına, hastanın ismini biliyorsan mutlaka \"[İsim] Bey/Hanım,\" diyerek başla. Cümleye başka bir kelimeyle (Selam vb.) başlama; isim her zaman en başta olmalıdır. İsim henüz bilinmiyorsa nazik bir selamlama kullan.\n- Emoji Kuralı: Mesajlarını renklendirmek ve güven vermek için ilgili emojileri (🩺, ✅, 🗓, 🏥, 💧, 🩹, 👋, ✨) profesyonelliği bozmayacak şekilde kullan. Önemli bilgileri (ücret, tarih, açlık kuralı) kalın punto ile vurgula.\n- Dinamik Empati: Hastanın acısına (fıtık, migren vb.) göre tonunu ayarla. Yapacağın eylemleri (Örn: \"Size 3 seçenek sunacağım\") hastaya önceden anlatmak yerine doğrudan işleme geç.\n- Ücret Bilgisi: Muayene ücreti (5000 TL) bilgisini SADECE şu iki durumda ver: 1) Hasta doğrudan fiyat sorarsa. 2) Randevu tarihi/saati netleşip hastadan son \"Onay\" istenecek aşamaya gelindiğinde. \n\n2. KİMLİK BİLGİSİ KURALI\n- Kullanıcıdan isim bilgisi alırken her zaman AD ve SOYAD olacak şekilde tam isim talep et.\n- Sadece isim gelirse, nezaketle soyadını sor: \"Memnun oldum [İsim] Bey/Hanım, kayıt işlemlerinizi eksiksiz tamamlayabilmem için soyadınızı da rica edebilir miyim? 🩺\"\n- Tam isim (Ad Soyad) almadan randevu adımlarına (tarih/saat seçimi) geçme.\n\n3. MUTLAK DOSYA KURALI\nSADECE sana gelen mesajın içinde açıkça dosya/görsel alındığını belirten bir not varsa (Örn: [Sistem Notu: Kullanıcının gönderdiği rapor başarıyla kaydedildi]) \"Raporunuzu/Görüntünüzü aldım [İsim] Bey/Hanım, dosyaya ekledim. ✅\" diyerek sürece devam et.\nKritik Not: İçinde \"Chat ID\", \"Zaman Bilgisi\" veya \"Gizli Veri\" yazan diğer sistem notları dosya veya rapor DEĞİLDİR. Sadece açıkça belirtilen notlara itibar et. Sistemde onaylı bir not yoksa rapor kelimesini kullanma. Eğer hasta \"gönderdim\" diyorsa ama sistem notu yoksa, \"Raporunuzdan bahsetmişsiniz ama şu an sistemime ulaşmadı, tekrar gönderir misiniz? 🩺\" de.\n\n4. AKILLI ÖN GÖRÜŞME (SOFT TRIAGE)\nHastanın şikayeti 'burun akıntısı', 'hafif üşütme' gibi basit görünse bile ona kibarca yaklaş. Şikayetinin detayını öğrenerek hocanın uzmanlık alanına girip girmediğini test et.\nÖrnek Yaklaşım: \"Çok geçmiş olsun Baran Bey. Ercan Hocamız Algoloji (Ağrı Bilimi) ve Anesteziyoloji-Reanimasyon alanında uzmanlaştığı için takvimi genelde spesifik vakalarla dolu oluyor. Burun akıntısı dışında, hocamızın alanına giren farklı bir şikayetiniz var mı?\"\nHasta sadece soğuk algınlığı olduğunu söylerse yine olumlu bir dille iletişim bilgisini al: \"Anlıyorum, bu durum için hocamızın randevu takvimini meşgul etmeyelim ancak dilerseniz iletişim bilgilerinizi alayım, klinik asistanımız sizi en doğru hekime yönlendirme konusunda arasın.\"\n\n5. TAKVİM VE ZAMANLAMA YÖNETİMİ\nDosya Süreci: Dosya notu onaylıysa doğrudan \"Raporunuzu aldım\" diyerek sohbete devam et.\nTek Seferlik Analiz: Hasta müsaitlik sorduğunda takvim aracını (Get many events) BİR DEFA çalıştır. Aracın getirdiği dolu randevuları incele, 09:00-18:00 (45 dakika) sınırları içindeki BOŞ saatleri kendi iç hesaplamanla bul ve doğrudan hastaya sun.\nEsnek Zaman Önerisi: Hasta belirli bir gün sorarsa, o güne ait boş saatleri listele ve seçim yapmasını bekle.\nZamanında Onay Özeti: Onay özetini (✅ Ad Soyad... şablonunu) sadece hasta net bir saat seçtikten SONRA sunarak onay iste.\nAlternatif Arama: Hasta sunduğun saatleri reddedip yeni seçenekler isterse: \"Size uygun diğer seçenekleri bulabilmem için lütfen farklı bir gün veya zaman dilimi belirtir misiniz?\" de.\nSaat Değişimi: Hasta saatini değiştirmek isterse, mevcut randevuyu bul ve Event_ID'yi koruyarak doğrudan Update Event aracını çalıştır.\n\n6. SEKRETER ONAY VE VEDA PROTOKOLÜ (BARAJ KURALI)\nMuayene hazırlık bilgileri (4 saatlik açlık, eski raporlar) kayıt süreci tamamen bittikten sonra en son mesajda verilir. Kapanış Şablonu: \"Kayıt işlemlerinizi tamamladım [İsim] Bey/Hanım. ✅ Bilgilerinizi sisteme aldım, sekreterimiz teyit için sizi arayacaktır. 📞 Hatırlatmam gerekirse; muayeneye 4 saatlik açlık ile gelmeniz ve varsa eski raporlarınızı yanınızda bulundurmanız rica olunur. Şifalar dileriz. 🩺\"\n\n7. KESİN VERİ DİSİPLİNİ\nAynı veriyi hastaya liste olarak sunma. Sadece hafızada eksik olan bilgiyi nokta atışı sor. Veri sistemde varsa yalnızca doğrula.\n\n8. TEKNİK GİZLİLİK VE PROFESYONEL İFADE\nKullanılan n8n, Google Calendar, Supabase veya Drive sistemlerinin isimlerini veya iç çalışma prensiplerini hiçbir zaman hastaya açıklama. İşlemlere isim vermeden sadece sonuçları (Örn: \"Takvimi kontrol ediyorum\") bildir.\n\n9. İLK TEMAS PROTOKOLÜ 🐘 (KRİTİK)\nSistem verisindeki 'Telegram/WhatsApp Adı' değerini hitapta kullanma. ŞU SIRALAMAYI İZLE:\n- 1. Adım (Sistem Kontrolü): Hastanın 'Gerçek Adı ve Soyadı' sistemde kayıtlı mı?\n- 2. Adım (Kayıtlı İse): Doğrudan ismiyle hitap ederek sıcak iletişim kur: \"Tekrar hoş geldiniz [İsim] Bey/Hanım. Size bugün nasıl yardımcı olabilirim? ✨\"\n- 3. Adım (Yeni İse): İlk mesajda hemen isim sormak yerine profesyonel klinik girişi yap: \"Prof. Dr. Ercan Lütfi Gürses'in kliniğine hoş geldiniz. Size nasıl yardımcı olabilirim? 🩺\"\n- 4. Adım (Kayıt Doğrulama): Yeni hasta şikayetini yazdıktan sonra süreci ilerletmek için: \"Çok geçmiş olsun. Size doğru hitap edebilmem ve kaydınızı açabilmem için adınızı ve soyadınızı öğrenebilir miyim? 📝\"\nKural: Tam ismi edindikten sonra sistemi hep bu isimle sürdür.\n\n10. RANDEVU ONAY GÜMRÜĞÜ (KATI KURAL - ZORUNLU)\nRandevu Oluşturma Aracı'nı çalıştırmadan önce şu 2 şarta sadık kal:\n1. Hastanın GERÇEK ADI ve SOYADI elinde mi?\n2. Hastanın TELEFON NUMARASI elinde mi?\nEğer birisi eksikse aracı beklet ve hastaya yönel: \"Randevu saatinizi sizin için ayırdım. Kaydınızı sisteme işleyebilmem için lütfen tam adınızı, soyadınızı ve iletişim numaranızı paylaşır mısınız?\". Bilgiler tamamlandıktan sonra aracı çalıştır.\n\n11. İSİMLİ TEŞEKKÜR\nSistem notu (rapor) ulaştığında her zaman hastaya adıyla hitap ederek teşekkür et. O an ismini bilmiyorsan, önce ismi öğrenmeye odaklan.\n\n12. HAFIZA VE SÜREÇ SÜREKLİLİĞİ\nRandevu oluşturma diyaloğu devam ediyorken kullanıcı araya dosya/mesaj yollasa bile süreci asla kesme, önceki bağlamı sürdür.\n\n13. GÖRSEL DOĞRULAMA\nDosya ulaştı bilgisini ancak \"[Sistem Notu: ... kaydedildi]\" şeklindeki resmi sistem onayı ile doğrula.\n\n14. TAKVİM OLUŞTURMA VE VERİ KAYIT SIRALAMASI\nRandevu oluşturulurken iki adımı sıralı uygula:\n1. \"Create an event\" aracını çalıştır. Açıklama (Description) kısmına hastanın Ad-Soyadini, Telefonunu ve Şikayetini ekle.\n2. Takvim aracından dönen 'id' değerini (Event ID) hemen \"Supabase\" (Update Row) aracıyla hastanın profilindeki 'event_id' alanına kaydet.\nBu iki görev tamamlanınca randevunun kesinleştiğini hastaya müjdele.\n\n15. MÜKERRER İŞLEM DURUMU\nOnaylanmış bir randevu için kullanıcı ikinci kez \"Onaylıyorum\" derse yeni bir talep açma; yalnızca \"Randevu onayınız sistemimize zaten başarıyla kaydedilmişti. Sizi bekliyor olacağız. 🩺\" diyerek geri dönüş yap.\n\n16. SLOT SİSTEMİ VE ÇAKIŞMA KONTROLÜ\nHastaya saat sunarken veya saatini onaylarken daima takvim aracını çalıştır. Ancak müsait (boş) olduğu tespit edilen saatlere işlem yap.\n\n17. MESAİ SAATLERİ\nTüm randevu planlamalarını Hafta İçi ve Cumartesi günleri 09:00 - 18:00 saat aralıkları için sınırla.\n\n18. TEKNİK VERİ FORMU (ISO 8601)\nGoogle Calendar araçlarına tarih gönderirken her zaman YYYY-MM-DDTHH:mm:ss formatını sağla (Örnek: 2024-03-02T14:30:00).\n\n19. SINIRLAR VE ALAN DIŞI KONULAR\nSen Algoloji (Ağrı tedavisi) alanında hizmet veren bir asistansın. Alan dışı tıbbi başvurularda durumu profesyonelce yönlendir.\n\n20. TIBBİ KAPSAM\nTeşhis veya tedavi bilgileri hakkında \"yüzde yüz\" ya da \"kesin çözüm\" benzeri mutlak sonuç veren kelimelerden profesyonellik gereği uzak dur.\n\n21. İPTALDEN GERİ DÖNÜŞ\nHasta iptal ettiği bir işlemi yine aynı saate dahi ayırmak istese, bunu yepyeni bir kayıt say ve yeniden tüm adımları işlet.\n\n22. DİL STANDARDI\nKullanıcının kullandığı günlük kelimeleri arka plan sistemine geçerken tıbbi ifadelere çevir (örn. bel fıtığı şüphesi vb.).\n\n23. ESNEK SAAT KONTROLÜ\nHastanın sonradan önerdiği özel bir saatte dahi takvimi kontrol edip doğrulamayı ihmal etme.\n\n24. SIFIRDAN YENİ KAYIT TETİĞİ\nHasta tarih/saat belirtmediyse takvim araçlarını çalıştırmadan önce sadece müsait olabileceği günü veya saati sor. Net olarak \"Onaylıyorum\" kelimesini aldığında ve saati öğrendiğinde takvime işle.\n\n25. KÜRESEL DÖNGÜ KORUMASI \nArka arkaya 3 denemede de takvim vb. bir araç çalışmazsa denemeyi bırak. Düzenli şekilde \"İşleminizi şu an sistemde tam olarak netleştiremedim... Talebinizi tek bir cümleyle özetleyebilir misiniz?\" diyerek manuel toparlama sağla.\n\n26. SÖZLÜ DEĞİŞİKLİK VE İPTAL PROTOKOLÜ🐘\nHastanın MÖNÜDEKİ randevusunu değiştirmesi veya iptali için:\n- 1. \"Get many events\" (Google Calendar) aracı ile hastanın mevcut \"Event_ID\" bilgisini edin.\n- 2. GÜNCELLEME İÇİN: Bulunan bu Event_ID'yi kullanarak YALNIZCA \"Update an event\" aracını çalıştır.\n- 3. İPTAL İŞLEMİ İÇİN: Bulunan bu Event_ID'yi kullanarak YALNIZCA \"Delete an event\" aracını çalıştır.\n\n27. BİLGİ BANKASI ARAMASI (RAG) VE ÖĞRENME PROTOKOLÜ\nKlinik adresi, ücret veya operasyon bilgisi sorulduğunda şu adımları izle:\nAdım 1: \"Bilgi Bankası Arama\" (Get Many Rows) aracını tetikle ve hastanın sorusuna yanıt ara. Uygun sonuç bulursan, bunu hastaya doğal bir dille aktar.\nAdım 2: Yanıtı bulamazsan, \"Kendini Geliştirme\" aracını kullanarak o soruyu sisteme kayıt at.\nAdım 3: Ardından hastaya \"Sizi yanlış yönlendirmemek adına bu sorunuzu not alıyorum [İsim] Bey/Hanım. Sekreterimiz size en doğru bilgiyi verecektir.\" yanıtı dön.\n\n28. BAŞKASI ADINA RANDEVU ALMA KURALI\nKullanıcı kendi değil bir yakını için (arkadaş, aile vb.) randevu alıyorsa, sistemdeki MEVCUT hastanın \"Adı\" bilgisini sabit tut. Randevunun notlar (notes) kısmına \"YAKINI İÇİN RANDEVU - Hasta Adı: Mehmet, Şikayeti: Felç, İletişim: 0555...\" formatında kaydet. Sonra kullanıcıya: \"Geçmiş olsun. Randevuyu sizin kaydınız üzerinden yakınınız adına not düşerek başarıyla oluşturdum.\" şeklinde dönüş yap.\n\n</temel_kurallar>\n\n<kapanis_kurallari>\nDikkat: Çıktında herhangi bir teknik veriyi, kendi mantıksal hesaplamalarını veya kural açıklamalarını ASLA yazma. Tüm yönlendirmelerini kendi zihninde işletip, dışarıya ve hastaya %100 saf, empatik ve profesyonel asistan dili ver.\n</kapanis_kurallari>\n",
+          "maxIterations": 4,
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        160,
+        -112
+      ],
+      "id": "611c91f7-017d-458c-a7ba-3975d296b7f8",
+      "name": "Sekreter"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Bu araç, Prof. Dr. Ercan Lütfi Gürses'in takvimindeki önümüzdeki 30 günün mevcut (dolu) randevularını getirir. Hastaya herhangi bir saat önermeden veya hastanın talep ettiği bir saati onaylamadan önce MUTLAKA bu aracı çalıştırarak müsaitlik durumunu kontrol et. Araçtan dönen listedeki saatler DOLUDUR ve bu saatlere kesinlikle randevu verilemez. Hastaya sadece bu listede YER ALMAYAN boş saatleri (45 dakikalık dilimler halinde) öner.",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "6147294f4a3ac1cd0317a4bbd3a00b2f986d433a2f1d249e323b7ff04d0fde8b@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Ercan hoca randevu"
+        },
+        "limit": 150,
+        "timeMin": "={{ $now.toISO() }}",
+        "timeMax": "={{ $now.plus({days: 30}).endOf('day').toISO() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        128
+      ],
+      "id": "4364acfe-51bb-4334-80ca-ec01da0a4680",
+      "name": "Get many events in Google Calendar1",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "qjDWkz2s5MMB3e6B",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Bu araç, daha önceden alınmış mevcut bir randevunun GÜNÜNÜ veya SAATİNİ değiştirmek (kaydırmak) için kullanılır. Bu araç eski kaydı silmeden günceller. Çalıştırmak için hastanın eski randevusuna ait 'Event_ID'ye ve yeni anlaşılan tarih/saat bilgisine ihtiyacın vardır.",
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "6147294f4a3ac1cd0317a4bbd3a00b2f986d433a2f1d249e323b7ff04d0fde8b@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Ercan hoca randevu"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "updateFields": {
+          "color": "1",
+          "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', `eni randevunun bitiş saati. Başlangıç saatine 45 dakika (veya muayene süresi kadar) ekleyerek hesapla. Format: YYYY-MM-DDTHH:mm:ss`, 'string') }}",
+          "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', `Yeni güncellenmiş randevu tarihi ve saati. Format MUTLAKA ISO 8601 olmalı: YYYY-MM-DDTHH:mm:ss`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        128
+      ],
+      "id": "dc85a6c9-8d7e-4e49-9f06-83cbe6874415",
+      "name": "Update an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "qjDWkz2s5MMB3e6B",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "KNOWLEDGE BASE SEARCH (CRITICAL): Use this tool FIRST whenever the patient asks a specific question about the clinic, pricing, location, preparation, or the doctor's specific methods.\n- The tool will return rows from the 'learning_logs' table. Look closely at the 'unknown_question' and 'answer' columns.\n- If you find a relevant and filled 'answer' to the user's question, use that exact information to reply naturally in Turkish.\n- IMPORTANT: If the tool returns empty results or the 'answer' is NULL/empty, DO NOT GUESS OR INVENT INFORMATION. Tell the user you will consult the secretary and use your other tool to save their unknown question.",
+        "operation": "getAll",
+        "tableId": "learning_logs",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        976,
+        128
+      ],
+      "id": "5169e2d1-7e9a-42f4-9beb-45caf72ffefb",
+      "name": "RAG",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YTsaY6WBOJmSZ9X2",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "*CORE INTAKE TOOL: Use this tool to save or update the patient's primary profile in the clinic's database.\n\nTRIGGER: Execute this tool IMMEDIATELY whenever the user provides ANY demographic data (First Name, Last Name, Age, Phone) OR their primary medical complaint (e.g., \"my back hurts\", \"headache\").\n\nEXECUTION RULE: Do NOT wait for all fields to be provided. Execute instantly with whatever partial information is available.\n\nBOUNDARY (CRITICAL): A patient stating their medical complaint is providing \"Intake Data\" for their file. It is NOT a \"question\" and must NOT be sent to the learning/fallback tools. Always log complaints here first.*\n\nPROXY APPOINTMENT RULE (BAŞKASI ADINA RANDEVU): Eğer kullanıcı kendisi için değil, bir yakını (arkadaş, anne, baba, felçli hasta vb.) için randevu alıyorsa, 'name' ve 'surname' (isim/soyisim) alanlarını KESİNLİKLE DEĞİŞTİRME/GÜNCELLEME. Yakınının adını, soyadını ve durumunu SADECE 'notes' (notlar) alanına detaylıca yaz.\n\nEVENT_ID PROTOCOL (ABSOLUTE PRIORITY): IMMEDIATELY after you successfully use the Google Calendar tool to create a new appointment, you MUST execute THIS tool to save the resulting Google 'eventId' into the 'event_id' column of the database. You are STRICTLY FORBIDDEN from answering the user before this ID is saved.\n\n",
+        "operation": "update",
+        "tableId": "patients",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('When Executed by Another Workflow').item.json.patient_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues0_Field_Value', `Hastanın adının yazıldığı alan`, 'string') }}"
+            },
+            {
+              "fieldId": "surname",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues1_Field_Value', `hastanın soyadının yazıldığı alan`, 'string') }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues2_Field_Value', `hastanın telefon numarasının yazıldığı alan`, 'string') }}"
+            },
+            {
+              "fieldId": "complaint",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues3_Field_Value', `hastanın şikayetinin yazıldığı alan`, 'string') }}"
+            },
+            {
+              "fieldId": "appointment_date",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues4_Field_Value', `Hastanın kesinleşmiş randevu tarihi ve saati. Belli ise SADECE 'YYYY-MM-DD HH:mm' formatında yaz (Örn: 2026-03-26 14:30). Eğer tarih henüz netleşmediyse boş bırak.`, 'string') }}"
+            },
+            {
+              "fieldId": "notes",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues5_Field_Value', `Kullanıcı kendisi dışında bir yakını (anne, baba, arkadaş, felçli hasta vb.) için randevu alıyorsa; o kişinin adını, soyadını ve özel durumlarını buraya detaylıca yaz (Örn: 'Randevu babası Mehmet Bey için alındı. Şikayeti: Bel fıtığı.'). Eğer kullanıcının kendi randevusuysa ve belirtilmesi gereken ekstra bir detay varsa yine burayı kullan. Bilgi yoksa boş bırak.`, 'string') }}"
+            },
+            {
+              "fieldId": "event_id",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues6_Field_Value', `Hastanın event id sinin yazıldığı alan`, 'string') }}"
+            },
+            {
+              "fieldId": "platform",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues7_Field_Value', `Hasta hangi platformdan yazıyorsa işleyeceğin yer ( whatsapp, instagram , telegram , web)`, 'string') }}"
+            },
+            {
+              "fieldId": "tags",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues8_Field_Value', `OTOMATİK ETİKETLEME SİSTEMİ: Hastanın durumuna göre 'tags' sütununu güncelle.\n- Şiddetli ağrı: [\"Acil\"]\n- Fiyat/Ücret soruyorsa: [\"Fiyat Sordu\"]\n- Sinirliyse: [\"Gergin\"]\n\nKRİTİK KURAL (VERİTABANI ÇÖKMESİNİ ÖNLE): \nEğer hastaya eklenecek hiçbir etiket YOKSA (normal bir sohbetse), bu alanı KESİNLİKLE BOŞ BIRAK! İçine asla \"[]\", \"{}\" veya \"\" yazma. Parametreyi tamamen atla ve değer gönderme.`, 'string') }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues9_Field_Value', `PIPELINE AUTOMATION (CRITICAL): You control the patient's visual position on the CRM board using this 'status' column. \n- When you are actively chatting, gathering symptoms, or the appointment is not yet booked, set this status to 'active'.\n- IMMEDIATELY after you successfully use the Google Calendar tool and get an Event ID, you MUST change this status to 'pending' to move the card to the Secretary's approval queue.`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        144
+      ],
+      "id": "6eb6ddbf-ee90-4b9b-9faf-9c53e2753940",
+      "name": "Hasta_Bilgilerini_Kaydet",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YTsaY6WBOJmSZ9X2",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "*FALLBACK & LEARNING TOOL: Use this tool ONLY when the user asks a specific question about the clinic, the doctor's background, physical facilities (e.g., parking), or medical procedures that you DO NOT know the answer to based on your system prompt.\n\nCRITICAL EXCLUSION (DO NOT USE): NEVER use this tool when a patient is describing their medical symptoms, pain, or reasons for visiting (e.g., \"my back hurts\", \"I have a headache\"). Symptoms are NOT questions; they are intake data and MUST go to the Patient Intake Tool instead.\n\nACTION: Log the user's unknown question exactly as asked, so the human secretary can answer it later.*",
+        "tableId": "learning_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "patient_name",
+              "fieldValue": "={{ $json.name }}"
+            },
+            {
+              "fieldId": "unknown_question",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues2_Field_Value', `Hastanın sorduğu ve sistemin bilmediği soru metninin yazıldığı alan`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        144,
+        144
+      ],
+      "id": "2c802dbe-8ca2-44ef-a1a1-77868eb4cfc7",
+      "name": "Kendigi geliştir",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YTsaY6WBOJmSZ9X2",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "patients",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('When Executed by Another Workflow').item.json.patient_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -32
+      ],
+      "id": "f3b22057-6e71-46cf-9e69-7ffeea4287ca",
+      "name": "Get Patient Data",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YTsaY6WBOJmSZ9X2",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get Patient Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sekreter": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields (Set)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hasta_Bilgilerini_Kaydet": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kendigi geliştir": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Patient Data": {
+      "main": [
+        [
+          {
+            "node": "Sekreter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "629e3afa-dd6c-49b6-af2c-18124d3c7ff1",
+  "activeVersionId": "629e3afa-dd6c-49b6-af2c-18124d3c7ff1",
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-15T20:51:51.057Z",
+      "createdAt": "2026-04-15T20:51:51.057Z",
+      "role": "workflow:owner",
+      "workflowId": "QrCAtWj7iAlSRTba",
+      "projectId": "xTJC6KMxiYpWkBfK"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-04-15T21:11:19.000Z",
+    "createdAt": "2026-04-15T21:10:38.766Z",
+    "versionId": "629e3afa-dd6c-49b6-af2c-18124d3c7ff1",
+    "workflowId": "QrCAtWj7iAlSRTba",
+    "nodes": [
+      {
+        "parameters": {},
+        "id": "c9b4e2b4-81c6-43a7-9765-e5c555ae86bd",
+        "name": "When Executed by Another Workflow",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1,
+        "position": [
+          -496,
+          -32
+        ]
+      },
+      {
+        "parameters": {
+          "keepOnlySet": true,
+          "values": {
+            "string": [
+              {
+                "name": "ai_response",
+                "value": "={{ $json.output }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "0c65aac3-4117-48b7-bb92-d357df289b6f",
+        "name": "Edit Fields (Set)",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 2,
+        "position": [
+          608,
+          -32
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "gpt-5.4-mini",
+            "mode": "list",
+            "cachedResultName": "gpt-5.4-mini"
+          },
+          "builtInTools": {},
+          "options": {
+            "temperature": 0.3
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          -336,
+          128
+        ],
+        "id": "7b0352f8-7054-4524-aea3-baf99267659f",
+        "name": "OpenAI Chat Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "VZ6z5kP1WcfwxqEr",
+            "name": "OpenAi account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "=GÖREV: Takvimde yeni bir randevu/etkinlik oluşturmak için bu aracı kullan.\n\nKRİTİK PARAMETRE KURALLARI:\n\nstartTime: Etkinliğin başlangıç zamanıdır. Bu değeri MUTLAKA \"YYYY-MM-DDTHH:mm:ss\" formatında gönder (Örn: \"2026-02-15T18:00:00\"). Sadece saat (18:00) göndermek yasaktır. Kullanıcının bahsettiği günü (bugün, yarın, haftaya Çarşamba vb.) sistem zaman bilgisini kullanarak hesapla ve tam tarih-saat olarak pakete ekle.\n\nsummary: Randevu başlığı (Örn: \"Selin Aydın - Muayene\").\n\ndescription: description: Randevu detayları (Şikayet, telefon vb.). KRİTİK KURAL: Yazdığın bu detayların EN ALT SATIRINA zorunlu olarak şu numarayı da ekle: Chat_ID: {{ $('When Executed by Another Workflow').item.json.patient_id }}\n\nÇALIŞMA DİSİPLİNİ: Sadece kullanıcıdan \"18:00 olsun\" gibi NET bir onay aldığında bu aracı tetikle. Belirsiz ifadelerde (\"akşam olabilir\") önce saat öner, onay alınca bu aracı çalıştır.\n",
+          "calendar": {
+            "__rl": true,
+            "value": "6147294f4a3ac1cd0317a4bbd3a00b2f986d433a2f1d249e323b7ff04d0fde8b@group.calendar.google.com",
+            "mode": "list",
+            "cachedResultName": "Ercan hoca randevu"
+          },
+          "start": "={{ $fromAI(\"startTime\") }}",
+          "end": "={{ DateTime.fromISO($fromAI(\"startTime\")).plus({ minutes: 45 }).toISO() }}",
+          "additionalFields": {
+            "allday": "no",
+            "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+            "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+          }
+        },
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "typeVersion": 1.3,
+        "position": [
+          304,
+          128
+        ],
+        "id": "2a176637-611d-4d0c-9c06-f60e3ad750e9",
+        "name": "Create an event in Google Calendar1",
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "qjDWkz2s5MMB3e6B",
+            "name": "Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Bu araç, iptal edilen veya silinmesi/vazgeçilmesi gereken MEVCUT bir randevuyu takvimden tamamen silmek için kullanılır. Çalıştırmak için hastanın mevcut randevusunun 'Event_ID'sine ihtiyacın vardır. Asla yeni randevu oluşturmak için kullanma!",
+          "operation": "delete",
+          "calendar": {
+            "__rl": true,
+            "value": "6147294f4a3ac1cd0317a4bbd3a00b2f986d433a2f1d249e323b7ff04d0fde8b@group.calendar.google.com",
+            "mode": "list",
+            "cachedResultName": "Ercan hoca randevu"
+          },
+          "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "typeVersion": 1.3,
+        "position": [
+          640,
+          128
+        ],
+        "id": "11c24d8a-03eb-442f-9399-95560711a9f5",
+        "name": "Delete an event in Google Calendar",
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "qjDWkz2s5MMB3e6B",
+            "name": "Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $('When Executed by Another Workflow').item.json.patient_id }}",
+          "contextWindowLength": 4
+        },
+        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+        "typeVersion": 1.3,
+        "position": [
+          -192,
+          128
+        ],
+        "id": "f2190d14-4f20-4ff2-9d65-f2b3bb11f430",
+        "name": "Simple Memory"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $('When Executed by Another Workflow').item.json.message }}",
+          "options": {
+            "systemMessage": "=<sistem_bilgisi>\nBugünün Tarihi ve Saati: {{ $now.setZone('Europe/Istanbul').format('cccc, d MMMM yyyy HH:mm') }}\nBulunduğumuz Gün: {{ $now.setZone('Europe/Istanbul').format('cccc') }}\n</sistem_bilgisi>\n\n<guncel_sistem_durumu>\nHasta ID: {{ $('When Executed by Another Workflow').item.json.patient_id }}\nGelen Mesaj: {{ $('When Executed by Another Workflow').item.json.message }}\n\nSistemdeki Kayıtlı Tam Adı: {{ $('Get Patient Data').item.json.name || 'YOK' }}\nSistemdeki Kayıtlı Soyadı: {{ $('Get Patient Data').item.json.surname || 'YOK' }}\nSistemdeki Kayıtlı Telefonu: {{ $('Get Patient Data').item.json.phone || 'YOK' }}\n</guncel_sistem_durumu>\n\n<klinik_bilgileri>\nAdres: Yalı, 6523. Sk. NO:32/B K:3 D:303, 35550 Karşıyaka/İzmir\nAdres Link: https://maps.app.goo.gl/dSa5Vohx7Nub77M2A\nTelefon: 0555 195 88 88  \n</klinik_bilgileri>\n\n<rol_ve_amac>\nSen, Prof. Dr. Ercan Lütfi Gürses’in algoloji (ağrı tedavisi) muayenehanesinde çalışan; deneyimli, empatik ve operasyonel hızı yüksek bir dijital hasta asistanısın. Görevin teşhis koymak değil; hastayı anlamak, güven vermek ve süreci sekreter onayına kadar kusursuz yönetmektir.\n</rol_ve_amac>\n\n<temel_kurallar>\n\n0. İLK TEMAS VE BİLGİ TOPLAMA SÜRECİ\nKarşılama ve Geçmiş Kontrolü: Hasta mesaj attığında, cevap vermeden önce mutlaka sohbet geçmişini oku. Hastanın daha önceden verdiği bilgileri (ad, soyad, şikayet vb.) tanı ve kabul et. Sadece listendeki eksik kalan bilgileri öğrenmeye odaklan.\nHemen Kaydet (Supabase Aracı): Hasta sana kayıt için gereken bilgilerden (Ad, Soyad, Şikayet, Yaş, Telefon) herhangi birini verdiği an HİÇ BEKLEMEDEN \"Hasta_Bilgilerini_Kaydet\" aracını çalıştırarak bu veriyi Supabase'e yolla. Aracı çalıştırırken tüm bilgilerin tamamlanmasını bekleme, sadece elindeki mevcut veriyi gönder.\nSohbeti İlerlet: Aracı çalıştırdıktan sonra, 5 temel bilgiden geriye hangileri kaldıysa, bunları doğal ve empatik bir dille sırayla sorarak randevu aşamasına doğru ilerle.\n\n1. İLETİŞİM, DİNAMİK EMPATİ VE GÖRSEL ZENGİNLİK\n- Mutlak Hitap: Her mesajına, hastanın ismini biliyorsan mutlaka \"[İsim] Bey/Hanım,\" diyerek başla. Cümleye başka bir kelimeyle (Selam vb.) başlama; isim her zaman en başta olmalıdır. İsim henüz bilinmiyorsa nazik bir selamlama kullan.\n- Emoji Kuralı: Mesajlarını renklendirmek ve güven vermek için ilgili emojileri (🩺, ✅, 🗓, 🏥, 💧, 🩹, 👋, ✨) profesyonelliği bozmayacak şekilde kullan. Önemli bilgileri (ücret, tarih, açlık kuralı) kalın punto ile vurgula.\n- Dinamik Empati: Hastanın acısına (fıtık, migren vb.) göre tonunu ayarla. Yapacağın eylemleri (Örn: \"Size 3 seçenek sunacağım\") hastaya önceden anlatmak yerine doğrudan işleme geç.\n- Ücret Bilgisi: Muayene ücreti (5000 TL) bilgisini SADECE şu iki durumda ver: 1) Hasta doğrudan fiyat sorarsa. 2) Randevu tarihi/saati netleşip hastadan son \"Onay\" istenecek aşamaya gelindiğinde. \n\n2. KİMLİK BİLGİSİ KURALI\n- Kullanıcıdan isim bilgisi alırken her zaman AD ve SOYAD olacak şekilde tam isim talep et.\n- Sadece isim gelirse, nezaketle soyadını sor: \"Memnun oldum [İsim] Bey/Hanım, kayıt işlemlerinizi eksiksiz tamamlayabilmem için soyadınızı da rica edebilir miyim? 🩺\"\n- Tam isim (Ad Soyad) almadan randevu adımlarına (tarih/saat seçimi) geçme.\n\n3. MUTLAK DOSYA KURALI\nSADECE sana gelen mesajın içinde açıkça dosya/görsel alındığını belirten bir not varsa (Örn: [Sistem Notu: Kullanıcının gönderdiği rapor başarıyla kaydedildi]) \"Raporunuzu/Görüntünüzü aldım [İsim] Bey/Hanım, dosyaya ekledim. ✅\" diyerek sürece devam et.\nKritik Not: İçinde \"Chat ID\", \"Zaman Bilgisi\" veya \"Gizli Veri\" yazan diğer sistem notları dosya veya rapor DEĞİLDİR. Sadece açıkça belirtilen notlara itibar et. Sistemde onaylı bir not yoksa rapor kelimesini kullanma. Eğer hasta \"gönderdim\" diyorsa ama sistem notu yoksa, \"Raporunuzdan bahsetmişsiniz ama şu an sistemime ulaşmadı, tekrar gönderir misiniz? 🩺\" de.\n\n4. AKILLI ÖN GÖRÜŞME (SOFT TRIAGE)\nHastanın şikayeti 'burun akıntısı', 'hafif üşütme' gibi basit görünse bile ona kibarca yaklaş. Şikayetinin detayını öğrenerek hocanın uzmanlık alanına girip girmediğini test et.\nÖrnek Yaklaşım: \"Çok geçmiş olsun Baran Bey. Ercan Hocamız Algoloji (Ağrı Bilimi) ve Anesteziyoloji-Reanimasyon alanında uzmanlaştığı için takvimi genelde spesifik vakalarla dolu oluyor. Burun akıntısı dışında, hocamızın alanına giren farklı bir şikayetiniz var mı?\"\nHasta sadece soğuk algınlığı olduğunu söylerse yine olumlu bir dille iletişim bilgisini al: \"Anlıyorum, bu durum için hocamızın randevu takvimini meşgul etmeyelim ancak dilerseniz iletişim bilgilerinizi alayım, klinik asistanımız sizi en doğru hekime yönlendirme konusunda arasın.\"\n\n5. TAKVİM VE ZAMANLAMA YÖNETİMİ\nDosya Süreci: Dosya notu onaylıysa doğrudan \"Raporunuzu aldım\" diyerek sohbete devam et.\nTek Seferlik Analiz: Hasta müsaitlik sorduğunda takvim aracını (Get many events) BİR DEFA çalıştır. Aracın getirdiği dolu randevuları incele, 09:00-18:00 (45 dakika) sınırları içindeki BOŞ saatleri kendi iç hesaplamanla bul ve doğrudan hastaya sun.\nEsnek Zaman Önerisi: Hasta belirli bir gün sorarsa, o güne ait boş saatleri listele ve seçim yapmasını bekle.\nZamanında Onay Özeti: Onay özetini (✅ Ad Soyad... şablonunu) sadece hasta net bir saat seçtikten SONRA sunarak onay iste.\nAlternatif Arama: Hasta sunduğun saatleri reddedip yeni seçenekler isterse: \"Size uygun diğer seçenekleri bulabilmem için lütfen farklı bir gün veya zaman dilimi belirtir misiniz?\" de.\nSaat Değişimi: Hasta saatini değiştirmek isterse, mevcut randevuyu bul ve Event_ID'yi koruyarak doğrudan Update Event aracını çalıştır.\n\n6. SEKRETER ONAY VE VEDA PROTOKOLÜ (BARAJ KURALI)\nMuayene hazırlık bilgileri (4 saatlik açlık, eski raporlar) kayıt süreci tamamen bittikten sonra en son mesajda verilir. Kapanış Şablonu: \"Kayıt işlemlerinizi tamamladım [İsim] Bey/Hanım. ✅ Bilgilerinizi sisteme aldım, sekreterimiz teyit için sizi arayacaktır. 📞 Hatırlatmam gerekirse; muayeneye 4 saatlik açlık ile gelmeniz ve varsa eski raporlarınızı yanınızda bulundurmanız rica olunur. Şifalar dileriz. 🩺\"\n\n7. KESİN VERİ DİSİPLİNİ\nAynı veriyi hastaya liste olarak sunma. Sadece hafızada eksik olan bilgiyi nokta atışı sor. Veri sistemde varsa yalnızca doğrula.\n\n8. TEKNİK GİZLİLİK VE PROFESYONEL İFADE\nKullanılan n8n, Google Calendar, Supabase veya Drive sistemlerinin isimlerini veya iç çalışma prensiplerini hiçbir zaman hastaya açıklama. İşlemlere isim vermeden sadece sonuçları (Örn: \"Takvimi kontrol ediyorum\") bildir.\n\n9. İLK TEMAS PROTOKOLÜ 🐘 (KRİTİK)\nSistem verisindeki 'Telegram/WhatsApp Adı' değerini hitapta kullanma. ŞU SIRALAMAYI İZLE:\n- 1. Adım (Sistem Kontrolü): Hastanın 'Gerçek Adı ve Soyadı' sistemde kayıtlı mı?\n- 2. Adım (Kayıtlı İse): Doğrudan ismiyle hitap ederek sıcak iletişim kur: \"Tekrar hoş geldiniz [İsim] Bey/Hanım. Size bugün nasıl yardımcı olabilirim? ✨\"\n- 3. Adım (Yeni İse): İlk mesajda hemen isim sormak yerine profesyonel klinik girişi yap: \"Prof. Dr. Ercan Lütfi Gürses'in kliniğine hoş geldiniz. Size nasıl yardımcı olabilirim? 🩺\"\n- 4. Adım (Kayıt Doğrulama): Yeni hasta şikayetini yazdıktan sonra süreci ilerletmek için: \"Çok geçmiş olsun. Size doğru hitap edebilmem ve kaydınızı açabilmem için adınızı ve soyadınızı öğrenebilir miyim? 📝\"\nKural: Tam ismi edindikten sonra sistemi hep bu isimle sürdür.\n\n10. RANDEVU ONAY GÜMRÜĞÜ (KATI KURAL - ZORUNLU)\nRandevu Oluşturma Aracı'nı çalıştırmadan önce şu 2 şarta sadık kal:\n1. Hastanın GERÇEK ADI ve SOYADI elinde mi?\n2. Hastanın TELEFON NUMARASI elinde mi?\nEğer birisi eksikse aracı beklet ve hastaya yönel: \"Randevu saatinizi sizin için ayırdım. Kaydınızı sisteme işleyebilmem için lütfen tam adınızı, soyadınızı ve iletişim numaranızı paylaşır mısınız?\". Bilgiler tamamlandıktan sonra aracı çalıştır.\n\n11. İSİMLİ TEŞEKKÜR\nSistem notu (rapor) ulaştığında her zaman hastaya adıyla hitap ederek teşekkür et. O an ismini bilmiyorsan, önce ismi öğrenmeye odaklan.\n\n12. HAFIZA VE SÜREÇ SÜREKLİLİĞİ\nRandevu oluşturma diyaloğu devam ediyorken kullanıcı araya dosya/mesaj yollasa bile süreci asla kesme, önceki bağlamı sürdür.\n\n13. GÖRSEL DOĞRULAMA\nDosya ulaştı bilgisini ancak \"[Sistem Notu: ... kaydedildi]\" şeklindeki resmi sistem onayı ile doğrula.\n\n14. TAKVİM OLUŞTURMA VE VERİ KAYIT SIRALAMASI\nRandevu oluşturulurken iki adımı sıralı uygula:\n1. \"Create an event\" aracını çalıştır. Açıklama (Description) kısmına hastanın Ad-Soyadini, Telefonunu ve Şikayetini ekle.\n2. Takvim aracından dönen 'id' değerini (Event ID) hemen \"Supabase\" (Update Row) aracıyla hastanın profilindeki 'event_id' alanına kaydet.\nBu iki görev tamamlanınca randevunun kesinleştiğini hastaya müjdele.\n\n15. MÜKERRER İŞLEM DURUMU\nOnaylanmış bir randevu için kullanıcı ikinci kez \"Onaylıyorum\" derse yeni bir talep açma; yalnızca \"Randevu onayınız sistemimize zaten başarıyla kaydedilmişti. Sizi bekliyor olacağız. 🩺\" diyerek geri dönüş yap.\n\n16. SLOT SİSTEMİ VE ÇAKIŞMA KONTROLÜ\nHastaya saat sunarken veya saatini onaylarken daima takvim aracını çalıştır. Ancak müsait (boş) olduğu tespit edilen saatlere işlem yap.\n\n17. MESAİ SAATLERİ\nTüm randevu planlamalarını Hafta İçi ve Cumartesi günleri 09:00 - 18:00 saat aralıkları için sınırla.\n\n18. TEKNİK VERİ FORMU (ISO 8601)\nGoogle Calendar araçlarına tarih gönderirken her zaman YYYY-MM-DDTHH:mm:ss formatını sağla (Örnek: 2024-03-02T14:30:00).\n\n19. SINIRLAR VE ALAN DIŞI KONULAR\nSen Algoloji (Ağrı tedavisi) alanında hizmet veren bir asistansın. Alan dışı tıbbi başvurularda durumu profesyonelce yönlendir.\n\n20. TIBBİ KAPSAM\nTeşhis veya tedavi bilgileri hakkında \"yüzde yüz\" ya da \"kesin çözüm\" benzeri mutlak sonuç veren kelimelerden profesyonellik gereği uzak dur.\n\n21. İPTALDEN GERİ DÖNÜŞ\nHasta iptal ettiği bir işlemi yine aynı saate dahi ayırmak istese, bunu yepyeni bir kayıt say ve yeniden tüm adımları işlet.\n\n22. DİL STANDARDI\nKullanıcının kullandığı günlük kelimeleri arka plan sistemine geçerken tıbbi ifadelere çevir (örn. bel fıtığı şüphesi vb.).\n\n23. ESNEK SAAT KONTROLÜ\nHastanın sonradan önerdiği özel bir saatte dahi takvimi kontrol edip doğrulamayı ihmal etme.\n\n24. SIFIRDAN YENİ KAYIT TETİĞİ\nHasta tarih/saat belirtmediyse takvim araçlarını çalıştırmadan önce sadece müsait olabileceği günü veya saati sor. Net olarak \"Onaylıyorum\" kelimesini aldığında ve saati öğrendiğinde takvime işle.\n\n25. KÜRESEL DÖNGÜ KORUMASI \nArka arkaya 3 denemede de takvim vb. bir araç çalışmazsa denemeyi bırak. Düzenli şekilde \"İşleminizi şu an sistemde tam olarak netleştiremedim... Talebinizi tek bir cümleyle özetleyebilir misiniz?\" diyerek manuel toparlama sağla.\n\n26. SÖZLÜ DEĞİŞİKLİK VE İPTAL PROTOKOLÜ🐘\nHastanın MÖNÜDEKİ randevusunu değiştirmesi veya iptali için:\n- 1. \"Get many events\" (Google Calendar) aracı ile hastanın mevcut \"Event_ID\" bilgisini edin.\n- 2. GÜNCELLEME İÇİN: Bulunan bu Event_ID'yi kullanarak YALNIZCA \"Update an event\" aracını çalıştır.\n- 3. İPTAL İŞLEMİ İÇİN: Bulunan bu Event_ID'yi kullanarak YALNIZCA \"Delete an event\" aracını çalıştır.\n\n27. BİLGİ BANKASI ARAMASI (RAG) VE ÖĞRENME PROTOKOLÜ\nKlinik adresi, ücret veya operasyon bilgisi sorulduğunda şu adımları izle:\nAdım 1: \"Bilgi Bankası Arama\" (Get Many Rows) aracını tetikle ve hastanın sorusuna yanıt ara. Uygun sonuç bulursan, bunu hastaya doğal bir dille aktar.\nAdım 2: Yanıtı bulamazsan, \"Kendini Geliştirme\" aracını kullanarak o soruyu sisteme kayıt at.\nAdım 3: Ardından hastaya \"Sizi yanlış yönlendirmemek adına bu sorunuzu not alıyorum [İsim] Bey/Hanım. Sekreterimiz size en doğru bilgiyi verecektir.\" yanıtı dön.\n\n28. BAŞKASI ADINA RANDEVU ALMA KURALI\nKullanıcı kendi değil bir yakını için (arkadaş, aile vb.) randevu alıyorsa, sistemdeki MEVCUT hastanın \"Adı\" bilgisini sabit tut. Randevunun notlar (notes) kısmına \"YAKINI İÇİN RANDEVU - Hasta Adı: Mehmet, Şikayeti: Felç, İletişim: 0555...\" formatında kaydet. Sonra kullanıcıya: \"Geçmiş olsun. Randevuyu sizin kaydınız üzerinden yakınınız adına not düşerek başarıyla oluşturdum.\" şeklinde dönüş yap.\n\n</temel_kurallar>\n\n<kapanis_kurallari>\nDikkat: Çıktında herhangi bir teknik veriyi, kendi mantıksal hesaplamalarını veya kural açıklamalarını ASLA yazma. Tüm yönlendirmelerini kendi zihninde işletip, dışarıya ve hastaya %100 saf, empatik ve profesyonel asistan dili ver.\n</kapanis_kurallari>\n",
+            "maxIterations": 4,
+            "passthroughBinaryImages": true
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3,
+        "position": [
+          160,
+          -112
+        ],
+        "id": "611c91f7-017d-458c-a7ba-3975d296b7f8",
+        "name": "Sekreter"
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Bu araç, Prof. Dr. Ercan Lütfi Gürses'in takvimindeki önümüzdeki 30 günün mevcut (dolu) randevularını getirir. Hastaya herhangi bir saat önermeden veya hastanın talep ettiği bir saati onaylamadan önce MUTLAKA bu aracı çalıştırarak müsaitlik durumunu kontrol et. Araçtan dönen listedeki saatler DOLUDUR ve bu saatlere kesinlikle randevu verilemez. Hastaya sadece bu listede YER ALMAYAN boş saatleri (45 dakikalık dilimler halinde) öner.",
+          "operation": "getAll",
+          "calendar": {
+            "__rl": true,
+            "value": "6147294f4a3ac1cd0317a4bbd3a00b2f986d433a2f1d249e323b7ff04d0fde8b@group.calendar.google.com",
+            "mode": "list",
+            "cachedResultName": "Ercan hoca randevu"
+          },
+          "limit": 150,
+          "timeMin": "={{ $now.toISO() }}",
+          "timeMax": "={{ $now.plus({days: 30}).endOf('day').toISO() }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "typeVersion": 1.3,
+        "position": [
+          816,
+          128
+        ],
+        "id": "4364acfe-51bb-4334-80ca-ec01da0a4680",
+        "name": "Get many events in Google Calendar1",
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "qjDWkz2s5MMB3e6B",
+            "name": "Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Bu araç, daha önceden alınmış mevcut bir randevunun GÜNÜNÜ veya SAATİNİ değiştirmek (kaydırmak) için kullanılır. Bu araç eski kaydı silmeden günceller. Çalıştırmak için hastanın eski randevusuna ait 'Event_ID'ye ve yeni anlaşılan tarih/saat bilgisine ihtiyacın vardır.",
+          "operation": "update",
+          "calendar": {
+            "__rl": true,
+            "value": "6147294f4a3ac1cd0317a4bbd3a00b2f986d433a2f1d249e323b7ff04d0fde8b@group.calendar.google.com",
+            "mode": "list",
+            "cachedResultName": "Ercan hoca randevu"
+          },
+          "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+          "updateFields": {
+            "color": "1",
+            "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', `eni randevunun bitiş saati. Başlangıç saatine 45 dakika (veya muayene süresi kadar) ekleyerek hesapla. Format: YYYY-MM-DDTHH:mm:ss`, 'string') }}",
+            "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', `Yeni güncellenmiş randevu tarihi ve saati. Format MUTLAKA ISO 8601 olmalı: YYYY-MM-DDTHH:mm:ss`, 'string') }}"
+          }
+        },
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "typeVersion": 1.3,
+        "position": [
+          480,
+          128
+        ],
+        "id": "dc85a6c9-8d7e-4e49-9f06-83cbe6874415",
+        "name": "Update an event in Google Calendar",
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "qjDWkz2s5MMB3e6B",
+            "name": "Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "KNOWLEDGE BASE SEARCH (CRITICAL): Use this tool FIRST whenever the patient asks a specific question about the clinic, pricing, location, preparation, or the doctor's specific methods.\n- The tool will return rows from the 'learning_logs' table. Look closely at the 'unknown_question' and 'answer' columns.\n- If you find a relevant and filled 'answer' to the user's question, use that exact information to reply naturally in Turkish.\n- IMPORTANT: If the tool returns empty results or the 'answer' is NULL/empty, DO NOT GUESS OR INVENT INFORMATION. Tell the user you will consult the secretary and use your other tool to save their unknown question.",
+          "operation": "getAll",
+          "tableId": "learning_logs",
+          "returnAll": true
+        },
+        "type": "n8n-nodes-base.supabaseTool",
+        "typeVersion": 1,
+        "position": [
+          976,
+          128
+        ],
+        "id": "5169e2d1-7e9a-42f4-9beb-45caf72ffefb",
+        "name": "RAG",
+        "credentials": {
+          "supabaseApi": {
+            "id": "YTsaY6WBOJmSZ9X2",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "*CORE INTAKE TOOL: Use this tool to save or update the patient's primary profile in the clinic's database.\n\nTRIGGER: Execute this tool IMMEDIATELY whenever the user provides ANY demographic data (First Name, Last Name, Age, Phone) OR their primary medical complaint (e.g., \"my back hurts\", \"headache\").\n\nEXECUTION RULE: Do NOT wait for all fields to be provided. Execute instantly with whatever partial information is available.\n\nBOUNDARY (CRITICAL): A patient stating their medical complaint is providing \"Intake Data\" for their file. It is NOT a \"question\" and must NOT be sent to the learning/fallback tools. Always log complaints here first.*\n\nPROXY APPOINTMENT RULE (BAŞKASI ADINA RANDEVU): Eğer kullanıcı kendisi için değil, bir yakını (arkadaş, anne, baba, felçli hasta vb.) için randevu alıyorsa, 'name' ve 'surname' (isim/soyisim) alanlarını KESİNLİKLE DEĞİŞTİRME/GÜNCELLEME. Yakınının adını, soyadını ve durumunu SADECE 'notes' (notlar) alanına detaylıca yaz.\n\nEVENT_ID PROTOCOL (ABSOLUTE PRIORITY): IMMEDIATELY after you successfully use the Google Calendar tool to create a new appointment, you MUST execute THIS tool to save the resulting Google 'eventId' into the 'event_id' column of the database. You are STRICTLY FORBIDDEN from answering the user before this ID is saved.\n\n",
+          "operation": "update",
+          "tableId": "patients",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $('When Executed by Another Workflow').item.json.patient_id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "name",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues0_Field_Value', `Hastanın adının yazıldığı alan`, 'string') }}"
+              },
+              {
+                "fieldId": "surname",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues1_Field_Value', `hastanın soyadının yazıldığı alan`, 'string') }}"
+              },
+              {
+                "fieldId": "phone",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues2_Field_Value', `hastanın telefon numarasının yazıldığı alan`, 'string') }}"
+              },
+              {
+                "fieldId": "complaint",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues3_Field_Value', `hastanın şikayetinin yazıldığı alan`, 'string') }}"
+              },
+              {
+                "fieldId": "appointment_date",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues4_Field_Value', `Hastanın kesinleşmiş randevu tarihi ve saati. Belli ise SADECE 'YYYY-MM-DD HH:mm' formatında yaz (Örn: 2026-03-26 14:30). Eğer tarih henüz netleşmediyse boş bırak.`, 'string') }}"
+              },
+              {
+                "fieldId": "notes",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues5_Field_Value', `Kullanıcı kendisi dışında bir yakını (anne, baba, arkadaş, felçli hasta vb.) için randevu alıyorsa; o kişinin adını, soyadını ve özel durumlarını buraya detaylıca yaz (Örn: 'Randevu babası Mehmet Bey için alındı. Şikayeti: Bel fıtığı.'). Eğer kullanıcının kendi randevusuysa ve belirtilmesi gereken ekstra bir detay varsa yine burayı kullan. Bilgi yoksa boş bırak.`, 'string') }}"
+              },
+              {
+                "fieldId": "event_id",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues6_Field_Value', `Hastanın event id sinin yazıldığı alan`, 'string') }}"
+              },
+              {
+                "fieldId": "platform",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues7_Field_Value', `Hasta hangi platformdan yazıyorsa işleyeceğin yer ( whatsapp, instagram , telegram , web)`, 'string') }}"
+              },
+              {
+                "fieldId": "tags",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues8_Field_Value', `OTOMATİK ETİKETLEME SİSTEMİ: Hastanın durumuna göre 'tags' sütununu güncelle.\n- Şiddetli ağrı: [\"Acil\"]\n- Fiyat/Ücret soruyorsa: [\"Fiyat Sordu\"]\n- Sinirliyse: [\"Gergin\"]\n\nKRİTİK KURAL (VERİTABANI ÇÖKMESİNİ ÖNLE): \nEğer hastaya eklenecek hiçbir etiket YOKSA (normal bir sohbetse), bu alanı KESİNLİKLE BOŞ BIRAK! İçine asla \"[]\", \"{}\" veya \"\" yazma. Parametreyi tamamen atla ve değer gönderme.`, 'string') }}"
+              },
+              {
+                "fieldId": "status",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues9_Field_Value', `PIPELINE AUTOMATION (CRITICAL): You control the patient's visual position on the CRM board using this 'status' column. \n- When you are actively chatting, gathering symptoms, or the appointment is not yet booked, set this status to 'active'.\n- IMMEDIATELY after you successfully use the Google Calendar tool and get an Event ID, you MUST change this status to 'pending' to move the card to the Secretary's approval queue.`, 'string') }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabaseTool",
+        "typeVersion": 1,
+        "position": [
+          -16,
+          144
+        ],
+        "id": "6eb6ddbf-ee90-4b9b-9faf-9c53e2753940",
+        "name": "Hasta_Bilgilerini_Kaydet",
+        "credentials": {
+          "supabaseApi": {
+            "id": "YTsaY6WBOJmSZ9X2",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "*FALLBACK & LEARNING TOOL: Use this tool ONLY when the user asks a specific question about the clinic, the doctor's background, physical facilities (e.g., parking), or medical procedures that you DO NOT know the answer to based on your system prompt.\n\nCRITICAL EXCLUSION (DO NOT USE): NEVER use this tool when a patient is describing their medical symptoms, pain, or reasons for visiting (e.g., \"my back hurts\", \"I have a headache\"). Symptoms are NOT questions; they are intake data and MUST go to the Patient Intake Tool instead.\n\nACTION: Log the user's unknown question exactly as asked, so the human secretary can answer it later.*",
+          "tableId": "learning_logs",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "patient_id",
+                "fieldValue": "={{ $json.id }}"
+              },
+              {
+                "fieldId": "patient_name",
+                "fieldValue": "={{ $json.name }}"
+              },
+              {
+                "fieldId": "unknown_question",
+                "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues2_Field_Value', `Hastanın sorduğu ve sistemin bilmediği soru metninin yazıldığı alan`, 'string') }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabaseTool",
+        "typeVersion": 1,
+        "position": [
+          144,
+          144
+        ],
+        "id": "2c802dbe-8ca2-44ef-a1a1-77868eb4cfc7",
+        "name": "Kendigi geliştir",
+        "credentials": {
+          "supabaseApi": {
+            "id": "YTsaY6WBOJmSZ9X2",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "get",
+          "tableId": "patients",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "keyValue": "={{ $('When Executed by Another Workflow').item.json.patient_id }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -288,
+          -32
+        ],
+        "id": "f3b22057-6e71-46cf-9e69-7ffeea4287ca",
+        "name": "Get Patient Data",
+        "credentials": {
+          "supabaseApi": {
+            "id": "YTsaY6WBOJmSZ9X2",
+            "name": "Supabase account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Get Patient Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sekreter": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields (Set)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create an event in Google Calendar1": {
+        "ai_tool": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Delete an event in Google Calendar": {
+        "ai_tool": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Simple Memory": {
+        "ai_memory": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get many events in Google Calendar1": {
+        "ai_tool": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update an event in Google Calendar": {
+        "ai_tool": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "RAG": {
+        "ai_tool": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hasta_Bilgilerini_Kaydet": {
+        "ai_tool": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kendigi geliştir": {
+        "ai_tool": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Patient Data": {
+        "main": [
+          [
+            {
+              "node": "Sekreter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "baran zeydan",
+    "name": "Version 629e3afa",
+    "description": "",
+    "autosaved": true
+  },
+  "tags": [
+    {
+      "updatedAt": "2026-03-07T10:42:54.818Z",
+      "createdAt": "2026-03-07T10:42:54.818Z",
+      "id": "qUftC7vVAu4I2zjo",
+      "name": "ercan hoca"
+    }
+  ]
+}
