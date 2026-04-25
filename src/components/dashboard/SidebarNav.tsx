@@ -94,7 +94,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
       </div>
 
       {/* Main Nav */}
-      <nav className={`flex-1 ${collapsed ? "px-1.5" : "px-3"}`}>
+      <nav className={`flex-1 overflow-y-auto overflow-x-hidden pb-4 ${collapsed ? "px-1.5" : "px-3"}`}>
         {!collapsed && (
           <p className="px-3 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-group-label">
             {t("sidebar.mainMenu")}
