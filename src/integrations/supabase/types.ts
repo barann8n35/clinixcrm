@@ -152,6 +152,7 @@ export type Database = {
           patient_id: string | null
           patient_name: string | null
           unknown_question: string | null
+          user_id: string | null
         }
         Insert: {
           answer?: string | null
@@ -160,6 +161,7 @@ export type Database = {
           patient_id?: string | null
           patient_name?: string | null
           unknown_question?: string | null
+          user_id?: string | null
         }
         Update: {
           answer?: string | null
@@ -168,6 +170,7 @@ export type Database = {
           patient_id?: string | null
           patient_name?: string | null
           unknown_question?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -592,6 +595,7 @@ export type Database = {
           language: string
           unanswered_threshold_minutes: number
           updated_at: string
+          user_id: string | null
           voice_id: string
         }
         Insert: {
@@ -610,6 +614,7 @@ export type Database = {
           language?: string
           unanswered_threshold_minutes?: number
           updated_at?: string
+          user_id?: string | null
           voice_id?: string
         }
         Update: {
@@ -628,6 +633,7 @@ export type Database = {
           language?: string
           unanswered_threshold_minutes?: number
           updated_at?: string
+          user_id?: string | null
           voice_id?: string
         }
         Relationships: []
@@ -653,6 +659,7 @@ export type Database = {
           transcript: string | null
           twilio_call_sid: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           appointment_id?: string | null
@@ -674,6 +681,7 @@ export type Database = {
           transcript?: string | null
           twilio_call_sid?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           appointment_id?: string | null
@@ -695,6 +703,7 @@ export type Database = {
           transcript?: string | null
           twilio_call_sid?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -759,6 +768,7 @@ export type Database = {
           logo_url: string | null
           primary_color: string
           updated_at: string
+          user_id: string | null
           welcome_message: string
         }
         Insert: {
@@ -770,6 +780,7 @@ export type Database = {
           logo_url?: string | null
           primary_color?: string
           updated_at?: string
+          user_id?: string | null
           welcome_message?: string
         }
         Update: {
@@ -781,6 +792,7 @@ export type Database = {
           logo_url?: string | null
           primary_color?: string
           updated_at?: string
+          user_id?: string | null
           welcome_message?: string
         }
         Relationships: []
