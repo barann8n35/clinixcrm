@@ -82,21 +82,21 @@ export default function SecurityDashboard() {
                     <span className="text-sm font-medium text-foreground">Hasta Verileri (patients)</span>
                     <span className="text-xs font-bold text-emerald-500">100% İzole</span>
                   </div>
-                  <Progress value={100} className="h-2 bg-emerald-500/10" indicatorClassName="bg-emerald-500" />
+                  <Progress value={100} className="h-2 bg-emerald-500/10 [&>div]:bg-emerald-500" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-sm font-medium text-foreground">Mesajlar (messages)</span>
                     <span className="text-xs font-bold text-emerald-500">100% İzole</span>
                   </div>
-                  <Progress value={100} className="h-2 bg-emerald-500/10" indicatorClassName="bg-emerald-500" />
+                  <Progress value={100} className="h-2 bg-emerald-500/10 [&>div]:bg-emerald-500" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-sm font-medium text-foreground">Randevular (appointments)</span>
                     <span className="text-xs font-bold text-emerald-500">100% İzole</span>
                   </div>
-                  <Progress value={100} className="h-2 bg-emerald-500/10" indicatorClassName="bg-emerald-500" />
+                  <Progress value={100} className="h-2 bg-emerald-500/10 [&>div]:bg-emerald-500" />
                 </div>
               </div>
             </Card>
