@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +55,7 @@ const timeSlots = Array.from({ length: 28 }, (_, i) => {
 
 const QuickAppointmentDialog = ({ open, onOpenChange, date: initialDate, time: initialTime, onCreated }: QuickAppointmentDialogProps) => {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [patientName, setPatientName] = useState("");
   const [phone, setPhone] = useState("");
@@ -94,6 +96,7 @@ const QuickAppointmentDialog = ({ open, onOpenChange, date: initialDate, time: i
           name: patientName.trim(),
           phone: phone.trim() || null,
           status: "pending",
+          user_id: user?.id,
         });
         if (pErr) throw pErr;
       }
@@ -108,6 +111,7 @@ const QuickAppointmentDialog = ({ open, onOpenChange, date: initialDate, time: i
         type,
         scheduled_at: scheduledAt.toISOString(),
         status: "upcoming",
+        user_id: user?.id,
       });
       if (aErr) throw aErr;
 

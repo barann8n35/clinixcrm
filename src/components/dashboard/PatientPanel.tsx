@@ -5,6 +5,7 @@ import { RescheduleDrawer } from "./RescheduleDrawer";
 import { SendVideoDialog } from "@/components/video/SendVideoDialog";
 import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PatientOverviewTab } from "./patient-card/PatientOverviewTab";
@@ -40,6 +41,7 @@ export function PatientPanel({ patientId }: { patientId: string }) {
   const [showSendVideo, setShowSendVideo] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const { isPremium } = useRole();
+  const { user } = useAuth();
 
   useEffect(() => {
     async function load() {
@@ -83,6 +85,7 @@ export function PatientPanel({ patientId }: { patientId: string }) {
         sender_type: "secretary",
         text: msgText,
         platform: null,
+        user_id: user?.id,
       });
 
       setPatient(prev => prev ? { ...prev, status: newStatus } : null);

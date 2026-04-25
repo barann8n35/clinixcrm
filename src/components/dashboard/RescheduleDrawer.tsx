@@ -7,6 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const TIME_SLOTS = Array.from({ length: 4 * 14 }, (_, i) => {
@@ -28,6 +29,7 @@ export function RescheduleDrawer({ open, onOpenChange, patientId, patientName, o
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
 
   async function handleSave() {
     if (!selectedDate || !selectedTime) return;
@@ -70,6 +72,7 @@ export function RescheduleDrawer({ open, onOpenChange, patientId, patientName, o
         sender_type: "secretary",
         text: `Randevunuz ${format(dt, "dd MMMM yyyy, HH:mm", { locale: tr })} tarihine yeniden planlanmıştır 🗓️`,
         platform: null,
+        user_id: user?.id,
       });
 
       toast.success("Randevu başarıyla güncellendi 🗓️");

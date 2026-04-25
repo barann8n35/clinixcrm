@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Send, Paperclip, Sparkles, Bot, User, ToggleLeft, ToggleRight, ChevronLeft, Info, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { FaWhatsapp, FaInstagram, FaTelegramPlane } from "react-icons/fa";
@@ -174,6 +175,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }: ChatInterfaceProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [aiPaused, setAiPaused] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -261,6 +263,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
         sender_type: "admin",
         text: inputValue.trim(),
         platform: null,
+        user_id: user?.id,
       }),
       supabase.from("patients").update({ is_ai_active: false }).eq("id", patientId),
     ]);

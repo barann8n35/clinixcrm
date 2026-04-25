@@ -100,6 +100,7 @@ export function SendVideoDialog({ open, onOpenChange, patientId, patientName }: 
         sender_type: "secretary",
         text,
         platform: null,
+        user_id: user?.id,
       });
       if (error) throw error;
       toast.success(`Video ${patientName} hastasına gönderildi`, { id: tId });
