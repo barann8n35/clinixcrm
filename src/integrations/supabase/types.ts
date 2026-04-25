@@ -44,6 +44,7 @@ export type Database = {
           scheduled_at: string
           status: string
           type: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -53,6 +54,7 @@ export type Database = {
           scheduled_at: string
           status?: string
           type?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -62,6 +64,7 @@ export type Database = {
           scheduled_at?: string
           status?: string
           type?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -177,6 +180,7 @@ export type Database = {
           platform: string | null
           sender_type: string
           text: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -186,6 +190,7 @@ export type Database = {
           platform?: string | null
           sender_type: string
           text: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -195,6 +200,7 @@ export type Database = {
           platform?: string | null
           sender_type?: string
           text?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -253,6 +259,7 @@ export type Database = {
           note: string
           patient_id: string
           remind_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -261,6 +268,7 @@ export type Database = {
           note?: string
           patient_id: string
           remind_at: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -269,6 +277,7 @@ export type Database = {
           note?: string
           patient_id?: string
           remind_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -298,6 +307,7 @@ export type Database = {
           surname: string | null
           tags: Json | null
           updated_at: string
+          user_id: string | null
           web_session_id: string | null
         }
         Insert: {
@@ -325,6 +335,7 @@ export type Database = {
           surname?: string | null
           tags?: Json | null
           updated_at?: string
+          user_id?: string | null
           web_session_id?: string | null
         }
         Update: {
@@ -352,6 +363,7 @@ export type Database = {
           surname?: string | null
           tags?: Json | null
           updated_at?: string
+          user_id?: string | null
           web_session_id?: string | null
         }
         Relationships: []
