@@ -30,8 +30,7 @@ interface SecurityLog {
 
 export default function SecurityDashboard() {
   const { user } = useAuth();
-  const { role } = useRole();
-  const isAdmin = role === "admin";
+  const { isAdmin } = useRole();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
