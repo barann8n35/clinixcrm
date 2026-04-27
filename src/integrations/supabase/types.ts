@@ -819,6 +819,7 @@ export type Database = {
       }
       handle_omnichannel_message: {
         Args: {
+          p_clinic_user_id?: string
           p_external_id: string
           p_message: string
           p_name: string
