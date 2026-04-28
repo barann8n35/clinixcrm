@@ -1,4 +1,4 @@
-import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles, Crown, Tag, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles, Crown, Tag, ShieldCheck, PhoneCall } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,7 @@ const managementNavItems = [
 
 const premiumNavItems = [
   { icon: Video, labelKey: "sidebar.videoStudio", path: "/video-studio", premium: true },
+  { icon: PhoneCall, labelKey: "Sesli AI Asistan", path: "/voice-agent", premium: true },
 ];
 
 interface SidebarNavProps {
