@@ -9,16 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download, CheckCircle2, Clock, Mic, PhoneCall, Globe } from "lucide-react";
+import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download, CheckCircle2, Clock, Mic, Globe } from "lucide-react";
 import { usePWA } from "@/hooks/use-pwa";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import VoiceCloneManager from "@/components/video/VoiceCloneManager";
-import VoiceAgentTab from "@/components/settings/VoiceAgentTab";
 import WidgetSettingsTab from "@/components/settings/WidgetSettingsTab";
-import { FeatureLock } from "@/components/premium/FeatureLock";
-import { useRole } from "@/hooks/useRole";
 
 interface QuickReply {
   id: string;
@@ -32,7 +29,6 @@ const Settings = () => {
   const [instagramEnabled, setInstagramEnabled] = useState(false);
   const { canInstall, isInstalled, install } = usePWA();
   const { loading: notifLoading, connectionStatus, requestPermission } = usePushNotifications();
-  const { isPremiumPlus } = useRole();
 
   // Quick replies state
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
