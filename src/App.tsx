@@ -23,6 +23,7 @@ import CalendarPage from "./pages/CalendarPage";
 import Inventory from "./pages/Inventory";
 import TeamManagement from "./pages/TeamManagement";
 import VideoStudio from "./pages/VideoStudio";
+import VoiceAgentPage from "./pages/VoiceAgentPage";
 import Pricing from "./pages/Pricing";
 import Widget from "./pages/Widget";
 import SecurityDashboard from "./pages/SecurityDashboard";
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="inventory" element={<Inventory />} />
               <Route path="team" element={<TeamManagement />} />
               <Route path="video-studio" element={<VideoStudio />} />
+              <Route path="voice-agent" element={<VoiceAgentPage />} />
               <Route path="pricing" element={<Pricing />} />
               <Route path="security" element={<SecurityDashboard />} />
             </Route>
