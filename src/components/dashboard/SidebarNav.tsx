@@ -13,20 +13,25 @@ const mainNavItems = [
   { icon: Users, labelKey: "sidebar.patients", path: "/patients" },
   { icon: Calendar, labelKey: "sidebar.appointments", path: "/appointments" },
   { icon: CalendarDays, labelKey: "sidebar.calendar", path: "/calendar" },
-  { icon: Megaphone, labelKey: "sidebar.campaigns", path: "/campaigns" },
 ];
 
 const managementNavItems = [
   { icon: Package, labelKey: "sidebar.inventory", path: "/inventory" },
   { icon: UsersRound, labelKey: "sidebar.team", path: "/team" },
   { icon: ShieldCheck, labelKey: "Güvenlik & KVKK", path: "/security" },
-  { icon: BookOpen, labelKey: "sidebar.knowledgeBase", path: "/knowledge-base" },
   { icon: Tag, labelKey: "sidebar.pricing", path: "/pricing" },
   { icon: Settings, labelKey: "sidebar.settings", path: "/settings" },
 ];
 
+// Premium (Yazılı AI) — WhatsApp AI Bot, RAG, Video Stüdyo, Kampanyalar
 const premiumNavItems = [
+  { icon: Megaphone, labelKey: "sidebar.campaigns", path: "/campaigns", premium: true },
+  { icon: BookOpen, labelKey: "sidebar.knowledgeBase", path: "/knowledge-base", premium: true },
   { icon: Video, labelKey: "sidebar.videoStudio", path: "/video-studio", premium: true },
+];
+
+// Premium+ (VIP — Sesli AI)
+const premiumPlusNavItems = [
   { icon: PhoneCall, labelKey: "Sesli AI Asistan", path: "/voice-agent", premium: true },
 ];
 
@@ -121,12 +126,26 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
           <>
             {!collapsed && (
               <p className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-widest text-primary/80 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> {isPremiumPlus ? "PREMIUM+ VIP" : "PREMIUM"}
+                <Sparkles className="w-3 h-3" /> PREMIUM — YAZILI AI
               </p>
             )}
             {collapsed && <div className="my-4 mx-2 h-px bg-sidebar-border" />}
             <div className="space-y-0.5">
               {premiumNavItems.map(renderNavItem)}
+            </div>
+          </>
+        )}
+
+        {isPremiumPlus && (
+          <>
+            {!collapsed && (
+              <p className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-widest text-purple-500/90 flex items-center gap-1">
+                <Crown className="w-3 h-3" /> PREMIUM+ VIP — SESLİ AI
+              </p>
+            )}
+            {collapsed && <div className="my-4 mx-2 h-px bg-sidebar-border" />}
+            <div className="space-y-0.5">
+              {premiumPlusNavItems.map(renderNavItem)}
             </div>
           </>
         )}
