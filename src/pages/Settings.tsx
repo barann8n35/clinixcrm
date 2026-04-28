@@ -133,16 +133,17 @@ const Settings = () => {
       </motion.div>
 
       <Tabs defaultValue="profil" className="space-y-6">
-        <TabsList className="bg-muted/50 w-full sm:w-auto rounded-xl flex-wrap">
-          <TabsTrigger value="profil" className="gap-2"><User className="h-4 w-4 hidden sm:block" />Profil</TabsTrigger>
-          <TabsTrigger value="klinik" className="gap-2"><Building2 className="h-4 w-4 hidden sm:block" />Klinik</TabsTrigger>
-          <TabsTrigger value="entegrasyonlar" className="gap-2"><Plug className="h-4 w-4 hidden sm:block" />Entegrasyonlar</TabsTrigger>
-          <TabsTrigger value="hazir-yanitlar" className="gap-2"><Zap className="h-4 w-4 hidden sm:block" />Hazır Yanıtlar</TabsTrigger>
-          <TabsTrigger value="ses-asistan" className="gap-2"><PhoneCall className="h-4 w-4 hidden sm:block" />Sesli Asistan</TabsTrigger>
-          <TabsTrigger value="ses-klonum" className="gap-2"><Mic className="h-4 w-4 hidden sm:block" />Ses Klonum</TabsTrigger>
-          <TabsTrigger value="web-widget" className="gap-2"><Globe className="h-4 w-4 hidden sm:block" />Web Widget</TabsTrigger>
-          <TabsTrigger value="mobil" className="gap-2"><Smartphone className="h-4 w-4 hidden sm:block" />Mobil & Bildirim</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 md:mx-0 overflow-x-auto scrollbar-none">
+          <TabsList className="bg-muted/50 rounded-xl inline-flex w-max min-w-full sm:w-auto mx-4 md:mx-0">
+            <TabsTrigger value="profil" className="gap-2 shrink-0"><User className="h-4 w-4" /><span className="text-xs sm:text-sm">Profil</span></TabsTrigger>
+            <TabsTrigger value="klinik" className="gap-2 shrink-0"><Building2 className="h-4 w-4" /><span className="text-xs sm:text-sm">Klinik</span></TabsTrigger>
+            <TabsTrigger value="entegrasyonlar" className="gap-2 shrink-0"><Plug className="h-4 w-4" /><span className="text-xs sm:text-sm">Entegrasyonlar</span></TabsTrigger>
+            <TabsTrigger value="hazir-yanitlar" className="gap-2 shrink-0"><Zap className="h-4 w-4" /><span className="text-xs sm:text-sm">Hazır Yanıtlar</span></TabsTrigger>
+            <TabsTrigger value="ses-klonum" className="gap-2 shrink-0"><Mic className="h-4 w-4" /><span className="text-xs sm:text-sm">Ses Klonum</span></TabsTrigger>
+            <TabsTrigger value="web-widget" className="gap-2 shrink-0"><Globe className="h-4 w-4" /><span className="text-xs sm:text-sm">Web Widget</span></TabsTrigger>
+            <TabsTrigger value="mobil" className="gap-2 shrink-0"><Smartphone className="h-4 w-4" /><span className="text-xs sm:text-sm">Mobil & Bildirim</span></TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Profil Tab */}
         <TabsContent value="profil">
@@ -324,18 +325,7 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        {/* Sesli Asistan Tab — Premium+ */}
-        <TabsContent value="ses-asistan">
-          {isPremiumPlus ? (
-            <VoiceAgentTab />
-          ) : (
-            <FeatureLock
-              tier="premium_plus"
-              featureName="Sesli AI Asistan"
-              description="7/24 telefonları açan, randevu alan, doktorun kendi sesiyle dış arama yapan dijital sekreter. Premium+ paketine dahildir."
-            />
-          )}
-        </TabsContent>
+        {/* Sesli Asistan Tab moved to /voice-agent (Premium sidebar) */}
 
         {/* Ses Klonum Tab */}
         <TabsContent value="ses-klonum">
