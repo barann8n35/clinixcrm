@@ -13,20 +13,25 @@ const mainNavItems = [
   { icon: Users, labelKey: "sidebar.patients", path: "/patients" },
   { icon: Calendar, labelKey: "sidebar.appointments", path: "/appointments" },
   { icon: CalendarDays, labelKey: "sidebar.calendar", path: "/calendar" },
-  { icon: Megaphone, labelKey: "sidebar.campaigns", path: "/campaigns" },
 ];
 
 const managementNavItems = [
   { icon: Package, labelKey: "sidebar.inventory", path: "/inventory" },
   { icon: UsersRound, labelKey: "sidebar.team", path: "/team" },
   { icon: ShieldCheck, labelKey: "Güvenlik & KVKK", path: "/security" },
-  { icon: BookOpen, labelKey: "sidebar.knowledgeBase", path: "/knowledge-base" },
   { icon: Tag, labelKey: "sidebar.pricing", path: "/pricing" },
   { icon: Settings, labelKey: "sidebar.settings", path: "/settings" },
 ];
 
+// Premium (Yazılı AI) — WhatsApp AI Bot, RAG, Video Stüdyo, Kampanyalar
 const premiumNavItems = [
+  { icon: Megaphone, labelKey: "sidebar.campaigns", path: "/campaigns", premium: true },
+  { icon: BookOpen, labelKey: "sidebar.knowledgeBase", path: "/knowledge-base", premium: true },
   { icon: Video, labelKey: "sidebar.videoStudio", path: "/video-studio", premium: true },
+];
+
+// Premium+ (VIP — Sesli AI)
+const premiumPlusNavItems = [
   { icon: PhoneCall, labelKey: "Sesli AI Asistan", path: "/voice-agent", premium: true },
 ];
 
