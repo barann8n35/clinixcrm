@@ -126,12 +126,26 @@ export function SidebarNav({ collapsed = false, onNavigate }: SidebarNavProps) {
           <>
             {!collapsed && (
               <p className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-widest text-primary/80 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> {isPremiumPlus ? "PREMIUM+ VIP" : "PREMIUM"}
+                <Sparkles className="w-3 h-3" /> PREMIUM — YAZILI AI
               </p>
             )}
             {collapsed && <div className="my-4 mx-2 h-px bg-sidebar-border" />}
             <div className="space-y-0.5">
               {premiumNavItems.map(renderNavItem)}
+            </div>
+          </>
+        )}
+
+        {isPremiumPlus && (
+          <>
+            {!collapsed && (
+              <p className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-widest text-purple-500/90 flex items-center gap-1">
+                <Crown className="w-3 h-3" /> PREMIUM+ VIP — SESLİ AI
+              </p>
+            )}
+            {collapsed && <div className="my-4 mx-2 h-px bg-sidebar-border" />}
+            <div className="space-y-0.5">
+              {premiumPlusNavItems.map(renderNavItem)}
             </div>
           </>
         )}
