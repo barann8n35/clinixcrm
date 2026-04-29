@@ -1,84 +1,95 @@
+# Sistem Denetim Raporu — Eksikler ve Öneriler
 
-Kullanıcı stratejik bir karar soruyor: lip-sync (dudak senkronu) + ses klonlama özelliğini standart pakete mi koymalı yoksa ekstra premium özellik olarak mı sunmalı?
+Mevcut sistemi (frontend, edge functions, veritabanı, RLS, entegrasyonlar) inceledim. Aşağıda öncelik sırasına göre tespit ettiğim eksikleri ve önerdiğim aksiyonları gruplayarak listeledim.
 
-Bu bir kod değişikliği değil, ürün/iş modeli sorusu. Kısa ve net bir öneri sun, sonra teknik açıdan iki yolu da göster.
+---
 
-## Önerim: Ekstra Üst Katman (Premium+) Olarak Sun
+## 1. KRİTİK — Hemen Çözülmesi Önerilen
 
-### Neden ekstra olmalı?
+### A. Instagram Webhook için secret'lar eksik
+`instagram-webhook` edge function deploy edildi ama 3 secret henüz eklenmedi:
+- `META_APP_SECRET`
+- `META_VERIFY_TOKEN`
+- `INSTAGRAM_PAGE_ACCESS_TOKEN`
 
-**1. Maliyet farkı çok büyük**
-- Mevcut TTS dublaj (ElevenLabs `eleven_multilingual_v2`): ~$0.30/dakika video
-- Ses klonlama + lip-sync (ElevenLabs Voice Clone + HeyGen/Sync.so/D-ID): ~$2-4/dakika video
-- 10x maliyet farkı var. Standart pakete koyarsan ya fiyatı 10x artırırsın ya zarar edersin.
+Sen bunları Meta Developer panelinden alıp paylaşana kadar Instagram DM'leri sisteme akmaz.
 
-**2. İşlem süresi farkı**
-- TTS dublaj: 1-2 dakika
-- Lip-sync: 5-15 dakika
-- Kullanıcı deneyimi açısından farklı bir kategori — ayrı UI/beklenti yönetimi gerekir.
+### B. Telefonsuz hasta kayıtları (11 / 28)
+Veritabanında **11 hastanın telefonu boş**. Bu kayıtlar:
+- Randevu hatırlatma (WhatsApp/SMS) alamaz,
+- Sesli AI dış arama yapamaz,
+- Kampanya audience'larından otomatik düşer.
 
-**3. Pazarlama avantajı**
-- "Premium" (mevcut) → sağlık turizmi kliniklerinin %80'i için yeterli
-- "Premium+" / "Studio Pro" → en üst segment, "doktorun kendi yüzü/sesiyle Arapça konuşuyor" demosuyla satış kapatır
-- Üç katmanlı yapı (Free / Premium / Premium+) klasik SaaS upsell hunisi
+**Öneri:** `Patients` ekranında "Telefonu Eksik" filtresi + uyarı rozeti ekle. Yeni hasta formunda telefonu zorunlu (NOT NULL) yapma seçeneği sun.
 
-**4. Teknik risk**
-- Lip-sync API'leri (HeyGen, Sync.so) hala olgunlaşıyor — bazı yüzlerde/açılarda hatalı sonuç verebilir
-- Standart pakete koyup bozuk çıktı → tüm ürünün premium algısı zedelenir
-- Ekstra katman → "beta" / "deneysel" rozetiyle sunabilirsin
+### C. Güvenlik taraması yapılmadı
+Son aylarda RLS policy'leri ve `auth.uid()` default'ları değişti. **Tam güvenlik taraması** çalıştırıp, kalan açık varsa kapatmamız gerekiyor (özellikle yeni `instagram-webhook` ve mevcut `widget-message` public endpoint'leri için).
 
-### Mimari (onaylarsan uygularım)
+---
+
+## 2. YÜKSEK — Fonksiyonel Boşluklar
+
+### D. Onboarding akışı eksik
+Yeni kayıt → "Pending Approval" ekranında bekliyor. Admin onayladıktan sonra kullanıcıya:
+- E-posta bildirimi gitmiyor,
+- İlk açılışta tur/wizard tetiklenmiyor (`OnboardingWizard.tsx` var ama bağlı değil gibi).
+
+### E. Şifre sıfırlama akışı
+`Auth.tsx`'de "Şifremi unuttum" linki var mı kontrol edilmeli. Yoksa eklenmeli (Supabase `resetPasswordForEmail`).
+
+### F. Hata sınırı (Error Boundary) yok
+Daha önce "ekran beyaz kaldı" sorunu yaşadık. Global bir `<ErrorBoundary>` (ör. `react-error-boundary`) ile beyaz ekran yerine kullanıcıya friendly fallback + "Yeniden Yükle" butonu gösterilmeli.
+
+### G. Audit log / Aktivite kaydı yok
+Kim ne zaman hangi hastayı düzenledi, hangi randevuyu iptal etti — kayıt yok. KVKK ve takım yönetimi için kritik. Basit bir `activity_logs` tablosu + tetikleyiciler önerilir.
+
+---
+
+## 3. ORTA — UX / İçerik İyileştirmeleri
+
+### H. Boş durumlar (Empty states)
+`Pipeline`, `Campaigns`, `Inventory`, `KnowledgeBase` sayfaları ilk girişte boş. Her birine illüstrasyonlu "Henüz yok — şununla başla" CTA'sı ekle.
+
+### I. Mobil push test akışı
+`use-push-notifications` ve OneSignal kurulu ama Settings ekranında "Test Bildirim Gönder" butonu var mı belirsiz. Kullanıcının kurulumun çalıştığını doğrulayabilmesi için eklenmeli.
+
+### J. Pricing → Checkout bağlantısı
+`Pricing.tsx` sayfası var ama Stripe/Paddle bağlı değil. "Premium'a Geç" butonu şu an sadece görsel — ya Stripe entegre edilmeli ya da "WhatsApp ile iletişime geç" akışına bağlanmalı.
+
+### K. i18n eksik anahtarlar
+SidebarNav'a son eklenen "Güvenlik & KVKK" ve "Sesli AI Asistan" gibi öğeler `labelKey` yerine düz Türkçe metin içeriyor. EN moduna geçince çevrilmiyor.
+
+---
+
+## 4. DÜŞÜK — Teknik Borç
+
+### L. `useRole` cache yok
+Her sayfa değişiminde rol sorgusu yeniden yapılıyor. TanStack Query ile cache'lenmeli (5 dk staleTime).
+
+### M. Edge function'larda yapılandırılmış log yok
+Hata ayıklamak için JSON formatında log + correlation ID önerilir.
+
+### N. `widget-message` rate limit in-memory
+Edge function instance restart olunca sıfırlanıyor. Kalıcı rate limit için Supabase tablosu veya Upstash Redis önerilir (şimdilik bekleyebilir).
+
+---
+
+## Tavsiye edilen sıra
 
 ```text
-app_role enum:
-  pending → user → premium → premium_plus (YENİ)
-
-Video modu seçimi:
-  ☐ Altyazı       (Premium)
-  ☐ TTS Dublaj    (Premium - genel ses)
-  ☐ Voice Clone   (Premium+ - kullanıcının kendi sesi)
-  ☐ Lip-Sync      (Premium+ - dudak senkronu)
+1. Güvenlik taraması çalıştır              → 1 dk
+2. ErrorBoundary + Pricing CTA fix         → küçük
+3. i18n eksik label'lar                    → küçük
+4. Şifre sıfırlama akışı                   → orta
+5. Audit log altyapısı                     → orta-büyük
+6. Onboarding e-posta + wizard tetikleyici → orta
+7. Stripe entegrasyonu (eğer ödeme almak istiyorsan) → büyük
 ```
 
-### Teknik Plan (kısaca)
+---
 
-**1. Veritabanı**
-- `app_role` enum'a `premium_plus` ekle
-- `voice_clones` tablosu: `id, user_id, elevenlabs_voice_id, sample_url, name, status` — kullanıcının klonlanmış sesini sakla
-- `video_translations.mode` enum: `subtitle | dub | clone_dub | lipsync`
+## Sıradaki adım
 
-**2. Edge Functions (yeni)**
-- `clone-voice` — kullanıcı 1-3 dakikalık ses örneği yükler → ElevenLabs Voice Cloning API → `voice_id` döner
-- `process-video-translation` güncellemesi — `clone_dub` modunda kullanıcının kendi `voice_id`'sini kullan
-- `generate-lipsync` — Sync.so veya HeyGen API'ye dublajlı ses + orijinal video gönder → dudak senkronlu video al
+Hangilerini bu turda yapmamı istersin? Önerim: **1, 2, 3** maddelerini tek seferde halledelim (hızlı ve riski düşük), sonra kalanları ayrı turlarda ele alalım.
 
-**3. UI**
-- Settings altında yeni sekme: **"Ses Klonum"** — örnek kayıt yükle, klonu test et, sil
-- Video Studio'da mod seçici genişler:
-  - "🎙️ Kendi sesimle dublaj (Premium+)"
-  - "👄 Dudak senkronu (Premium+)"
-- Premium+ olmayan kullanıcıya kilitli buton + "Yükselt" CTA
-
-**4. Gerekli secret'lar**
-- `SYNC_SO_API_KEY` veya `HEYGEN_API_KEY` (lip-sync için — sen seçeceksin)
-- ElevenLabs zaten var (Voice Cloning aynı API key ile çalışır)
-
-**5. Premium+ atama**
-- Team Management'ta admin elle atar (ilk versiyon)
-- Sonra Stripe ile self-service abonelik (Faz 3)
-
-### Açık Karar
-
-Hangi lip-sync sağlayıcısı? Üç seçenek:
-- **Sync.so** — en yeni, en doğal sonuç, $1.5/dk
-- **HeyGen** — pazar lideri, kurumsal görünüm, $2-3/dk, daha katı kullanım koşulları
-- **D-ID** — daha ucuz ($0.50/dk) ama kalite biraz geride
-
-Onayını ver, hangi sağlayıcıyla gideceğimizi söyle, plana son şeklini verip uygulamaya geçeyim.
-
-<lov-actions>
-<lov-suggestion message="Premium+ katmanı olarak ekle. Ses klonlama + lip-sync için Sync.so kullan (en doğal sonuç, makul fiyat). Settings'e 'Ses Klonum' sekmesi ekle, Video Studio'da yeni mod seçenekleri olsun.">Premium+ olarak ekle (Sync.so ile)</lov-suggestion>
-<lov-suggestion message="Premium+ katmanı olarak ekle ama HeyGen API kullan — kurumsal kalite ve marka güveni daha önemli, fiyat farkını üstleniriz.">Premium+ olarak ekle (HeyGen ile)</lov-suggestion>
-<lov-suggestion message="Standart Premium pakete dahil et — fiyatlama karmaşıklığı istemiyorum, herkese tam paket. Sync.so ile entegre et.">Standart pakete dahil et</lov-suggestion>
-<lov-suggestion message="Şimdilik mevcut TTS dublajla devam edelim, lip-sync özelliğini ileride 10 gerçek müşteri talebi geldikten sonra ekleriz.">Şimdilik ekleme, beklesin</lov-suggestion>
-</lov-actions>
+Onaylarsan plan modundan çıkıp uygulamaya geçeyim. Farklı bir öncelik istersen söyle, planı güncelleyeyim.

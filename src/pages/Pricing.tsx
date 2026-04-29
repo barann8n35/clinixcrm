@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
+const SALES_WHATSAPP = "905555555555"; // TODO: gerçek satış hattı
+const buildWaUrl = (planName: string) =>
+  `https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(
+    `Merhaba, Clinix ${planName} paketi hakkında bilgi almak istiyorum.`
+  )}`;
+
 interface Plan {
   id: "standard" | "premium" | "premium_plus";
   name: string;
@@ -186,7 +192,7 @@ const Pricing = () => {
               </div>
 
               <Button
-                onClick={() => navigate(session ? "/dashboard" : "/auth")}
+                onClick={() => window.open(buildWaUrl(plan.name), "_blank", "noopener")}
                 className={`rounded-xl gap-2 mb-6 ${
                   plan.highlight
                     ? ""
@@ -239,7 +245,7 @@ const Pricing = () => {
             doktorun kendisinin aradığını duyuyor.
           </p>
           <Button
-            onClick={() => navigate(session ? "/dashboard" : "/auth")}
+            onClick={() => window.open(buildWaUrl("Premium+"), "_blank", "noopener")}
             className="rounded-xl gap-2 bg-gradient-to-r from-purple-500 to-primary hover:opacity-90 text-white"
           >
             VIP Paketi Aktive Et <ArrowRight className="w-4 h-4" />
