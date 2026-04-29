@@ -18,7 +18,7 @@ const mainNavItems = [
 const managementNavItems = [
   { icon: Package, labelKey: "sidebar.inventory", path: "/inventory" },
   { icon: UsersRound, labelKey: "sidebar.team", path: "/team" },
-  { icon: ShieldCheck, labelKey: "Güvenlik & KVKK", path: "/security" },
+  { icon: ShieldCheck, labelKey: "sidebar.security", path: "/security" },
   { icon: Tag, labelKey: "sidebar.pricing", path: "/pricing" },
   { icon: Settings, labelKey: "sidebar.settings", path: "/settings" },
 ];
@@ -32,7 +32,7 @@ const premiumNavItems = [
 
 // Premium+ (VIP — Sesli AI)
 const premiumPlusNavItems = [
-  { icon: PhoneCall, labelKey: "Sesli AI Asistan", path: "/voice-agent", premium: true },
+  { icon: PhoneCall, labelKey: "sidebar.voiceAgent", path: "/voice-agent", premium: true },
 ];
 
 interface SidebarNavProps {

@@ -16,7 +16,9 @@
     "calendar": "Calendar",
     "inventory": "Inventory",
     "team": "Team Management",
-    "videoStudio": "Video Studio"
+    "videoStudio": "Video Studio",
+    "security": "Security & GDPR",
+    "voiceAgent": "Voice AI Agent"
   },
   "dashboard": {
     "title": "Dashboard",

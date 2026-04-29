@@ -31,6 +31,7 @@ import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
 import { OneSignalClickHandler } from "@/components/OneSignalClickHandler";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const OneSignalInit = () => {
 };
 
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <NotificationProvider>
@@ -82,6 +84,7 @@ const App = () => (
       </NotificationProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

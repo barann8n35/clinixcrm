@@ -16,7 +16,9 @@
     "calendar": "Takvim",
     "inventory": "Stok Takibi",
     "team": "Ekip Yönetimi",
-    "videoStudio": "Video Stüdyo"
+    "videoStudio": "Video Stüdyo",
+    "security": "Güvenlik & KVKK",
+    "voiceAgent": "Sesli AI Asistan"
   },
   "dashboard": {
     "title": "Gösterge Paneli",
