@@ -1,0 +1,1 @@
+UPDATE public.video_translations SET lipsync_url = 'https://api.sync.so/v2/generations/39ec094f-2bdd-40ee-8991-707f8231d0b9/result?token=ae6bfaab-0028-4f72-a113-dd7c3f110e19', status = 'completed', completed_at = now() WHERE id = 'd5e7ee95-d6f6-4fa3-99f3-38ff653ae3f0';
