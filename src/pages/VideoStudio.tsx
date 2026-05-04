@@ -92,6 +92,8 @@ const VideoStudio = () => {
   useEffect(() => {
     if (!user) return;
     loadData();
+    // Recover any lipsync jobs whose poller died on edge runtime shutdown
+    supabase.functions.invoke("check-lipsync-jobs").catch(() => {});
     const ch = supabase
       .channel("video-studio-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "video_translations" }, () => loadData())
