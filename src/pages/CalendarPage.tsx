@@ -1,24 +1,26 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { User, Phone, Stethoscope, FileText, Clock, CalendarDays, StickyNote, MapPin, Pencil, CheckCircle2 } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  User, Phone, Stethoscope, FileText, Clock, CalendarDays, StickyNote,
+  MapPin, Pencil, CheckCircle2, ChevronLeft, ChevronRight, Plus, Sparkles,
+} from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import QuickAppointmentDialog from "@/components/appointments/QuickAppointmentDialog";
 import EditAppointmentDialog from "@/components/appointments/EditAppointmentDialog";
 
@@ -78,18 +80,24 @@ const typeBgColors: Record<string, string> = {
   "Operasyon": "rgba(239,68,68,0.08)",
 };
 
+const VIEWS = [
+  { key: "dayGridMonth", label: "Ay" },
+  { key: "timeGridWeek", label: "Hafta" },
+  { key: "timeGridDay", label: "Gün" },
+  { key: "listWeek", label: "Ajanda" },
+];
+
 const CalendarPage = () => {
   const { t } = useTranslation();
   const calendarRef = useRef<any>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [editOpen, setEditOpen] = useState(false);
-  const [currentView, setCurrentView] = useState("dayGridMonth");
+  const [currentView, setCurrentView] = useState("timeGridWeek");
+  const [currentTitle, setCurrentTitle] = useState("");
   const [markingArrived, setMarkingArrived] = useState(false);
   const [quickAppt, setQuickAppt] = useState<{ open: boolean; date: Date; time: string }>({
-    open: false,
-    date: new Date(),
-    time: "09:00",
+    open: false, date: new Date(), time: "09:00",
   });
 
   const loadEvents = useCallback(async () => {
@@ -104,102 +112,81 @@ const CalendarPage = () => {
       .not("appointment_date", "is", null);
 
     const eventsArr: CalendarEvent[] = [];
-
     (apptData || []).forEach((a: any) => {
       const p = a.patients;
       const fullName = p ? [p.name, p.surname].filter(Boolean).join(" ") : "—";
       const colors = statusColors[a.status] || statusColors.upcoming;
       eventsArr.push({
-        id: a.id,
-        title: fullName,
-        start: a.scheduled_at,
-        backgroundColor: colors.bg,
-        borderColor: colors.border,
-        textColor: colors.text,
+        id: a.id, title: fullName, start: a.scheduled_at,
+        backgroundColor: colors.bg, borderColor: colors.border, textColor: colors.text,
         extendedProps: {
-          doctor: a.doctor,
-          type: a.type,
-          status: a.status,
-          complaint: p?.complaint || "—",
-          patientName: fullName,
-          phone: p?.phone || "—",
-          location: p?.location || "—",
-          scheduledAt: a.scheduled_at,
-          internalNotes: p?.internal_notes || "",
-          appointmentId: a.id,
-          patientId: a.patient_id,
+          doctor: a.doctor, type: a.type, status: a.status,
+          complaint: p?.complaint || "—", patientName: fullName,
+          phone: p?.phone || "—", location: p?.location || "—",
+          scheduledAt: a.scheduled_at, internalNotes: p?.internal_notes || "",
+          appointmentId: a.id, patientId: a.patient_id,
         },
       });
     });
-
-    const coveredPatientIds = new Set((apptData || []).map((a: any) => a.patient_id));
+    const covered = new Set((apptData || []).map((a: any) => a.patient_id));
     (patientData || []).forEach((p: any) => {
-      if (coveredPatientIds.has(p.id)) return;
+      if (covered.has(p.id)) return;
       const fullName = [p.name, p.surname].filter(Boolean).join(" ");
       const colors = statusColors[p.status] || statusColors.pending;
       eventsArr.push({
-        id: `patient-${p.id}`,
-        title: fullName,
-        start: p.appointment_date,
-        backgroundColor: colors.bg,
-        borderColor: colors.border,
-        textColor: colors.text,
+        id: `patient-${p.id}`, title: fullName, start: p.appointment_date,
+        backgroundColor: colors.bg, borderColor: colors.border, textColor: colors.text,
         extendedProps: {
-          doctor: "—",
-          type: "Genel",
-          status: p.status,
-          complaint: p.complaint || "—",
-          patientName: fullName,
-          phone: p.phone || "—",
-          location: p.location || "—",
-          scheduledAt: p.appointment_date,
-          internalNotes: p.internal_notes || "",
-          appointmentId: "",
-          patientId: p.id,
+          doctor: "—", type: "Genel", status: p.status,
+          complaint: p.complaint || "—", patientName: fullName,
+          phone: p.phone || "—", location: p.location || "—",
+          scheduledAt: p.appointment_date, internalNotes: p.internal_notes || "",
+          appointmentId: "", patientId: p.id,
         },
       });
     });
-
     setEvents(eventsArr);
   }, []);
 
   useEffect(() => { loadEvents(); }, [loadEvents]);
 
-  // Realtime: auto-refresh on appointment or patient changes
   useEffect(() => {
-    const ch1 = supabase
-      .channel("calendar-appointments-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => loadEvents())
-      .subscribe();
-    const ch2 = supabase
-      .channel("calendar-patients-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, () => loadEvents())
-      .subscribe();
+    const ch1 = supabase.channel("calendar-appointments-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => loadEvents()).subscribe();
+    const ch2 = supabase.channel("calendar-patients-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "patients" }, () => loadEvents()).subscribe();
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [loadEvents]);
+
+  // Sync title and view when calendar mounts/changes
+  const updateTitle = useCallback(() => {
+    const api = calendarRef.current?.getApi();
+    if (api) setCurrentTitle(api.view.title);
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
+      const api = calendarRef.current?.getApi();
+      if (!api) return;
+      if (e.key === "ArrowLeft") { api.prev(); updateTitle(); }
+      else if (e.key === "ArrowRight") { api.next(); updateTitle(); }
+      else if (e.key === "t" || e.key === "T") { api.today(); updateTitle(); }
+      else if (e.key === "m" || e.key === "M") { api.changeView("dayGridMonth"); setCurrentView("dayGridMonth"); updateTitle(); }
+      else if (e.key === "w" || e.key === "W") { api.changeView("timeGridWeek"); setCurrentView("timeGridWeek"); updateTitle(); }
+      else if (e.key === "d" || e.key === "D") { api.changeView("timeGridDay"); setCurrentView("timeGridDay"); updateTitle(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [updateTitle]);
 
   const handleEventClick = (info: any) => {
     const event = info.event;
     setSelectedEvent({
-      id: event.id,
-      title: event.title,
-      start: event.startStr,
-      backgroundColor: event.backgroundColor,
-      borderColor: event.borderColor,
-      textColor: event.textColor,
-      extendedProps: {
-        doctor: event.extendedProps.doctor,
-        type: event.extendedProps.type,
-        status: event.extendedProps.status,
-        complaint: event.extendedProps.complaint,
-        patientName: event.extendedProps.patientName,
-        phone: event.extendedProps.phone,
-        location: event.extendedProps.location,
-        scheduledAt: event.extendedProps.scheduledAt,
-        internalNotes: event.extendedProps.internalNotes,
-        appointmentId: event.extendedProps.appointmentId,
-        patientId: event.extendedProps.patientId,
-      },
+      id: event.id, title: event.title, start: event.startStr,
+      backgroundColor: event.backgroundColor, borderColor: event.borderColor, textColor: event.textColor,
+      extendedProps: { ...event.extendedProps } as any,
     });
   };
 
@@ -212,12 +199,31 @@ const CalendarPage = () => {
     setQuickAppt({ open: true, date: clickedDate, time: finalTime });
   };
 
-  const formatDateTime = (dateStr: string) => {
-    try {
-      return format(new Date(dateStr), "d MMMM yyyy, HH:mm", { locale: tr });
-    } catch {
-      return dateStr;
+  // Drag & drop / resize → update Supabase
+  const handleEventChange = async (info: any) => {
+    const apptId = info.event.extendedProps?.appointmentId;
+    if (!apptId) {
+      toast.error("Bu kayıt sürüklenemiyor.");
+      info.revert();
+      return;
     }
+    const newStart = info.event.start as Date;
+    const { error } = await supabase
+      .from("appointments")
+      .update({ scheduled_at: newStart.toISOString() })
+      .eq("id", apptId);
+    if (error) {
+      toast.error(error.message.includes("dolu") ? "Bu saat dolu. Başka bir slot seçin." : "Güncellenemedi");
+      info.revert();
+    } else {
+      toast.success("Randevu yeni slota taşındı ✓");
+      loadEvents();
+    }
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    try { return format(new Date(dateStr), "d MMMM yyyy, HH:mm", { locale: tr }); }
+    catch { return dateStr; }
   };
 
   const abbreviateName = (name: string) => {
@@ -243,44 +249,125 @@ const CalendarPage = () => {
       ]);
       toast.success("Hasta bekleme salonuna alındı ✅");
       setSelectedEvent(null);
-    } catch {
-      toast.error("Durum güncellenemedi");
-    } finally {
-      setMarkingArrived(false);
-    }
+    } catch { toast.error("Durum güncellenemedi"); }
+    finally { setMarkingArrived(false); }
   };
 
   const isSelectedArrived = selectedEvent?.extendedProps.status === "arrived";
 
+  // Today summary
+  const todayStats = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+    const todays = events.filter(e => {
+      const d = new Date(e.start);
+      return d >= today && d < tomorrow;
+    });
+    return {
+      total: todays.length,
+      arrived: todays.filter(e => e.extendedProps.status === "arrived").length,
+      remaining: todays.filter(e => e.extendedProps.status !== "arrived" && e.extendedProps.status !== "cancelled" && e.extendedProps.status !== "completed").length,
+    };
+  }, [events]);
+
+  const goPrev = () => { calendarRef.current?.getApi().prev(); updateTitle(); };
+  const goNext = () => { calendarRef.current?.getApi().next(); updateTitle(); };
+  const goToday = () => { calendarRef.current?.getApi().today(); updateTitle(); };
+  const switchView = (v: string) => {
+    calendarRef.current?.getApi().changeView(v);
+    setCurrentView(v);
+    updateTitle();
+  };
+
   return (
     <>
-      <div className="p-6 md:p-8 space-y-6 h-full overflow-auto gradient-mesh">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-display font-extrabold text-foreground tracking-tight">
-            {t("sidebar.calendar", "Takvim")}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Randevuları ay, hafta ve gün bazında görüntüleyin — boş alana tıklayarak hızlı randevu oluşturun
-          </p>
+      <div className="p-4 md:p-8 space-y-6 h-full overflow-auto gradient-mesh">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h1 className="text-2xl md:text-3xl font-display font-extrabold text-foreground tracking-tight">
+                Klinik Takvimi
+              </h1>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              Boş slota tıklayarak randevu ekleyin · Sürükleyip bırakarak taşıyın · <kbd className="px-1.5 py-0.5 text-[10px] rounded bg-muted border border-border font-mono">T</kbd> bugün, <kbd className="px-1.5 py-0.5 text-[10px] rounded bg-muted border border-border font-mono">←/→</kbd> gezin
+            </p>
+          </div>
+
+          {/* Today summary chips */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-full bg-card border border-border/60 px-3 py-1.5 shadow-sm">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Bugün</span>
+              <span className="text-xs font-bold text-foreground tabular-nums">{todayStats.total}</span>
+              <span className="w-px h-3 bg-border" />
+              <span className="text-[10px] text-emerald-600 font-semibold tabular-nums">{todayStats.arrived} geldi</span>
+              <span className="w-px h-3 bg-border" />
+              <span className="text-[10px] text-primary font-semibold tabular-nums">{todayStats.remaining} kaldı</span>
+            </div>
+          </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="rounded-2xl border border-border/60 bg-card shadow-card p-4 md:p-6 clinix-calendar"
-        >
+        {/* Toolbar */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card p-3 shadow-card">
+          {/* Left: nav */}
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="sm" onClick={goToday}
+              className="h-8 px-3 rounded-lg font-semibold text-xs transition-all duration-200 hover:scale-105 active:scale-95">
+              Bugün
+            </Button>
+            <Button variant="ghost" size="icon" onClick={goPrev}
+              className="h-8 w-8 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={goNext}
+              className="h-8 w-8 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95">
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            <h2 className="ml-2 font-display font-bold text-base md:text-lg text-foreground tabular-nums capitalize">
+              {currentTitle}
+            </h2>
+          </div>
+
+          {/* Right: segmented view switcher */}
+          <div className="relative inline-flex items-center rounded-xl bg-muted/60 p-1 border border-border/40">
+            {VIEWS.map((v) => {
+              const active = currentView === v.key;
+              return (
+                <button
+                  key={v.key}
+                  onClick={() => switchView(v.key)}
+                  className={cn(
+                    "relative z-10 px-3 md:px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
+                    active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {active && (
+                    <motion.div layoutId="view-pill"
+                      className="absolute inset-0 rounded-lg bg-primary shadow-md"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }} />
+                  )}
+                  <span className="relative">{v.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Calendar */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          className="rounded-2xl border border-border/60 bg-card shadow-card p-3 md:p-5 clinix-calendar">
           <FullCalendar
             ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
+            plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+            initialView="timeGridWeek"
+            headerToolbar={false}
             events={events}
             locale="tr"
+            firstDay={1}
             height="auto"
             eventDisplay="block"
             dayMaxEvents={3}
@@ -293,25 +380,21 @@ const CalendarPage = () => {
             allDaySlot={false}
             expandRows
             selectable
+            editable
+            eventResizableFromStart={false}
             dateClick={handleDateClick}
-            buttonText={{
-              today: "Bugün",
-              month: "Ay",
-              week: "Hafta",
-              day: "Gün",
-            }}
             eventClick={handleEventClick}
-            viewDidMount={(info) => setCurrentView(info.view.type)}
+            eventChange={handleEventChange}
+            datesSet={updateTitle}
+            viewDidMount={(info) => { setCurrentView(info.view.type); updateTitle(); }}
             moreLinkClick={(info) => {
               const calApi = calendarRef.current?.getApi();
-              if (calApi) {
-                calApi.changeView("timeGridDay", info.date);
-              }
+              if (calApi) calApi.changeView("timeGridDay", info.date);
               return "none";
             }}
             moreLinkContent={(arg) => (
-              <span className="text-[10px] font-semibold text-primary cursor-pointer hover:underline transition-colors duration-200">
-                +{arg.num} daha...
+              <span className="text-[10px] font-semibold text-primary cursor-pointer hover:underline">
+                +{arg.num} daha
               </span>
             )}
             eventContent={(arg) => {
@@ -326,13 +409,21 @@ const CalendarPage = () => {
 
               if (viewType === "dayGridMonth") {
                 return (
-                  <div
-                    className="px-1.5 py-0.5 text-[10px] font-medium truncate cursor-pointer rounded-md transition-all duration-200 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1"
-                    style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "6px", backgroundColor: bgColor }}
-                  >
+                  <div className="px-1.5 py-0.5 text-[10px] font-medium truncate cursor-pointer rounded-md transition-all duration-200 flex items-center gap-1"
+                    style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "6px", backgroundColor: bgColor }}>
                     {isArrived && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
-                    <span className="opacity-70">{timeText}</span>{" "}
-                    <span className="font-semibold">{shortName}</span>
+                    <span className="opacity-70 tabular-nums">{timeText}</span>
+                    <span className="font-semibold text-foreground">{shortName}</span>
+                  </div>
+                );
+              }
+              if (viewType.startsWith("list")) {
+                return (
+                  <div className="flex items-center gap-2 py-0.5">
+                    <span className="w-2 h-2 rounded-full" style={{ background: borderColor }} />
+                    <span className="font-semibold text-foreground">{arg.event.title}</span>
+                    <span className="text-xs text-muted-foreground">· {eventType}</span>
+                    {isArrived && <span className="text-[10px] text-emerald-600 font-bold">Geldi ✓</span>}
                   </div>
                 );
               }
@@ -340,32 +431,40 @@ const CalendarPage = () => {
               const fullName = arg.event.extendedProps.patientName || arg.event.title;
               const complaint = arg.event.extendedProps.complaint;
               const showComplaint = complaint && complaint !== "—";
-
               return (
-                <div
-                  className="px-2 py-1 text-[11px] cursor-pointer rounded-md transition-all duration-200 hover:shadow-md hover:scale-[1.01] active:scale-[0.99] space-y-0.5"
-                  style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "8px", backgroundColor: bgColor }}
-                >
+                <div className="px-2 py-1 text-[11px] cursor-pointer rounded-md transition-all duration-200 space-y-0.5 h-full"
+                  style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: "8px", backgroundColor: bgColor }}>
                   <div className="flex items-center gap-1.5">
                     {isArrived && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
-                    <span className="opacity-70 text-[10px]">{timeText}</span>
-                    <span className="font-bold truncate">{fullName}</span>
+                    <span className="opacity-70 text-[10px] tabular-nums">{timeText}</span>
+                    <span className="font-bold truncate text-foreground">{fullName}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] opacity-60">
+                  <div className="flex items-center gap-2 text-[10px] opacity-70">
                     <span className="truncate">{eventType}</span>
                     {isArrived && <span className="text-emerald-600 font-semibold">Geldi ✓</span>}
-                    {showComplaint && !isArrived && (
-                      <>
-                        <span>·</span>
-                        <span className="truncate">{complaint}</span>
-                      </>
-                    )}
+                    {showComplaint && !isArrived && (<><span>·</span><span className="truncate">{complaint}</span></>)}
                   </div>
                 </div>
               );
             }}
           />
         </motion.div>
+
+        {/* Floating add button */}
+        <motion.button
+          initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+          whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
+          onClick={() => {
+            const now = new Date();
+            const mins = now.getMinutes() < 30 ? "00" : "30";
+            setQuickAppt({ open: true, date: now, time: `${String(now.getHours()).padStart(2, "0")}:${mins}` });
+          }}
+          className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-float flex items-center justify-center hover:shadow-glow transition-shadow"
+          aria-label="Yeni Randevu"
+        >
+          <Plus className="w-6 h-6" />
+        </motion.button>
       </div>
 
       <QuickAppointmentDialog
@@ -384,10 +483,7 @@ const CalendarPage = () => {
           currentDate={new Date(selectedEvent.extendedProps.scheduledAt)}
           currentTime={format(new Date(selectedEvent.extendedProps.scheduledAt), "HH:mm")}
           currentType={selectedEvent.extendedProps.type}
-          onUpdated={() => {
-            loadEvents();
-            setSelectedEvent(null);
-          }}
+          onUpdated={() => { loadEvents(); setSelectedEvent(null); }}
         />
       )}
 
@@ -400,17 +496,12 @@ const CalendarPage = () => {
                 Randevu Detayı
               </DialogTitle>
               <div className="flex items-center gap-1">
-                {/* Mark Arrived button */}
                 {selectedEvent && !isSelectedArrived && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <Button variant="ghost" size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-all duration-200 hover:scale-110 active:scale-95"
-                        onClick={handleMarkArrived}
-                        disabled={markingArrived}
-                      >
+                        onClick={handleMarkArrived} disabled={markingArrived}>
                         <CheckCircle2 className={`w-4 h-4 ${markingArrived ? "animate-spin" : ""}`} />
                       </Button>
                     </TooltipTrigger>
@@ -418,12 +509,9 @@ const CalendarPage = () => {
                   </Tooltip>
                 )}
                 {selectedEvent?.extendedProps.appointmentId && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <Button variant="ghost" size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110 active:scale-95"
-                    onClick={openEdit}
-                  >
+                    onClick={openEdit}>
                     <Pencil className="w-4 h-4" />
                   </Button>
                 )}
@@ -433,64 +521,29 @@ const CalendarPage = () => {
           {selectedEvent && (
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-2">
-                <Badge
-                  className="text-xs transition-all duration-200"
-                  style={{
-                    backgroundColor: selectedEvent.backgroundColor,
-                    color: selectedEvent.textColor,
-                    borderColor: selectedEvent.borderColor,
-                  }}
-                >
+                <Badge className="text-xs"
+                  style={{ backgroundColor: selectedEvent.backgroundColor, color: selectedEvent.textColor, borderColor: selectedEvent.borderColor }}>
                   {statusLabel[selectedEvent.extendedProps.status] || selectedEvent.extendedProps.status}
                 </Badge>
-                <Badge variant="outline" className="text-xs">
-                  {selectedEvent.extendedProps.type}
-                </Badge>
+                <Badge variant="outline" className="text-xs">{selectedEvent.extendedProps.type}</Badge>
               </div>
-
               <div className="space-y-3 rounded-xl border border-border/60 bg-muted/30 p-4">
-                <div className="flex items-start gap-3">
-                  <User className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Hasta</p>
-                    <p className="text-sm font-semibold text-foreground">{selectedEvent.extendedProps.patientName}</p>
+                {[
+                  { Icon: User, label: "Hasta", value: selectedEvent.extendedProps.patientName },
+                  { Icon: Phone, label: "Telefon", value: selectedEvent.extendedProps.phone },
+                  { Icon: MapPin, label: "Konum", value: selectedEvent.extendedProps.location },
+                  { Icon: Stethoscope, label: "Doktor", value: selectedEvent.extendedProps.doctor },
+                  { Icon: Clock, label: "Tarih & Saat", value: formatDateTime(selectedEvent.extendedProps.scheduledAt) },
+                  { Icon: FileText, label: "Şikayet", value: selectedEvent.extendedProps.complaint },
+                ].map(({ Icon, label, value }) => (
+                  <div key={label} className="flex items-start gap-3">
+                    <Icon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <p className="text-sm text-foreground">{value}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Phone className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Telefon</p>
-                    <p className="text-sm text-foreground">{selectedEvent.extendedProps.phone}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Konum</p>
-                    <p className="text-sm text-foreground">{selectedEvent.extendedProps.location}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Stethoscope className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Doktor</p>
-                    <p className="text-sm text-foreground">{selectedEvent.extendedProps.doctor}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Tarih & Saat</p>
-                    <p className="text-sm text-foreground">{formatDateTime(selectedEvent.extendedProps.scheduledAt)}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <FileText className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Şikayet</p>
-                    <p className="text-sm text-foreground">{selectedEvent.extendedProps.complaint}</p>
-                  </div>
-                </div>
+                ))}
                 {selectedEvent.extendedProps.internalNotes && (
                   <div className="flex items-start gap-3 pt-2 border-t border-border/40">
                     <StickyNote className="w-4 h-4 text-warning mt-0.5 shrink-0" />
