@@ -275,6 +275,14 @@ export default function VoiceAgentTab() {
 
           <Separator />
 
+          <SettingRow
+            label="7/24 Açık (saat sınırı yok)"
+            desc="Asistan günün her saati arama yapabilir. Kapatırsan aşağıdaki saat aralığı geçerli olur."
+            checked={settings.always_on}
+            onChange={(v) => update("always_on", v)}
+            disabled={disabled}
+          />
+
           <div className="grid sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Günlük arama limiti</Label>
@@ -292,7 +300,7 @@ export default function VoiceAgentTab() {
                 type="time"
                 value={settings.call_window_start.slice(0, 5)}
                 onChange={(e) => update("call_window_start", e.target.value)}
-                disabled={disabled}
+                disabled={disabled || settings.always_on}
               />
             </div>
             <div className="space-y-1.5">
@@ -301,7 +309,7 @@ export default function VoiceAgentTab() {
                 type="time"
                 value={settings.call_window_end.slice(0, 5)}
                 onChange={(e) => update("call_window_end", e.target.value)}
-                disabled={disabled}
+                disabled={disabled || settings.always_on}
               />
             </div>
           </div>
