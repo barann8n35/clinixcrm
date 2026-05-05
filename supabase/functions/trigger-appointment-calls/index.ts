@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
     // Check master settings — must be enabled
     const { data: settings } = await admin
       .from("voice_agent_settings")
-      .select("auto_call_appointment_reminders, call_window_start, call_window_end")
+      .select("auto_call_appointment_reminders, call_window_start, call_window_end, always_on")
       .limit(1)
       .maybeSingle();
 
@@ -135,16 +135,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Window guard (Istanbul time approx: server UTC + 3h)
-    const nowUtc = new Date();
-    const istHour = (nowUtc.getUTCHours() + 3) % 24;
-    const startHour = parseInt((settings.call_window_start ?? "09:00").split(":")[0], 10);
-    const endHour = parseInt((settings.call_window_end ?? "20:00").split(":")[0], 10);
-    if (istHour < startHour || istHour >= endHour) {
-      return new Response(
-        JSON.stringify({ ok: true, skipped: `outside call window (${istHour}h IST)` }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // Window guard (skipped when always_on)
+    if (!settings.always_on) {
+      const nowUtc = new Date();
+      const istHour = (nowUtc.getUTCHours() + 3) % 24;
+      const startHour = parseInt((settings.call_window_start ?? "09:00").split(":")[0], 10);
+      const endHour = parseInt((settings.call_window_end ?? "20:00").split(":")[0], 10);
+      if (istHour < startHour || istHour >= endHour) {
+        return new Response(
+          JSON.stringify({ ok: true, skipped: `outside call window (${istHour}h IST)` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     const now = new Date();
