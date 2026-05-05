@@ -477,6 +477,7 @@ export type Database = {
           lipsync_url: string | null
           mode: string
           output_url: string | null
+          source_duration_seconds: number | null
           status: string
           subtitle_url: string | null
           target_language: string
@@ -495,6 +496,7 @@ export type Database = {
           lipsync_url?: string | null
           mode?: string
           output_url?: string | null
+          source_duration_seconds?: number | null
           status?: string
           subtitle_url?: string | null
           target_language: string
@@ -513,6 +515,7 @@ export type Database = {
           lipsync_url?: string | null
           mode?: string
           output_url?: string | null
+          source_duration_seconds?: number | null
           status?: string
           subtitle_url?: string | null
           target_language?: string
