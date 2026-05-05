@@ -62,13 +62,12 @@ async function callLovableAI(messages: any[], tools?: any[]) {
   return r.json();
 }
 
-async function transcribeAudio(audioUrl: string, sourceLang: string): Promise<string> {
+async function transcribeAudio(audioUrl: string, sourceLang: string): Promise<{ transcript: string; durationSec: number }> {
   // Fetch the file and pass as base64 data URL to gemini multimodal
   const audioResp = await fetch(audioUrl);
   if (!audioResp.ok) throw new Error(`Failed to fetch source media: ${audioResp.status}`);
   const arrayBuf = await audioResp.arrayBuffer();
   const bytes = new Uint8Array(arrayBuf);
-  // chunked base64 to avoid stack overflow
   let binary = "";
   const CHUNK = 0x8000;
   for (let i = 0; i < bytes.length; i += CHUNK) {
@@ -77,24 +76,47 @@ async function transcribeAudio(audioUrl: string, sourceLang: string): Promise<st
   const base64 = btoa(binary);
   const mime = audioResp.headers.get("content-type") || "video/mp4";
 
-  const result = await callLovableAI([
+  const tools = [
     {
-      role: "system",
-      content:
-        "You are a precise medical transcription assistant. Transcribe audio verbatim, preserving medical terminology. Return only the transcript text, no commentary.",
+      type: "function",
+      function: {
+        name: "return_transcript",
+        description: "Return verbatim transcript and the precise duration of the source media.",
+        parameters: {
+          type: "object",
+          properties: {
+            transcript: { type: "string", description: "Verbatim transcript preserving medical terminology." },
+            duration_seconds: { type: "number", description: "Precise total duration of the media in seconds." },
+          },
+          required: ["transcript", "duration_seconds"],
+        },
+      },
     },
-    {
-      role: "user",
-      content: [
-        { type: "text", text: `Transcribe this ${LANG_NAMES[sourceLang] || sourceLang} medical/clinic video audio.` },
-        { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
-      ],
-    },
-  ]);
-  return result.choices?.[0]?.message?.content?.trim() || "";
+  ];
+
+  const result = await callLovableAI(
+    [
+      {
+        role: "system",
+        content:
+          "You are a precise medical transcription assistant. Transcribe audio verbatim and report the exact total duration of the media in seconds.",
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `Transcribe this ${LANG_NAMES[sourceLang] || sourceLang} medical/clinic video and report its exact duration in seconds.` },
+          { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
+        ],
+      },
+    ],
+    tools
+  );
+  const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+  const args = JSON.parse(toolCall.function.arguments);
+  return { transcript: String(args.transcript || "").trim(), durationSec: Number(args.duration_seconds) || 0 };
 }
 
-async function translateText(transcript: string, sourceLang: string, targetLang: string) {
+async function translateText(transcript: string, sourceLang: string, targetLang: string, sourceDurationSec?: number) {
   const tools = [
     {
       type: "function",
@@ -104,10 +126,10 @@ async function translateText(transcript: string, sourceLang: string, targetLang:
         parameters: {
           type: "object",
           properties: {
-            translated_text: { type: "string", description: "Full translated text in target language." },
+            translated_text: { type: "string", description: "Full translated text in target language, kept CONCISE to match source spoken duration." },
             segments: {
               type: "array",
-              description: "Approx 5-10 second segments with start/end timecodes (MM:SS).",
+              description: "Subtitle segments with start/end timecodes (MM:SS) that exactly match the source timing.",
               items: {
                 type: "object",
                 properties: {
@@ -125,11 +147,15 @@ async function translateText(transcript: string, sourceLang: string, targetLang:
     },
   ];
 
+  const durationHint = sourceDurationSec
+    ? `\n\nCRITICAL TIMING CONSTRAINT: The source video is approximately ${Math.round(sourceDurationSec)} seconds. Your translation MUST fit this duration when spoken at normal pace. Languages like French/German/Spanish naturally expand 20-35% vs English/Turkish — COMPENSATE by using shorter synonyms, dropping filler words, and tightening phrasing. Aim for a syllable count similar to the source. Do NOT add explanations or paraphrase verbosely. Each subtitle segment's text must be readable within its time window.`
+    : "";
+
   const result = await callLovableAI(
     [
       {
         role: "system",
-        content: `You are a professional medical translator specializing in health tourism. Translate from ${LANG_NAMES[sourceLang] || sourceLang} to ${LANG_NAMES[targetLang] || targetLang} with accurate medical terminology. Split into ~5-10s subtitle segments.`,
+        content: `You are a professional medical translator specializing in health tourism. Translate from ${LANG_NAMES[sourceLang] || sourceLang} to ${LANG_NAMES[targetLang] || targetLang} with accurate medical terminology. Split into ~5-10s subtitle segments matching the source rhythm.${durationHint}`,
       },
       { role: "user", content: transcript },
     ],
@@ -155,12 +181,14 @@ function buildSRT(segments: { start: string; end: string; text: string }[]): str
     .join("\n");
 }
 
-async function generateDubbedAudio(text: string, voiceId?: string): Promise<Uint8Array> {
+async function generateDubbedAudio(text: string, voiceId?: string, speed: number = 1.0): Promise<Uint8Array> {
   if (!ELEVENLABS_API_KEY) {
     throw new Error("ELEVENLABS_API_KEY not configured — required for dub mode");
   }
   // Default: George multilingual; otherwise user's cloned voice
   const useVoiceId = voiceId || "JBFqnCBsd6RMkjVDRZzb";
+  // Clamp speed to ElevenLabs supported range (0.7 - 1.2)
+  const safeSpeed = Math.max(0.7, Math.min(1.2, Number(speed.toFixed(2))));
   const r = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${useVoiceId}?output_format=mp3_44100_128`,
     {
@@ -177,6 +205,7 @@ async function generateDubbedAudio(text: string, voiceId?: string): Promise<Uint
           similarity_boost: 0.75,
           style: 0.3,
           use_speaker_boost: true,
+          speed: safeSpeed,
         },
       }),
     }
@@ -206,18 +235,25 @@ async function processTranslation(translationId: string) {
     .eq("id", translationId);
 
   try {
-    // Step 1: transcribe
-    let transcript = tr.transcript_text;
+    // Step 1: transcribe (also obtain duration when fresh)
+    let transcript: string | null = tr.transcript_text;
+    let sourceDurationSec: number = Number((tr as any).source_duration_seconds) || 0;
     if (!transcript) {
-      transcript = await transcribeAudio(video.original_url, video.source_language);
-      await admin.from("video_translations").update({ transcript_text: transcript }).eq("id", translationId);
+      const t = await transcribeAudio(video.original_url, video.source_language);
+      transcript = t.transcript;
+      if (!sourceDurationSec) sourceDurationSec = t.durationSec;
+      await admin
+        .from("video_translations")
+        .update({ transcript_text: transcript, source_duration_seconds: sourceDurationSec || null })
+        .eq("id", translationId);
     }
 
-    // Step 2: translate
+    // Step 2: translate (duration-aware)
     const { translated_text, segments } = await translateText(
-      transcript,
+      transcript!,
       video.source_language,
-      tr.target_language
+      tr.target_language,
+      sourceDurationSec || undefined
     );
     await admin
       .from("video_translations")
@@ -252,7 +288,18 @@ async function processTranslation(translationId: string) {
         }
         useVoiceId = vc.elevenlabs_voice_id;
       }
-      const mp3 = await generateDubbedAudio(translated_text, useVoiceId);
+      // Estimate TTS speed adjustment so dub length matches source duration
+      // Heuristic: ~14 characters per second at speed=1.0 for multilingual TTS
+      let speed = 1.0;
+      if (sourceDurationSec > 0) {
+        const estimatedSec = translated_text.length / 14;
+        const ratio = estimatedSec / sourceDurationSec;
+        // If translation is longer than source, speak faster (cap at 1.2)
+        // If shorter, slow down slightly (floor 0.9 to keep natural)
+        speed = Math.max(0.9, Math.min(1.2, ratio));
+        console.log(`[dub-speed] src=${sourceDurationSec}s estDub=${estimatedSec.toFixed(1)}s ratio=${ratio.toFixed(2)} -> speed=${speed.toFixed(2)}`);
+      }
+      const mp3 = await generateDubbedAudio(translated_text, useVoiceId, speed);
       const audioPath = `${video.user_id}/dubs/${translationId}_${tr.target_language}.mp3`;
       const { error: aErr } = await admin.storage
         .from("clinic-videos")
