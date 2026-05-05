@@ -94,7 +94,7 @@ async function transcribeAudio(audioUrl: string, sourceLang: string): Promise<st
   return result.choices?.[0]?.message?.content?.trim() || "";
 }
 
-async function translateText(transcript: string, sourceLang: string, targetLang: string) {
+async function translateText(transcript: string, sourceLang: string, targetLang: string, sourceDurationSec?: number) {
   const tools = [
     {
       type: "function",
@@ -104,10 +104,10 @@ async function translateText(transcript: string, sourceLang: string, targetLang:
         parameters: {
           type: "object",
           properties: {
-            translated_text: { type: "string", description: "Full translated text in target language." },
+            translated_text: { type: "string", description: "Full translated text in target language, kept CONCISE to match source spoken duration." },
             segments: {
               type: "array",
-              description: "Approx 5-10 second segments with start/end timecodes (MM:SS).",
+              description: "Subtitle segments with start/end timecodes (MM:SS) that exactly match the source timing.",
               items: {
                 type: "object",
                 properties: {
@@ -125,11 +125,15 @@ async function translateText(transcript: string, sourceLang: string, targetLang:
     },
   ];
 
+  const durationHint = sourceDurationSec
+    ? `\n\nCRITICAL TIMING CONSTRAINT: The source video is approximately ${Math.round(sourceDurationSec)} seconds. Your translation MUST fit this duration when spoken at normal pace. Languages like French/German/Spanish naturally expand 20-35% vs English/Turkish — COMPENSATE by using shorter synonyms, dropping filler words, and tightening phrasing. Aim for a syllable count similar to the source. Do NOT add explanations or paraphrase verbosely. Each subtitle segment's text must be readable within its time window.`
+    : "";
+
   const result = await callLovableAI(
     [
       {
         role: "system",
-        content: `You are a professional medical translator specializing in health tourism. Translate from ${LANG_NAMES[sourceLang] || sourceLang} to ${LANG_NAMES[targetLang] || targetLang} with accurate medical terminology. Split into ~5-10s subtitle segments.`,
+        content: `You are a professional medical translator specializing in health tourism. Translate from ${LANG_NAMES[sourceLang] || sourceLang} to ${LANG_NAMES[targetLang] || targetLang} with accurate medical terminology. Split into ~5-10s subtitle segments matching the source rhythm.${durationHint}`,
       },
       { role: "user", content: transcript },
     ],
