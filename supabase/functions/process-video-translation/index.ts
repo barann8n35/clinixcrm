@@ -244,7 +244,7 @@ async function processTranslation(translationId: string) {
       if (!sourceDurationSec) sourceDurationSec = t.durationSec;
       await admin
         .from("video_translations")
-        .update({ transcript_text: transcript })
+        .update({ transcript_text: transcript, source_duration_seconds: sourceDurationSec || null })
         .eq("id", translationId);
     }
 
