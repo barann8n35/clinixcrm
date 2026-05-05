@@ -181,12 +181,14 @@ function buildSRT(segments: { start: string; end: string; text: string }[]): str
     .join("\n");
 }
 
-async function generateDubbedAudio(text: string, voiceId?: string): Promise<Uint8Array> {
+async function generateDubbedAudio(text: string, voiceId?: string, speed: number = 1.0): Promise<Uint8Array> {
   if (!ELEVENLABS_API_KEY) {
     throw new Error("ELEVENLABS_API_KEY not configured — required for dub mode");
   }
   // Default: George multilingual; otherwise user's cloned voice
   const useVoiceId = voiceId || "JBFqnCBsd6RMkjVDRZzb";
+  // Clamp speed to ElevenLabs supported range (0.7 - 1.2)
+  const safeSpeed = Math.max(0.7, Math.min(1.2, Number(speed.toFixed(2))));
   const r = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${useVoiceId}?output_format=mp3_44100_128`,
     {
@@ -203,6 +205,7 @@ async function generateDubbedAudio(text: string, voiceId?: string): Promise<Uint
           similarity_boost: 0.75,
           style: 0.3,
           use_speaker_boost: true,
+          speed: safeSpeed,
         },
       }),
     }
@@ -232,18 +235,25 @@ async function processTranslation(translationId: string) {
     .eq("id", translationId);
 
   try {
-    // Step 1: transcribe
-    let transcript = tr.transcript_text;
+    // Step 1: transcribe (also obtain duration when fresh)
+    let transcript: string | null = tr.transcript_text;
+    let sourceDurationSec: number = Number((tr as any).source_duration_seconds) || 0;
     if (!transcript) {
-      transcript = await transcribeAudio(video.original_url, video.source_language);
-      await admin.from("video_translations").update({ transcript_text: transcript }).eq("id", translationId);
+      const t = await transcribeAudio(video.original_url, video.source_language);
+      transcript = t.transcript;
+      if (!sourceDurationSec) sourceDurationSec = t.durationSec;
+      await admin
+        .from("video_translations")
+        .update({ transcript_text: transcript })
+        .eq("id", translationId);
     }
 
-    // Step 2: translate
+    // Step 2: translate (duration-aware)
     const { translated_text, segments } = await translateText(
-      transcript,
+      transcript!,
       video.source_language,
-      tr.target_language
+      tr.target_language,
+      sourceDurationSec || undefined
     );
     await admin
       .from("video_translations")
@@ -278,7 +288,18 @@ async function processTranslation(translationId: string) {
         }
         useVoiceId = vc.elevenlabs_voice_id;
       }
-      const mp3 = await generateDubbedAudio(translated_text, useVoiceId);
+      // Estimate TTS speed adjustment so dub length matches source duration
+      // Heuristic: ~14 characters per second at speed=1.0 for multilingual TTS
+      let speed = 1.0;
+      if (sourceDurationSec > 0) {
+        const estimatedSec = translated_text.length / 14;
+        const ratio = estimatedSec / sourceDurationSec;
+        // If translation is longer than source, speak faster (cap at 1.2)
+        // If shorter, slow down slightly (floor 0.9 to keep natural)
+        speed = Math.max(0.9, Math.min(1.2, ratio));
+        console.log(`[dub-speed] src=${sourceDurationSec}s estDub=${estimatedSec.toFixed(1)}s ratio=${ratio.toFixed(2)} -> speed=${speed.toFixed(2)}`);
+      }
+      const mp3 = await generateDubbedAudio(translated_text, useVoiceId, speed);
       const audioPath = `${video.user_id}/dubs/${translationId}_${tr.target_language}.mp3`;
       const { error: aErr } = await admin.storage
         .from("clinic-videos")
