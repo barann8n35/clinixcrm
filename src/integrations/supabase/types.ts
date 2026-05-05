@@ -76,6 +76,36 @@ export type Database = {
           },
         ]
       }
+      clinic_schedule: {
+        Row: {
+          buffer_minutes: number
+          created_at: string
+          id: string
+          slot_duration_minutes: number
+          updated_at: string
+          user_id: string
+          working_hours: Json
+        }
+        Insert: {
+          buffer_minutes?: number
+          created_at?: string
+          id?: string
+          slot_duration_minutes?: number
+          updated_at?: string
+          user_id: string
+          working_hours?: Json
+        }
+        Update: {
+          buffer_minutes?: number
+          created_at?: string
+          id?: string
+          slot_duration_minutes?: number
+          updated_at?: string
+          user_id?: string
+          working_hours?: Json
+        }
+        Relationships: []
+      }
       inventory_items: {
         Row: {
           category: string
@@ -822,6 +852,13 @@ export type Database = {
       can_post_global_notification: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      get_available_slots: {
+        Args: { p_date: string; p_doctor: string }
+        Returns: {
+          is_available: boolean
+          slot_time: string
+        }[]
       }
       handle_omnichannel_message: {
         Args: {
