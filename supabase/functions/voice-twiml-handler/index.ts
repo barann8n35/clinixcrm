@@ -24,6 +24,12 @@ Deno.serve(async (req) => {
 
     let greeting = customMessage ?? "";
     let patientName = "";
+    let voiceId = "";
+    let language = "tr";
+    let persona = "";
+    let clinicName = "";
+    let doctorName = "";
+
     if (callId) {
       const { data: call } = await admin
         .from("voice_calls")
@@ -39,35 +45,45 @@ Deno.serve(async (req) => {
           .maybeSingle();
         patientName = [patient?.name, patient?.surname].filter(Boolean).join(" ").trim();
       }
-
-      if (!greeting) {
-        const { data: settings } = await admin
-          .from("voice_agent_settings")
-          .select("greeting_message, clinic_name")
-          .limit(1)
-          .maybeSingle();
-        greeting = settings?.greeting_message ?? "Merhaba, size nasıl yardımcı olabilirim?";
-      }
     }
 
+    const { data: settings } = await admin
+      .from("voice_agent_settings")
+      .select("greeting_message, clinic_name, voice_id, language, agent_persona, doctor_name")
+      .limit(1)
+      .maybeSingle();
+    if (!greeting) {
+      greeting = settings?.greeting_message ?? "Merhaba, size nasıl yardımcı olabilirim?";
+    }
+    voiceId = settings?.voice_id ?? "";
+    language = settings?.language ?? "tr";
+    persona = settings?.agent_persona ?? "";
+    clinicName = settings?.clinic_name ?? "";
+    doctorName = settings?.doctor_name ?? "";
+
+
     // Build the ElevenLabs Conversational AI WebSocket URL
-    // Twilio's <Stream> connects via WebSocket; ElevenLabs accepts this format.
     const elevenWsUrl =
       `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${ELEVENLABS_AGENT_ID}`;
 
-    // Greeting via Twilio's TTS first (helps with audio handshake), then bridge to agent
     const safeGreeting = (greeting || "Merhaba")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const esc = (s: string) => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+    // Voice/agent overrides passed to ElevenLabs via Twilio <Stream> Parameters.
+    // NOTE: The ElevenLabs agent must have these overrides enabled in its dashboard
+    // (Security → Overrides: voice_id, language, prompt, first_message).
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Filiz" language="tr-TR">${safeGreeting}</Say>
   <Connect>
     <Stream url="${elevenWsUrl}">
-      <Parameter name="patient_name" value="${patientName}" />
+      <Parameter name="patient_name" value="${esc(patientName)}" />
       <Parameter name="call_id" value="${callId ?? ""}" />
+      <Parameter name="voice_id" value="${esc(voiceId ?? "")}" />
+      <Parameter name="language" value="${esc(language ?? "tr")}" />
+      <Parameter name="first_message" value="${esc(greeting)}" />
+      <Parameter name="prompt" value="${esc(`Sen ${clinicName} kliniğinin asistanısın. Doktor: ${doctorName}. ${persona}`)}" />
     </Stream>
   </Connect>
 </Response>`;
