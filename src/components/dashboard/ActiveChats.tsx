@@ -101,6 +101,19 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
     ? chats.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
     : chats;
 
+  const deleteChat = async (e: React.MouseEvent, patientId: string, patientName: string) => {
+    e.stopPropagation();
+    if (!confirm(`"${patientName}" ile olan tüm konuşma ve hasta kaydı silinecek. Emin misiniz?`)) return;
+    // Cascade delete: messages → patient
+    const { error: mErr } = await supabase.from("messages").delete().eq("patient_id", patientId);
+    if (mErr) { toast.error("Mesajlar silinemedi: " + mErr.message); return; }
+    const { error: pErr } = await supabase.from("patients").delete().eq("id", patientId);
+    if (pErr) { toast.error("Hasta silinemedi: " + pErr.message); return; }
+    toast.success("Konuşma silindi");
+    if (selectedPatientId === patientId) onSelectPatient("");
+    setChats(prev => prev.filter(c => c.id !== patientId));
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Search */}
@@ -119,11 +132,11 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
       {/* Chat list */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {filtered.map((chat) => (
-          <button
+          <div
             key={chat.id}
-            onClick={() => onSelectPatient(chat.id)}
-            className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-border/50
+            className={`group relative w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-border/50 cursor-pointer
               ${chat.id === selectedPatientId ? "bg-primary/5" : "hover:bg-accent/50"}`}
+            onClick={() => onSelectPatient(chat.id)}
           >
             <div className="relative flex-shrink-0">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold
@@ -156,7 +169,15 @@ export function ActiveChats({ selectedPatientId, onSelectPatient }: Props) {
                 </span>
               </div>
             </div>
-          </button>
+
+            <button
+              onClick={(e) => deleteChat(e, chat.id, chat.name)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-card/80 backdrop-blur opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all"
+              title="Konuşmayı sil"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+            </button>
+          </div>
         ))}
       </div>
     </div>
