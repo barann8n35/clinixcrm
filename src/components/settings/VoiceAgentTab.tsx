@@ -27,6 +27,7 @@ interface VoiceAgentSettings {
   daily_call_limit: number;
   call_window_start: string;
   call_window_end: string;
+  always_on: boolean;
 }
 
 const VOICE_OPTIONS = [

@@ -1,0 +1,1 @@
+ALTER TABLE voice_agent_settings ADD COLUMN IF NOT EXISTS always_on boolean NOT NULL DEFAULT true;

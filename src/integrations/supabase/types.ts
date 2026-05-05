@@ -581,6 +581,7 @@ export type Database = {
       voice_agent_settings: {
         Row: {
           agent_persona: string
+          always_on: boolean
           auto_call_appointment_reminders: boolean
           auto_call_new_leads: boolean
           auto_call_unanswered_messages: boolean
@@ -600,6 +601,7 @@ export type Database = {
         }
         Insert: {
           agent_persona?: string
+          always_on?: boolean
           auto_call_appointment_reminders?: boolean
           auto_call_new_leads?: boolean
           auto_call_unanswered_messages?: boolean
@@ -619,6 +621,7 @@ export type Database = {
         }
         Update: {
           agent_persona?: string
+          always_on?: boolean
           auto_call_appointment_reminders?: boolean
           auto_call_new_leads?: boolean
           auto_call_unanswered_messages?: boolean
