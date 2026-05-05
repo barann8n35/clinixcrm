@@ -24,6 +24,12 @@ Deno.serve(async (req) => {
 
     let greeting = customMessage ?? "";
     let patientName = "";
+    let voiceId = "";
+    let language = "tr";
+    let persona = "";
+    let clinicName = "";
+    let doctorName = "";
+
     if (callId) {
       const { data: call } = await admin
         .from("voice_calls")
@@ -39,21 +45,22 @@ Deno.serve(async (req) => {
           .maybeSingle();
         patientName = [patient?.name, patient?.surname].filter(Boolean).join(" ").trim();
       }
-
-      const { data: settings } = await admin
-        .from("voice_agent_settings")
-        .select("greeting_message, clinic_name, voice_id, language, agent_persona, doctor_name")
-        .limit(1)
-        .maybeSingle();
-      if (!greeting) {
-        greeting = settings?.greeting_message ?? "Merhaba, size nasıl yardımcı olabilirim?";
-      }
-      var voiceId = settings?.voice_id ?? "";
-      var language = settings?.language ?? "tr";
-      var persona = settings?.agent_persona ?? "";
-      var clinicName = settings?.clinic_name ?? "";
-      var doctorName = settings?.doctor_name ?? "";
     }
+
+    const { data: settings } = await admin
+      .from("voice_agent_settings")
+      .select("greeting_message, clinic_name, voice_id, language, agent_persona, doctor_name")
+      .limit(1)
+      .maybeSingle();
+    if (!greeting) {
+      greeting = settings?.greeting_message ?? "Merhaba, size nasıl yardımcı olabilirim?";
+    }
+    voiceId = settings?.voice_id ?? "";
+    language = settings?.language ?? "tr";
+    persona = settings?.agent_persona ?? "";
+    clinicName = settings?.clinic_name ?? "";
+    doctorName = settings?.doctor_name ?? "";
+
 
     // Build the ElevenLabs Conversational AI WebSocket URL
     const elevenWsUrl =
