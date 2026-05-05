@@ -471,6 +471,9 @@ const VideoStudio = () => {
                           ) : (
                             <Loader2 className="w-3 h-3 animate-spin text-primary" />
                           )}
+                          <button onClick={(e) => deleteTranslation(e, t)} className="p-0.5 hover:bg-destructive/10 rounded" title="Çeviriyi sil">
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </button>
                         </div>
                       ))}
                     </div>
