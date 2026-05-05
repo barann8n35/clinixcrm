@@ -85,6 +85,15 @@ const VideoStudio = () => {
     setLoading(false);
   };
 
+  const checkLipsyncJobs = async () => {
+    const { data, error } = await supabase.functions.invoke("check-lipsync-jobs");
+    if (error) return;
+
+    const results = Array.isArray((data as any)?.results) ? (data as any).results : [];
+    const updated = results.some((result: any) => result?.updated === "completed" || result?.updated === "failed");
+    if (updated) await loadData();
+  };
+
   // Track previously seen translation statuses to detect transitions (pending/processing → completed/failed)
   const prevStatusRef = useRef<Map<string, string>>(new Map());
   const prevVoiceStatusRef = useRef<Map<string, string>>(new Map());
@@ -93,7 +102,7 @@ const VideoStudio = () => {
     if (!user) return;
     loadData();
     // Recover any lipsync jobs whose poller died on edge runtime shutdown
-    supabase.functions.invoke("check-lipsync-jobs").catch(() => {});
+    checkLipsyncJobs().catch(() => {});
     const ch = supabase
       .channel("video-studio-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "video_translations" }, () => loadData())
@@ -102,6 +111,18 @@ const VideoStudio = () => {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const hasProcessingLipsync = translations.some(t => t.mode === "lipsync" && t.status === "processing");
+    if (!hasProcessingLipsync) return;
+
+    const interval = window.setInterval(() => {
+      checkLipsyncJobs().catch(() => {});
+    }, 30_000);
+
+    return () => window.clearInterval(interval);
+  }, [user, translations]);
 
   // Notify user (toast) when a translation transitions to completed/failed live
   useEffect(() => {
