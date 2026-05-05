@@ -46,10 +46,21 @@ export default function VoiceAgentTab() {
   const [saving, setSaving] = useState(false);
   const [testCalling, setTestCalling] = useState(false);
   const [testNumber, setTestNumber] = useState("");
+  const [voiceClones, setVoiceClones] = useState<{ id: string; name: string; elevenlabs_voice_id: string }[]>([]);
 
   useEffect(() => {
     void loadSettings();
+    void loadVoiceClones();
   }, []);
+
+  async function loadVoiceClones() {
+    const { data } = await supabase
+      .from("voice_clones")
+      .select("id, name, elevenlabs_voice_id, status")
+      .eq("status", "ready")
+      .not("elevenlabs_voice_id", "is", null);
+    setVoiceClones((Array.isArray(data) ? data : []) as any);
+  }
 
   async function loadSettings() {
     setLoading(true);
@@ -205,6 +216,17 @@ export default function VoiceAgentTab() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  {voiceClones.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">🎙️ Klonlanmış Sesleriniz</div>
+                      {voiceClones.map((c) => (
+                        <SelectItem key={c.elevenlabs_voice_id} value={c.elevenlabs_voice_id}>
+                          {c.name} (klon)
+                        </SelectItem>
+                      ))}
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1">Hazır Sesler</div>
+                    </>
+                  )}
                   {VOICE_OPTIONS.map((v) => (
                     <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>
                   ))}
