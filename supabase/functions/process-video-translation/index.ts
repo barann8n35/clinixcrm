@@ -62,13 +62,12 @@ async function callLovableAI(messages: any[], tools?: any[]) {
   return r.json();
 }
 
-async function transcribeAudio(audioUrl: string, sourceLang: string): Promise<string> {
+async function transcribeAudio(audioUrl: string, sourceLang: string): Promise<{ transcript: string; durationSec: number }> {
   // Fetch the file and pass as base64 data URL to gemini multimodal
   const audioResp = await fetch(audioUrl);
   if (!audioResp.ok) throw new Error(`Failed to fetch source media: ${audioResp.status}`);
   const arrayBuf = await audioResp.arrayBuffer();
   const bytes = new Uint8Array(arrayBuf);
-  // chunked base64 to avoid stack overflow
   let binary = "";
   const CHUNK = 0x8000;
   for (let i = 0; i < bytes.length; i += CHUNK) {
@@ -77,21 +76,44 @@ async function transcribeAudio(audioUrl: string, sourceLang: string): Promise<st
   const base64 = btoa(binary);
   const mime = audioResp.headers.get("content-type") || "video/mp4";
 
-  const result = await callLovableAI([
+  const tools = [
     {
-      role: "system",
-      content:
-        "You are a precise medical transcription assistant. Transcribe audio verbatim, preserving medical terminology. Return only the transcript text, no commentary.",
+      type: "function",
+      function: {
+        name: "return_transcript",
+        description: "Return verbatim transcript and the precise duration of the source media.",
+        parameters: {
+          type: "object",
+          properties: {
+            transcript: { type: "string", description: "Verbatim transcript preserving medical terminology." },
+            duration_seconds: { type: "number", description: "Precise total duration of the media in seconds." },
+          },
+          required: ["transcript", "duration_seconds"],
+        },
+      },
     },
-    {
-      role: "user",
-      content: [
-        { type: "text", text: `Transcribe this ${LANG_NAMES[sourceLang] || sourceLang} medical/clinic video audio.` },
-        { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
-      ],
-    },
-  ]);
-  return result.choices?.[0]?.message?.content?.trim() || "";
+  ];
+
+  const result = await callLovableAI(
+    [
+      {
+        role: "system",
+        content:
+          "You are a precise medical transcription assistant. Transcribe audio verbatim and report the exact total duration of the media in seconds.",
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `Transcribe this ${LANG_NAMES[sourceLang] || sourceLang} medical/clinic video and report its exact duration in seconds.` },
+          { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
+        ],
+      },
+    ],
+    tools
+  );
+  const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+  const args = JSON.parse(toolCall.function.arguments);
+  return { transcript: String(args.transcript || "").trim(), durationSec: Number(args.duration_seconds) || 0 };
 }
 
 async function translateText(transcript: string, sourceLang: string, targetLang: string, sourceDurationSec?: number) {
