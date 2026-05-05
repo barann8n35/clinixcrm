@@ -46,10 +46,21 @@ export default function VoiceAgentTab() {
   const [saving, setSaving] = useState(false);
   const [testCalling, setTestCalling] = useState(false);
   const [testNumber, setTestNumber] = useState("");
+  const [voiceClones, setVoiceClones] = useState<{ id: string; name: string; elevenlabs_voice_id: string }[]>([]);
 
   useEffect(() => {
     void loadSettings();
+    void loadVoiceClones();
   }, []);
+
+  async function loadVoiceClones() {
+    const { data } = await supabase
+      .from("voice_clones")
+      .select("id, name, elevenlabs_voice_id, status")
+      .eq("status", "ready")
+      .not("elevenlabs_voice_id", "is", null);
+    setVoiceClones((Array.isArray(data) ? data : []) as any);
+  }
 
   async function loadSettings() {
     setLoading(true);
