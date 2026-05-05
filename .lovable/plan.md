@@ -1,95 +1,83 @@
-# Sistem Denetim Raporu — Eksikler ve Öneriler
+# Premium Klinik Takvimi — Google Calendar bağımsız
 
-Mevcut sistemi (frontend, edge functions, veritabanı, RLS, entegrasyonlar) inceledim. Aşağıda öncelik sırasına göre tespit ettiğim eksikleri ve önerdiğim aksiyonları gruplayarak listeledim.
+Mevcut `CalendarPage` (FullCalendar) çalışıyor ama "premium" hissi vermiyor: tipografi standart, slot/randevu tasarımı sade, slot çakışma koruması yok, çalışma saatleri yok. Bunu uçtan uca yenileyip Google Calendar'a hiç ihtiyaç bırakmıyoruz.
 
----
+## 1. Veri katmanı (Supabase)
 
-## 1. KRİTİK — Hemen Çözülmesi Önerilen
+**Yeni tablo: `clinic_schedule`** (her klinik için bir satır)
+- `user_id` uuid, `working_hours` jsonb (örn. `{"mon":{"start":"09:00","end":"18:00"},"sun":null}`)
+- `slot_duration_minutes` int default 30
+- `buffer_minutes` int default 0
+- RLS: `auth.uid() = user_id` + admin
 
-### A. Instagram Webhook için secret'lar eksik
-`instagram-webhook` edge function deploy edildi ama 3 secret henüz eklenmedi:
-- `META_APP_SECRET`
-- `META_VERIFY_TOKEN`
-- `INSTAGRAM_PAGE_ACCESS_TOKEN`
+**`appointments` üzerine slot koruma trigger'ı**
+- Aynı doktor + aynı `scheduled_at` (cancelled hariç) iki kez yazılırsa → `RAISE EXCEPTION 'Slot dolu'`
+- Çalışma saatleri dışındaysa → uyarı (soft, sadece istemcide kontrol)
 
-Sen bunları Meta Developer panelinden alıp paylaşana kadar Instagram DM'leri sisteme akmaz.
+**Yeni RPC: `get_available_slots(p_date, p_doctor)`**
+- O gün için `clinic_schedule` × dolu randevuları çıkararak müsait saat listesini döner
+- Frontend slot picker bunu kullanır → dolu saatler gri/disabled
 
-### B. Telefonsuz hasta kayıtları (11 / 28)
-Veritabanında **11 hastanın telefonu boş**. Bu kayıtlar:
-- Randevu hatırlatma (WhatsApp/SMS) alamaz,
-- Sesli AI dış arama yapamaz,
-- Kampanya audience'larından otomatik düşer.
+## 2. Takvim sayfasını yeniden tasarla (`CalendarPage`)
 
-**Öneri:** `Patients` ekranında "Telefonu Eksik" filtresi + uyarı rozeti ekle. Yeni hasta formunda telefonu zorunlu (NOT NULL) yapma seçeneği sun.
+**Görsel kimlik (premium)**
+- Tipografi: Plus Jakarta Sans (header), Inter (body) — `clinix-calendar` CSS sınıfında font-feature-settings: "ss01","cv11" (numerik tabular-nums)
+- Header çubuğu: Today/Prev/Next butonları rounded-2xl, ikon-led; "Bugün" pill rozet
+- View switcher: segmented control (Ay / Hafta / Gün / Ajanda) — animate-li sliding indicator (framer-motion)
+- Saat sütunu: tabular-nums, açık gri ince çizgiler; **şimdiki an çizgisi** kırmızı + nabız animasyonu
+- Slot yüksekliği daha rahat (60px / saat), 30dk bölmeleri kesik çizgi
+- Hafta görünümünde günlerin üst kısmında: gün adı + tarih + o günkü randevu sayısı badge'i; **bugün** dairesel highlight
+- Boş slota hover: yumuşak `bg-primary/5` + "+ Randevu ekle" tooltip
+- Randevu kartı: sol kenar tip rengi, ince gölge, hover'da 1.02 scale, status için sağ üstte küçük dot
 
-### C. Güvenlik taraması yapılmadı
-Son aylarda RLS policy'leri ve `auth.uid()` default'ları değişti. **Tam güvenlik taraması** çalıştırıp, kalan açık varsa kapatmamız gerekiyor (özellikle yeni `instagram-webhook` ve mevcut `widget-message` public endpoint'leri için).
+**Etkileşim**
+- Drag & drop: randevuyu yeni slota sürükle → otomatik UPDATE + çakışma kontrolü trigger'dan dönerse toast
+- Resize: randevu süresini sürükleyerek uzat (eventResize → `duration` alanı eklenir)
+- Boş slota tıkla → mevcut `QuickAppointmentDialog` (zaten var)
+- Randevuya tıkla → mevcut detay dialog (mevcut)
+- Klavye: `t` = bugün, `m/w/d` = view switch, `←/→` = prev/next
 
----
+**Yeni: Ajanda (Liste) görünümü**
+- Sol sidebar mini ay takvimi, sağda günlere göre gruplu randevu listesi (Notion/Linear stili)
+- Her grup başlığı sticky, içinde saat + hasta adı + tip rozeti
+- Mobilde varsayılan görünüm bu
 
-## 2. YÜKSEK — Fonksiyonel Boşluklar
+**Yeni: Mini sidebar (sağ panel, opsiyonel)**
+- Bugün özeti: toplam, geldi, kalan
+- Yaklaşan 3 randevu kartı
+- Doktor filtresi (multi-select)
+- Tip filtresi (Ön Muayene / Muayene / Kontrol / Operasyon)
 
-### D. Onboarding akışı eksik
-Yeni kayıt → "Pending Approval" ekranında bekliyor. Admin onayladıktan sonra kullanıcıya:
-- E-posta bildirimi gitmiyor,
-- İlk açılışta tur/wizard tetiklenmiyor (`OnboardingWizard.tsx` var ama bağlı değil gibi).
+## 3. Slot picker (NewAppointmentDialog & QuickAppointmentDialog)
 
-### E. Şifre sıfırlama akışı
-`Auth.tsx`'de "Şifremi unuttum" linki var mı kontrol edilmeli. Yoksa eklenmeli (Supabase `resetPasswordForEmail`).
+- Sabit `timeSlots` dizisi yerine tarih seçildiğinde `get_available_slots` RPC
+- Dolu slotlar disabled + üzerinde küçük "Dolu" rozeti
+- Doktora göre filtre
 
-### F. Hata sınırı (Error Boundary) yok
-Daha önce "ekran beyaz kaldı" sorunu yaşadık. Global bir `<ErrorBoundary>` (ör. `react-error-boundary`) ile beyaz ekran yerine kullanıcıya friendly fallback + "Yeniden Yükle" butonu gösterilmeli.
+## 4. Çalışma saatleri ekranı (Settings → yeni "Çalışma Saatleri" sekmesi)
 
-### G. Audit log / Aktivite kaydı yok
-Kim ne zaman hangi hastayı düzenledi, hangi randevuyu iptal etti — kayıt yok. KVKK ve takım yönetimi için kritik. Basit bir `activity_logs` tablosu + tetikleyiciler önerilir.
+- Haftanın günleri için açık/kapalı switch + başlangıç/bitiş TimePicker
+- Slot süresi: 15/30/45/60 dk segmented
+- Tampon süre: 0/5/10/15 dk
+- "Tatil günleri" datepicker (multi-select) — bu günler tamamen bloklanır (opsiyonel v2)
 
----
+## 5. n8n tarafı
 
-## 3. ORTA — UX / İçerik İyileştirmeleri
+- Google Calendar node'unu silebilirsin
+- n8n'in randevu okuma/yazması gerekiyorsa direkt Supabase REST'ten `appointments` tablosuna gider (service_role key zaten n8n'de)
+- Çakışma koruması trigger seviyesinde, n8n'den de geçerli
 
-### H. Boş durumlar (Empty states)
-`Pipeline`, `Campaigns`, `Inventory`, `KnowledgeBase` sayfaları ilk girişte boş. Her birine illüstrasyonlu "Henüz yok — şununla başla" CTA'sı ekle.
+## Stack & detaylar (geliştirici)
 
-### I. Mobil push test akışı
-`use-push-notifications` ve OneSignal kurulu ama Settings ekranında "Test Bildirim Gönder" butonu var mı belirsiz. Kullanıcının kurulumun çalıştığını doğrulayabilmesi için eklenmeli.
+- FullCalendar Premium **gerekmez** — `@fullcalendar/interaction` zaten var, drag/drop/resize free pluginlerde
+- Yeni view: `listWeek` için `@fullcalendar/list` ekle (free)
+- CSS: `src/index.css` içine `clinix-calendar` selector altında özel tipografi + spacing override
+- TR locale zaten var
+- Realtime subscription mevcut → drag/drop sonrası UI otomatik tazelenir
 
-### J. Pricing → Checkout bağlantısı
-`Pricing.tsx` sayfası var ama Stripe/Paddle bağlı değil. "Premium'a Geç" butonu şu an sadece görsel — ya Stripe entegre edilmeli ya da "WhatsApp ile iletişime geç" akışına bağlanmalı.
+## Dokunulmayacaklar
+- `appointments` şeması (sadece trigger)
+- Mevcut dialog form alanları (sadece slot picker davranışı değişir)
+- KVKK RLS politikaları
 
-### K. i18n eksik anahtarlar
-SidebarNav'a son eklenen "Güvenlik & KVKK" ve "Sesli AI Asistan" gibi öğeler `labelKey` yerine düz Türkçe metin içeriyor. EN moduna geçince çevrilmiyor.
-
----
-
-## 4. DÜŞÜK — Teknik Borç
-
-### L. `useRole` cache yok
-Her sayfa değişiminde rol sorgusu yeniden yapılıyor. TanStack Query ile cache'lenmeli (5 dk staleTime).
-
-### M. Edge function'larda yapılandırılmış log yok
-Hata ayıklamak için JSON formatında log + correlation ID önerilir.
-
-### N. `widget-message` rate limit in-memory
-Edge function instance restart olunca sıfırlanıyor. Kalıcı rate limit için Supabase tablosu veya Upstash Redis önerilir (şimdilik bekleyebilir).
-
----
-
-## Tavsiye edilen sıra
-
-```text
-1. Güvenlik taraması çalıştır              → 1 dk
-2. ErrorBoundary + Pricing CTA fix         → küçük
-3. i18n eksik label'lar                    → küçük
-4. Şifre sıfırlama akışı                   → orta
-5. Audit log altyapısı                     → orta-büyük
-6. Onboarding e-posta + wizard tetikleyici → orta
-7. Stripe entegrasyonu (eğer ödeme almak istiyorsan) → büyük
-```
-
----
-
-## Sıradaki adım
-
-Hangilerini bu turda yapmamı istersin? Önerim: **1, 2, 3** maddelerini tek seferde halledelim (hızlı ve riski düşük), sonra kalanları ayrı turlarda ele alalım.
-
-Onaylarsan plan modundan çıkıp uygulamaya geçeyim. Farklı bir öncelik istersen söyle, planı güncelleyeyim.
+Onaylarsan: 1 migration (clinic_schedule + trigger + RPC), CalendarPage yeniden yazımı, index.css premium stilleri, 2 dialog güncellemesi, Settings'e yeni sekme.
