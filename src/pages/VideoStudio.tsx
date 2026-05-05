@@ -242,9 +242,19 @@ const VideoStudio = () => {
 
   const deleteVideo = async (id: string) => {
     if (!confirm("Bu video ve tüm çevirileri silinecek. Emin misiniz?")) return;
+    await supabase.from("video_translations").delete().eq("video_id", id);
     const { error } = await supabase.from("videos").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Video silindi");
+    loadData();
+  };
+
+  const deleteTranslation = async (e: React.MouseEvent, t: VideoTranslation) => {
+    e.stopPropagation();
+    if (!confirm(`"${t.target_language_label}" çevirisi silinsin mi?`)) return;
+    const { error } = await supabase.from("video_translations").delete().eq("id", t.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Çeviri silindi");
     loadData();
   };
 
@@ -461,6 +471,9 @@ const VideoStudio = () => {
                           ) : (
                             <Loader2 className="w-3 h-3 animate-spin text-primary" />
                           )}
+                          <button onClick={(e) => deleteTranslation(e, t)} className="p-0.5 hover:bg-destructive/10 rounded" title="Çeviriyi sil">
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </button>
                         </div>
                       ))}
                     </div>
