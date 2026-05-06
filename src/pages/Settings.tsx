@@ -208,6 +208,9 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
+          <div className="mt-6">
+            <ClinicScheduleTab />
+          </div>
         </TabsContent>
 
         {/* Entegrasyonlar Tab */}
