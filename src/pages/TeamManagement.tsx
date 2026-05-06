@@ -74,6 +74,29 @@ const TeamManagement = () => {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  async function handleDeleteUser(member: TeamMember) {
+    const normalizedEmail = member.email.trim().toLowerCase();
+    if (normalizedEmail === PRIMARY_ADMIN_EMAIL) {
+      toast.error("Ana admin hesabı silinemez.");
+      return;
+    }
+    const label = member.full_name || member.email || "kullanıcı";
+    if (!confirm(`${label} hesabını kalıcı olarak silmek istediğinizden emin misiniz?`)) return;
+
+    setDeleting(member.user_id);
+    const { error } = await supabase.rpc("admin_delete_user" as any, {
+      _target_user_id: member.user_id,
+    });
+    setDeleting(null);
+    if (error) {
+      toast.error("Kullanıcı silinemedi: " + error.message);
+      return;
+    }
+    toast.success("Kullanıcı silindi.");
+    fetchMembers();
+  }
 
   async function fetchMembers() {
     setLoading(true);
