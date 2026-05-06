@@ -395,6 +395,18 @@ const TeamManagement = () => {
                     {lockRoleChange && (
                       <span className="text-[10px] font-medium text-muted-foreground shrink-0">Ana admin</span>
                     )}
+                    {!lockRoleChange && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
+                        disabled={deleting === m.user_id}
+                        onClick={() => handleDeleteUser(m)}
+                        title="Kullanıcıyı sil"
+                      >
+                        {deleting === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
