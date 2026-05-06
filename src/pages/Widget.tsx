@@ -133,9 +133,11 @@ export default function Widget() {
   }
 
   function saveContact() {
-    if (!name.trim()) return;
+    const digits = phone.replace(/\D/g, "");
+    if (!name.trim() || digits.length < 10) return;
     localStorage.setItem(NAME_KEY, name.trim());
-    if (phone.trim()) localStorage.setItem(PHONE_KEY, phone.trim());
+    localStorage.setItem(PHONE_KEY, digits);
+    setPhone(digits);
     setNeedsContact(false);
   }
 
