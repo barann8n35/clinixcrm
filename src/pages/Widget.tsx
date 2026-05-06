@@ -203,19 +203,22 @@ export default function Widget() {
               maxLength={80}
             />
             <input
-              placeholder="Telefon (opsiyonel)"
+              placeholder="Telefon * (en az 10 hane)"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
+              inputMode="numeric"
+              type="tel"
               style={{ ...inputStyle, marginTop: 8 }}
-              maxLength={30}
+              maxLength={15}
             />
             <button
               onClick={saveContact}
-              disabled={!name.trim()}
+              disabled={!name.trim() || phone.replace(/\D/g, "").length < 10}
               style={{
                 marginTop: 10, width: "100%", background: color, color: "#fff",
                 border: "none", borderRadius: 10, padding: "10px 14px", fontWeight: 600,
-                cursor: name.trim() ? "pointer" : "not-allowed", opacity: name.trim() ? 1 : 0.5,
+                cursor: (name.trim() && phone.replace(/\D/g, "").length >= 10) ? "pointer" : "not-allowed",
+                opacity: (name.trim() && phone.replace(/\D/g, "").length >= 10) ? 1 : 0.5,
               }}
             >
               Devam Et
