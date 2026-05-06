@@ -342,6 +342,7 @@ export type Database = {
           updated_at: string
           user_id: string
           web_session_id: string | null
+          whatsapp_id: string | null
         }
         Insert: {
           age?: string | null
@@ -370,6 +371,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           web_session_id?: string | null
+          whatsapp_id?: string | null
         }
         Update: {
           age?: string | null
@@ -398,6 +400,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           web_session_id?: string | null
+          whatsapp_id?: string | null
         }
         Relationships: []
       }
@@ -860,16 +863,26 @@ export type Database = {
           slot_time: string
         }[]
       }
-      handle_omnichannel_message: {
-        Args: {
-          p_clinic_user_id?: string
-          p_external_id: string
-          p_message: string
-          p_name: string
-          p_platform: string
-        }
-        Returns: string
-      }
+      handle_omnichannel_message:
+        | {
+            Args: {
+              p_external_id: string
+              p_message: string
+              p_name: string
+              p_platform: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_clinic_user_id?: string
+              p_external_id: string
+              p_message: string
+              p_name: string
+              p_platform: string
+            }
+            Returns: string
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
