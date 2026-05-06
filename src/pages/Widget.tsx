@@ -92,9 +92,12 @@ export default function Widget() {
   async function send() {
     const text = input.trim();
     if (!text || sending) return;
-    if (settings?.ask_phone && !name.trim()) {
-      setNeedsContact(true);
-      return;
+    if (settings?.ask_phone) {
+      const digits = phone.replace(/\D/g, "");
+      if (!name.trim() || digits.length < 10) {
+        setNeedsContact(true);
+        return;
+      }
     }
 
     setSending(true);
@@ -130,9 +133,11 @@ export default function Widget() {
   }
 
   function saveContact() {
-    if (!name.trim()) return;
+    const digits = phone.replace(/\D/g, "");
+    if (!name.trim() || digits.length < 10) return;
     localStorage.setItem(NAME_KEY, name.trim());
-    if (phone.trim()) localStorage.setItem(PHONE_KEY, phone.trim());
+    localStorage.setItem(PHONE_KEY, digits);
+    setPhone(digits);
     setNeedsContact(false);
   }
 
@@ -198,19 +203,22 @@ export default function Widget() {
               maxLength={80}
             />
             <input
-              placeholder="Telefon (opsiyonel)"
+              placeholder="Telefon * (en az 10 hane)"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
+              inputMode="numeric"
+              type="tel"
               style={{ ...inputStyle, marginTop: 8 }}
-              maxLength={30}
+              maxLength={15}
             />
             <button
               onClick={saveContact}
-              disabled={!name.trim()}
+              disabled={!name.trim() || phone.replace(/\D/g, "").length < 10}
               style={{
                 marginTop: 10, width: "100%", background: color, color: "#fff",
                 border: "none", borderRadius: 10, padding: "10px 14px", fontWeight: 600,
-                cursor: name.trim() ? "pointer" : "not-allowed", opacity: name.trim() ? 1 : 0.5,
+                cursor: (name.trim() && phone.replace(/\D/g, "").length >= 10) ? "pointer" : "not-allowed",
+                opacity: (name.trim() && phone.replace(/\D/g, "").length >= 10) ? 1 : 0.5,
               }}
             >
               Devam Et

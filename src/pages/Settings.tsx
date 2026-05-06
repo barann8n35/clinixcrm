@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import VoiceCloneManager from "@/components/video/VoiceCloneManager";
 import WidgetSettingsTab from "@/components/settings/WidgetSettingsTab";
+import ClinicScheduleTab from "@/components/settings/ClinicScheduleTab";
 
 interface QuickReply {
   id: string;
@@ -207,6 +208,9 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
+          <div className="mt-6">
+            <ClinicScheduleTab />
+          </div>
         </TabsContent>
 
         {/* Entegrasyonlar Tab */}

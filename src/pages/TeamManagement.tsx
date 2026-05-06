@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Users, ShieldAlert, ShieldCheck, Clock, UserCheck, UserX, Loader2, Sparkles, Zap, Package } from "lucide-react";
+import { Users, ShieldAlert, ShieldCheck, Clock, UserCheck, UserX, Loader2, Sparkles, Zap, Package, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -74,6 +74,29 @@ const TeamManagement = () => {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  async function handleDeleteUser(member: TeamMember) {
+    const normalizedEmail = member.email.trim().toLowerCase();
+    if (normalizedEmail === PRIMARY_ADMIN_EMAIL) {
+      toast.error("Ana admin hesabı silinemez.");
+      return;
+    }
+    const label = member.full_name || member.email || "kullanıcı";
+    if (!confirm(`${label} hesabını kalıcı olarak silmek istediğinizden emin misiniz?`)) return;
+
+    setDeleting(member.user_id);
+    const { error } = await supabase.rpc("admin_delete_user" as any, {
+      _target_user_id: member.user_id,
+    });
+    setDeleting(null);
+    if (error) {
+      toast.error("Kullanıcı silinemedi: " + error.message);
+      return;
+    }
+    toast.success("Kullanıcı silindi.");
+    fetchMembers();
+  }
 
   async function fetchMembers() {
     setLoading(true);
@@ -259,9 +282,10 @@ const TeamManagement = () => {
                     {updating === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
                     Onayla (Standart)
                   </Button>
-                  <Button size="sm" variant="destructive" className="rounded-lg gap-1.5" disabled={updating === m.user_id}
-                    onClick={() => handleRoleChange(m, "pending")}>
-                    <UserX className="w-3.5 h-3.5" /> Reddet
+                  <Button size="sm" variant="destructive" className="rounded-lg gap-1.5" disabled={deleting === m.user_id}
+                    onClick={() => handleDeleteUser(m)}>
+                    {deleting === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                    Reddet & Sil
                   </Button>
                 </div>
               </motion.div>
@@ -370,6 +394,18 @@ const TeamManagement = () => {
                     {isUpdating && <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />}
                     {lockRoleChange && (
                       <span className="text-[10px] font-medium text-muted-foreground shrink-0">Ana admin</span>
+                    )}
+                    {!lockRoleChange && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
+                        disabled={deleting === m.user_id}
+                        onClick={() => handleDeleteUser(m)}
+                        title="Kullanıcıyı sil"
+                      >
+                        {deleting === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </Button>
                     )}
                   </div>
                 </div>
