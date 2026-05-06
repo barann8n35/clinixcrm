@@ -92,9 +92,12 @@ export default function Widget() {
   async function send() {
     const text = input.trim();
     if (!text || sending) return;
-    if (settings?.ask_phone && !name.trim()) {
-      setNeedsContact(true);
-      return;
+    if (settings?.ask_phone) {
+      const digits = phone.replace(/\D/g, "");
+      if (!name.trim() || digits.length < 10) {
+        setNeedsContact(true);
+        return;
+      }
     }
 
     setSending(true);
