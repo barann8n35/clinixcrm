@@ -282,9 +282,10 @@ const TeamManagement = () => {
                     {updating === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
                     Onayla (Standart)
                   </Button>
-                  <Button size="sm" variant="destructive" className="rounded-lg gap-1.5" disabled={updating === m.user_id}
-                    onClick={() => handleRoleChange(m, "pending")}>
-                    <UserX className="w-3.5 h-3.5" /> Reddet
+                  <Button size="sm" variant="destructive" className="rounded-lg gap-1.5" disabled={deleting === m.user_id}
+                    onClick={() => handleDeleteUser(m)}>
+                    {deleting === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                    Reddet & Sil
                   </Button>
                 </div>
               </motion.div>
