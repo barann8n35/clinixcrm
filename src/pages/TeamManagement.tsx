@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Users, ShieldAlert, ShieldCheck, Clock, UserCheck, UserX, Loader2, Sparkles, Zap, Package } from "lucide-react";
+import { Users, ShieldAlert, ShieldCheck, Clock, UserCheck, UserX, Loader2, Sparkles, Zap, Package, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
