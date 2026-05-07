@@ -17,7 +17,6 @@ import {
 interface PipelineCard {
   id: string;
   name: string;
-  value: number;
   priority: "urgent" | "medium" | "low";
   platform: string | null;
   date: string;
@@ -90,10 +89,7 @@ const PostOpBadge = ({ days, patientName }: { days: number; patientName: string 
   const [saved, setSaved] = useState(false);
 
   const handleSend = async () => {
-    setSending(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setSending(false);
-    toast.success("Mesaj başarıyla gönderildi ✅");
+    toast.error("WhatsApp gönderim entegrasyonu henüz yapılandırılmadı.");
   };
 
   const handleSave = () => {
@@ -173,9 +169,6 @@ const CardContent = ({ card, pStyle, t, showPostOp, isArrived }: { card: Pipelin
       <PlatformIcon platform={card.platform} />
     </div>
     <div className="flex items-center gap-2 mb-2">
-      <span className="text-sm font-extrabold text-primary whitespace-nowrap">
-        {card.value.toLocaleString("tr-TR")} ₺
-      </span>
       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${pStyle.bg} ${pStyle.text}`}>
         {t(`pipeline.${card.priority}`)}
       </span>
@@ -195,16 +188,13 @@ const Pipeline = () => {
     appointmentBooked: [],
     postOp: [],
   });
-  const valuesRef = useRef<Record<string, number>>({});
-  const priorityRef = useRef<Record<string, "urgent" | "medium" | "low">>({});
-  const postOpDaysRef = useRef<Record<string, number>>({});
   const suppressRealtimeUntilRef = useRef<number>(0);
   const [celebrateId, setCelebrateId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     const { data } = await supabase
       .from("patients")
-      .select("id, name, platform, status, complaint, created_at")
+      .select("id, name, platform, status, complaint, created_at, updated_at")
       .order("updated_at", { ascending: false });
     if (!data) return;
 
@@ -217,29 +207,26 @@ const Pipeline = () => {
       postOp: [],
     };
 
-    data.forEach((p, i) => {
-      if (!valuesRef.current[p.id]) {
-        valuesRef.current[p.id] = Math.floor(Math.random() * 20000) + 3000;
-      }
-      if (!priorityRef.current[p.id]) {
-        priorityRef.current[p.id] = i % 3 === 0 ? "urgent" : i % 3 === 1 ? "medium" : "low";
-      }
+    const now = Date.now();
+    data.forEach((p) => {
       const col = columnForStatus(p.status);
-      if (col === "postOp" && postOpDaysRef.current[p.id] === undefined) {
-        postOpDaysRef.current[p.id] = Math.floor(Math.random() * 7) + 1;
-      }
+      const ageDays = Math.floor((now - new Date(p.created_at).getTime()) / 86400000);
+      const priority: "urgent" | "medium" | "low" =
+        p.status === "pending" && ageDays >= 1 ? "urgent" : p.status === "pending" ? "medium" : "low";
+      const postOpDays = col === "postOp"
+        ? Math.max(0, Math.floor((now - new Date(p.updated_at || p.created_at).getTime()) / 86400000))
+        : undefined;
       const card: PipelineCard = {
         id: p.id,
         name: p.name,
-        value: valuesRef.current[p.id],
-        priority: priorityRef.current[p.id],
+        priority,
         platform: p.platform,
         date: new Date(p.created_at).toLocaleDateString("tr-TR", {
           day: "numeric",
           month: "short",
           year: "numeric",
         }),
-        postOpDays: col === "postOp" ? postOpDaysRef.current[p.id] : undefined,
+        postOpDays,
       };
       stages[col].push(card);
     });
@@ -316,8 +303,6 @@ const Pipeline = () => {
     { key: "postOp", labelKey: "pipeline.postOp" },
   ];
 
-  const totalValue = (cards: PipelineCard[]) =>
-    cards.reduce((sum, c) => sum + c.value, 0).toLocaleString("tr-TR");
 
   return (
     <div className="p-6 md:p-8 space-y-6 h-full overflow-auto gradient-mesh">
@@ -350,7 +335,7 @@ const Pipeline = () => {
                       {col.key === "arrived" ? "Bekleme Salonu" : t(col.labelKey)}
                     </h3>
                     <p className="text-[11px] text-muted-foreground">
-                      {cards.length} {t("pipeline.lead")} · {totalValue(cards)} ₺
+                      {cards.length} {t("pipeline.lead")}
                     </p>
                   </div>
                   {cards.length > 0 && (
