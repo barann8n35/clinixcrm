@@ -17,7 +17,6 @@ import {
 interface PipelineCard {
   id: string;
   name: string;
-  value: number;
   priority: "urgent" | "medium" | "low";
   platform: string | null;
   date: string;
