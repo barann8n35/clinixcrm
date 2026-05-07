@@ -338,7 +338,7 @@ const Pipeline = () => {
                       {col.key === "arrived" ? "Bekleme Salonu" : t(col.labelKey)}
                     </h3>
                     <p className="text-[11px] text-muted-foreground">
-                      {cards.length} {t("pipeline.lead")} · {totalValue(cards)} ₺
+                      {cards.length} {t("pipeline.lead")}
                     </p>
                   </div>
                   {cards.length > 0 && (
