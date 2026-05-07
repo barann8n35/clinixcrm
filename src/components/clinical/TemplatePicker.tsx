@@ -59,7 +59,7 @@ export function TemplatePicker({ category, onInsert }: Props) {
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
 
-    let list = (Array.isArray(data) ? data : []) as Template[];
+    let list = (Array.isArray(data) ? data : []) as unknown as Template[];
 
     // Seed if empty
     if (list.length === 0) {
@@ -70,7 +70,7 @@ export function TemplatePicker({ category, onInsert }: Props) {
         .from("clinical_templates" as any)
         .insert(seeds as any)
         .select("id,title,content,category,sort_order");
-      list = (Array.isArray(inserted) ? inserted : []) as Template[];
+      list = (Array.isArray(inserted) ? inserted : []) as unknown as Template[];
     }
 
     setItems(list);

@@ -24,7 +24,7 @@ export default function ClinicalTemplatesTab() {
       .from("clinical_templates" as any)
       .select("id,category,title,content,sort_order")
       .order("category").order("sort_order");
-    setItems((Array.isArray(data) ? data : []) as Template[]);
+    setItems((Array.isArray(data) ? data : []) as unknown as Template[]);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
