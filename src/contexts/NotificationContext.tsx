@@ -251,7 +251,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <NotificationContext.Provider value={{ personalNotifications, globalNotifications, unreadCount, markAllRead, toggleRead, dismissNotification, clearAll, addNotification }}>
+    <NotificationContext.Provider value={{ personalNotifications: visiblePersonal, globalNotifications: visibleGlobal, unreadCount, markAllRead, toggleRead, dismissNotification, clearAll, addNotification }}>
       {children}
     </NotificationContext.Provider>
   );
