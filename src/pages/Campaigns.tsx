@@ -66,15 +66,11 @@ const Campaigns = () => {
         const pTags = Array.isArray(p.tags) ? p.tags : [];
         if (!selectedTags.some(t => pTags.includes(t))) return false;
       }
-      if (selectedLang) {
-        // Mock: filter by platform as language proxy
-        // In real app this would be a language field
-      }
       if (dateFrom && new Date(p.created_at) < new Date(dateFrom)) return false;
       if (dateTo && new Date(p.created_at) > new Date(dateTo + "T23:59:59")) return false;
       return true;
     });
-  }, [patients, selectedTags, selectedLang, dateFrom, dateTo]);
+  }, [patients, selectedTags, dateFrom, dateTo]);
 
   function toggleTag(tag: string) {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
@@ -85,11 +81,30 @@ const Campaigns = () => {
     if (filtered.length === 0) { toast.error("Gönderilecek hasta bulunamadı"); return; }
 
     setSending(true);
-    // Simulate sending delay
-    await new Promise(r => setTimeout(r, 2000));
-    setSending(false);
-    toast.success(`Kampanya başarıyla sıraya alındı! ${filtered.length} kişiye gönderilecek.`);
-    setMessage("");
+    try {
+      // Persist outbound messages so the n8n / WhatsApp pipeline can pick them up.
+      const rows = filtered
+        .filter(p => p.phone)
+        .map(p => ({
+          patient_id: p.id,
+          sender_type: "asistan" as const,
+          text: message.trim(),
+          platform: "whatsapp" as const,
+          is_processed: false,
+        }));
+      if (rows.length === 0) {
+        toast.error("Telefonu olan hasta bulunamadı");
+        return;
+      }
+      const { error } = await supabase.from("messages").insert(rows);
+      if (error) throw error;
+      toast.success(`Kampanya sıraya alındı: ${rows.length} kişi`);
+      setMessage("");
+    } catch (e: any) {
+      toast.error(e?.message || "Kampanya gönderilemedi");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
