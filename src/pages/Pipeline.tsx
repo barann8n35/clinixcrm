@@ -306,8 +306,6 @@ const Pipeline = () => {
     { key: "postOp", labelKey: "pipeline.postOp" },
   ];
 
-  const totalValue = (cards: PipelineCard[]) =>
-    cards.reduce((sum, c) => sum + c.value, 0).toLocaleString("tr-TR");
 
   return (
     <div className="p-6 md:p-8 space-y-6 h-full overflow-auto gradient-mesh">
