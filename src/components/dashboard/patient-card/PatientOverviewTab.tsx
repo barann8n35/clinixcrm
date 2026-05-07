@@ -1,4 +1,4 @@
-import { Phone, MapPin, AlertCircle, Tag, X, Plus, StickyNote, CreditCard, Bell, CalendarIcon, Save, Clock, Sparkles } from "lucide-react";
+import { Phone, MapPin, AlertCircle, Tag, X, Plus, StickyNote, CreditCard, Bell, CalendarIcon, Save, Clock, Sparkles, RefreshCw, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -57,6 +57,27 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [timePickerStep, setTimePickerStep] = useState<"hour" | "minute">("hour");
   const [selectedHour, setSelectedHour] = useState("09");
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
+
+  async function generateSummary() {
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("patient-ai-summary", {
+        body: { patient_id: patientId },
+      });
+      if (error || (data as any)?.error) throw new Error(error?.message || (data as any)?.error);
+      setAiSummary((data as any)?.summary || "");
+    } catch (e: any) {
+      toast.error("AI özeti oluşturulamadı: " + (e?.message || ""));
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    setAiSummary("");
+  }, [patientId]);
 
   // Reset state when patientId or patient data changes
   useEffect(() => {
@@ -148,27 +169,39 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
         <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
           <Sparkles className="w-16 h-16 text-indigo-500" />
         </div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h4 className="text-[12px] font-bold text-indigo-950 dark:text-indigo-200 tracking-tight">AI Hasta Özeti</h4>
           </div>
-          <h4 className="text-[12px] font-bold text-indigo-950 dark:text-indigo-200 tracking-tight">AI Hızlı Hasta Özeti</h4>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={generateSummary}
+            disabled={aiLoading}
+            className="h-7 px-2 text-[11px] text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10 rounded-lg"
+          >
+            {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
+            {aiLoading ? "" : aiSummary ? "Yenile" : "Oluştur"}
+          </Button>
         </div>
-        <div className="space-y-2">
-          <p className="text-[13px] leading-relaxed text-indigo-900/80 dark:text-indigo-200/80 font-medium">
-            {patient?.complaint ? `Ana şikayeti: ${patient.complaint}.` : "Henüz belirgin bir şikayet kaydedilmemiş."}
-            {patient?.status === "pending" && " Hasta şu an bekleme aşamasında, aksiyon bekliyor."}
-            {patient?.status === "approved" && " Hastanın işlemleri onaylanmış durumda."}
+        {aiSummary ? (
+          <p className="text-[12.5px] leading-relaxed text-indigo-900/90 dark:text-indigo-200/90 whitespace-pre-wrap">
+            {aiSummary}
           </p>
-          <div className="bg-indigo-500/10 rounded-lg p-2.5 border border-indigo-500/10">
-            <p className="text-[11px] font-semibold text-indigo-800 dark:text-indigo-300">
-              ⚡ Aksiyon Önerisi:
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[12px] leading-relaxed text-indigo-900/70 dark:text-indigo-200/70">
+              {patient?.complaint ? `Ana şikayeti: ${patient.complaint}.` : "Henüz belirgin bir şikayet kaydedilmemiş."}
+              {patient?.status === "pending" && " Hasta şu an bekleme aşamasında."}
             </p>
-            <p className="text-[11px] text-indigo-900/70 dark:text-indigo-200/70 mt-0.5">
-              {patient?.status === "pending" ? "Hastayla iletişime geçip randevu gününü kesinleştirin." : "Rutin takibe devam edin, geçmiş notları kontrol edin."}
+            <p className="text-[10.5px] text-indigo-700/70 dark:text-indigo-300/60 italic">
+              Daha kapsamlı AI özeti için "Oluştur" butonuna basın — randevu geçmişi, mesajlar, klinik notlar ve epikriz dahil edilir.
             </p>
           </div>
-        </div>
+        )}
       </motion.div>
 
       {/* Contact Info */}

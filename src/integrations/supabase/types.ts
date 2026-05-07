@@ -321,7 +321,9 @@ export type Database = {
           complaint: string | null
           created_at: string
           doctor: string | null
+          epicrisis: string | null
           event_id: string | null
+          examination_notes: string | null
           facebook_id: string | null
           gender: string | null
           id: string
@@ -350,7 +352,9 @@ export type Database = {
           complaint?: string | null
           created_at?: string
           doctor?: string | null
+          epicrisis?: string | null
           event_id?: string | null
+          examination_notes?: string | null
           facebook_id?: string | null
           gender?: string | null
           id: string
@@ -379,7 +383,9 @@ export type Database = {
           complaint?: string | null
           created_at?: string
           doctor?: string | null
+          epicrisis?: string | null
           event_id?: string | null
+          examination_notes?: string | null
           facebook_id?: string | null
           gender?: string | null
           id?: string

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { PatientOverviewTab } from "@/components/dashboard/patient-card/PatientOverviewTab";
 import { PatientTimelineTab } from "@/components/dashboard/patient-card/PatientTimelineTab";
 import { PatientTasksTab } from "@/components/dashboard/patient-card/PatientTasksTab";
+import { PatientClinicalTab } from "@/components/dashboard/patient-card/PatientClinicalTab";
 
 export interface PatientFull {
   id: string;
@@ -406,7 +407,8 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
       ) : (
         <Tabs defaultValue="overview" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-4 mt-3 mb-0 shrink-0">
-            <TabsTrigger value="overview" className="text-xs">Genel Bilgiler</TabsTrigger>
+            <TabsTrigger value="overview" className="text-xs">Genel</TabsTrigger>
+            <TabsTrigger value="clinical" className="text-xs">Klinik</TabsTrigger>
             <TabsTrigger value="timeline" className="text-xs">Zaman Çizelgesi</TabsTrigger>
             <TabsTrigger value="tasks" className="text-xs">Görevler</TabsTrigger>
           </TabsList>
@@ -419,6 +421,9 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
                   onPatientUpdate={handlePatientUpdate}
                 />
               )}
+            </TabsContent>
+            <TabsContent value="clinical" className="mt-0 px-3 pb-4">
+              {patient && <PatientClinicalTab patientId={patient.id} />}
             </TabsContent>
             <TabsContent value="timeline" className="mt-0 px-3 pb-4">
               {patient && <PatientTimelineTab patientId={patient.id} />}
