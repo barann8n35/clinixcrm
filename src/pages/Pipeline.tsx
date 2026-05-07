@@ -78,7 +78,7 @@ const PlatformIcon = ({ platform }: { platform: string | null }) => {
 };
 
 /* ── Post-Op Badge with Interactive Popover ── */
-const PostOpBadge = ({ days, patientName }: { days: number; patientName: string }) => {
+const PostOpBadge = ({ days, patientName, patientId }: { days: number; patientName: string; patientId: string }) => {
   const isUrgent = days <= 1;
   const defaultMessage = days <= 0
     ? `Merhaba ${patientName}, geçmiş olsun 🙏 Ameliyat sonrası durumunuz nasıl? Herhangi bir ağrınız veya şikayetiniz var mı?`
@@ -89,7 +89,27 @@ const PostOpBadge = ({ days, patientName }: { days: number; patientName: string 
   const [saved, setSaved] = useState(false);
 
   const handleSend = async () => {
-    toast.error("WhatsApp gönderim entegrasyonu henüz yapılandırılmadı.");
+    if (!draft.trim()) { toast.error("Mesaj boş olamaz"); return; }
+    setSending(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) throw new Error("Oturum bulunamadı");
+      const { error } = await supabase.from("messages").insert({
+        patient_id: patientId,
+        sender_type: "asistan",
+        text: draft.trim(),
+        platform: "whatsapp",
+        is_processed: false,
+        user_id: uid,
+      });
+      if (error) throw error;
+      toast.success("Mesaj sıraya alındı ✅ (WhatsApp pipeline işleyecek)");
+    } catch (e: any) {
+      toast.error(e?.message || "Mesaj gönderilemedi");
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleSave = () => {
@@ -174,7 +194,7 @@ const CardContent = ({ card, pStyle, t, showPostOp, isArrived }: { card: Pipelin
       </span>
     </div>
     <p className="text-[11px] text-muted-foreground">{card.date}</p>
-    {showPostOp && card.postOpDays !== undefined && <PostOpBadge days={card.postOpDays} patientName={card.name} />}
+    {showPostOp && card.postOpDays !== undefined && <PostOpBadge days={card.postOpDays} patientName={card.name} patientId={card.id} />}
   </>
 );
 
