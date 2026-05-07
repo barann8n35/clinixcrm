@@ -36,14 +36,6 @@ Deno.serve(async (req) => {
       .order("scheduled_at", { ascending: false })
       .limit(5);
 
-    const { data: messages } = await supabase
-      .from("messages")
-      .select("sender_type, text, created_at, platform")
-      .eq("patient_id", patient_id)
-      .order("created_at", { ascending: false })
-      .limit: 10 as any;
-
-    // Try without limit chaining issue (above is faulty). Re-query properly:
     const { data: msgs } = await supabase
       .from("messages")
       .select("sender_type, text, created_at, platform")
@@ -64,9 +56,9 @@ Deno.serve(async (req) => {
 
 KURALLAR:
 - En fazla 4 kısa paragraf, toplam 120 kelime
-- Şu sırayla: 1) Hasta profili (yaş, cinsiyet, şikayet) 2) Süreç durumu (randevu/aşama) 3) Klinik notlar veya epikriz varsa kritik vurgu 4) ÖNERİLEN AKSİYON (1 cümle, net ve uygulanabilir)
-- Tıbbi terimleri koru ama gereksiz tekrar yapma
-- Eğer veri yoksa "—" yaz, uydurma
+- Sırayla: 1) Hasta profili (yaş, cinsiyet, şikayet) 2) Süreç durumu (randevu/aşama) 3) Klinik notlar veya epikriz varsa kritik vurgu 4) ÖNERİLEN AKSİYON (1 cümle, net ve uygulanabilir)
+- Tıbbi terimleri koru, gereksiz tekrar yapma
+- Veri yoksa "—" yaz, uydurma
 - Markdown KULLANMA, düz metin
 
 VERİ:
