@@ -327,8 +327,8 @@ const Dashboard = () => {
                       )}
                       <span className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">{p.name}</span>
                     </div>
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-destructive/10 text-destructive flex-shrink-0 ml-3">
-                      {p.score}/10
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-warning/10 text-warning flex-shrink-0 ml-3">
+                      Bekliyor
                     </span>
                   </div>
                 );
