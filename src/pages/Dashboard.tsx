@@ -108,7 +108,7 @@ const Dashboard = () => {
         .map((p) => ({
           id: p.id,
           name: p.name,
-          score: Math.floor(Math.random() * 3) + 7,
+          score: 0,
           platform: p.platform,
         }));
 
