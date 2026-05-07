@@ -17,6 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import VoiceCloneManager from "@/components/video/VoiceCloneManager";
 import WidgetSettingsTab from "@/components/settings/WidgetSettingsTab";
 import ClinicScheduleTab from "@/components/settings/ClinicScheduleTab";
+import ClinicalTemplatesTab from "@/components/settings/ClinicalTemplatesTab";
+import { useSearchParams } from "react-router-dom";
+import { FileText as FileTextIcon } from "lucide-react";
 
 interface QuickReply {
   id: string;
@@ -129,18 +132,31 @@ const Settings = () => {
         <p className="text-sm text-muted-foreground mt-1">Uygulama ayarlarını yönetin</p>
       </motion.div>
 
-      <Tabs defaultValue="profil" className="space-y-6">
+      <SettingsTabs />
+    </div>
+  );
+
+  function SettingsTabs() {
+    const [sp, setSp] = useSearchParams();
+    const tab = sp.get("tab") || "profil";
+    return (
+      <Tabs value={tab} onValueChange={(v) => { sp.set("tab", v); setSp(sp, { replace: true }); }} className="space-y-6">
         <div className="-mx-4 md:mx-0 overflow-x-auto scrollbar-none">
           <TabsList className="bg-muted/50 rounded-xl inline-flex w-max min-w-full sm:w-auto mx-4 md:mx-0">
             <TabsTrigger value="profil" className="gap-2 shrink-0"><User className="h-4 w-4" /><span className="text-xs sm:text-sm">Profil</span></TabsTrigger>
             <TabsTrigger value="klinik" className="gap-2 shrink-0"><Building2 className="h-4 w-4" /><span className="text-xs sm:text-sm">Klinik</span></TabsTrigger>
             <TabsTrigger value="entegrasyonlar" className="gap-2 shrink-0"><Plug className="h-4 w-4" /><span className="text-xs sm:text-sm">Entegrasyonlar</span></TabsTrigger>
             <TabsTrigger value="hazir-yanitlar" className="gap-2 shrink-0"><Zap className="h-4 w-4" /><span className="text-xs sm:text-sm">Hazır Yanıtlar</span></TabsTrigger>
+            <TabsTrigger value="sablonlar" className="gap-2 shrink-0"><FileTextIcon className="h-4 w-4" /><span className="text-xs sm:text-sm">Şablonlar</span></TabsTrigger>
             <TabsTrigger value="ses-klonum" className="gap-2 shrink-0"><Mic className="h-4 w-4" /><span className="text-xs sm:text-sm">Ses Klonum</span></TabsTrigger>
             <TabsTrigger value="web-widget" className="gap-2 shrink-0"><Globe className="h-4 w-4" /><span className="text-xs sm:text-sm">Web Widget</span></TabsTrigger>
             <TabsTrigger value="mobil" className="gap-2 shrink-0"><Smartphone className="h-4 w-4" /><span className="text-xs sm:text-sm">Mobil & Bildirim</span></TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="sablonlar">
+          <ClinicalTemplatesTab />
+        </TabsContent>
 
         {/* Profil Tab */}
         <TabsContent value="profil">
