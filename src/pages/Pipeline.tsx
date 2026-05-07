@@ -90,9 +90,17 @@ const PostOpBadge = ({ days, patientName }: { days: number; patientName: string 
 
   const handleSend = async () => {
     setSending(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setSending(false);
-    toast.success("Mesaj başarıyla gönderildi ✅");
+    try {
+      const { error } = await supabase.functions.invoke("widget-replies", {
+        body: { patient_name: patientName, message: draft, channel: "post_op" },
+      });
+      if (error) throw error;
+      toast.success("Mesaj gönderildi ✅");
+    } catch (e: any) {
+      toast.error(e?.message || "Mesaj gönderilemedi");
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleSave = () => {
