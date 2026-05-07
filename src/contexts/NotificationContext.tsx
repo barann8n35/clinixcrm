@@ -63,14 +63,31 @@ function mapNotification(n: any): Notification {
   };
 }
 
+const DISMISSED_KEY = "clinix.dismissedNotificationIds";
+
+function loadDismissed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DISMISSED_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch {
+    return new Set();
+  }
+}
+function saveDismissed(s: Set<string>) {
+  try { localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(s))); } catch {}
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [personalNotifications, setPersonalNotifications] = useState<Notification[]>([]);
   const [globalNotifications, setGlobalNotifications] = useState<Notification[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => loadDismissed());
   const userIdRef = useRef<string | null>(null);
 
-  const allNotifications = [...personalNotifications, ...globalNotifications];
-  const unreadCount = allNotifications.filter((n) => !n.read && !dismissedIds.has(n.id)).length;
+  const visiblePersonal = personalNotifications.filter((n) => !dismissedIds.has(n.id));
+  const visibleGlobal = globalNotifications.filter((n) => !dismissedIds.has(n.id));
+  const allVisible = [...visiblePersonal, ...visibleGlobal];
+  const unreadCount = allVisible.filter((n) => !n.read).length;
 
   const fetchNotifications = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -104,7 +121,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchNotifications();
 
-    // Realtime subscription for all notification changes
     const channel = supabase
       .channel("notifications-realtime")
       .on(
@@ -113,7 +129,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         (payload) => {
           if (payload.eventType === "INSERT") {
             const n = mapNotification(payload.new);
-            // Realtime delivers all rows on the channel; filter to current user (or legacy NULL)
             if (n.user_id && n.user_id !== userIdRef.current) return;
             if (n.scope === "global") {
               setGlobalNotifications((prev) => [n, ...prev]);
@@ -141,34 +156,43 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchNotifications]);
 
+  const addDismissed = (ids: string[]) => {
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      saveDismissed(next);
+      return next;
+    });
+  };
+
   const markAllRead = async () => {
-    const unreadIds = allNotifications.filter((n) => !n.read).map((n) => n.id);
+    const unreadIds = allVisible.filter((n) => !n.read).map((n) => n.id);
     setPersonalNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setGlobalNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     if (unreadIds.length === 0) return;
-    // Update by IDs so we cover both personal and (RLS-permitted) global rows
-    await supabase
-      .from("notifications")
-      .update({ read: true } as any)
-      .in("id", unreadIds);
+    await supabase.from("notifications").update({ read: true } as any).in("id", unreadIds);
   };
 
   const clearAll = async () => {
-    const ids = allNotifications.map((n) => n.id);
+    const all = [...personalNotifications, ...globalNotifications];
+    const deletable = all.filter((n) => n.user_id === userIdRef.current).map((n) => n.id);
+    const undeletable = all.filter((n) => n.user_id !== userIdRef.current).map((n) => n.id);
+
+    // Hide everything immediately
+    addDismissed(all.map((n) => n.id));
     setPersonalNotifications([]);
     setGlobalNotifications([]);
-    setDismissedIds(new Set());
-    if (ids.length === 0) return { ok: true };
-    const { error } = await supabase
-      .from("notifications")
-      .delete()
-      .in("id", ids);
-    if (error) return { ok: false, error: error.message };
+
+    if (deletable.length > 0) {
+      const { error } = await supabase.from("notifications").delete().in("id", deletable);
+      if (error) return { ok: false, error: error.message };
+    }
+    // Undeletable (legacy global) rows stay in DB but are hidden via localStorage
     return { ok: true };
   };
 
   const toggleRead = async (id: string) => {
-    const target = allNotifications.find((n) => n.id === id);
+    const target = allVisible.find((n) => n.id === id);
     if (!target) return;
     const newRead = !target.read;
     const updateInList = (prev: Notification[]) =>
@@ -179,14 +203,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   };
 
   const dismissNotification = async (id: string) => {
-    setDismissedIds((prev) => new Set(prev).add(id));
-    // Mark as read in DB
-    await supabase.from("notifications").update({ read: true } as any).eq("id", id);
-    // Remove from local state after animation delay
-    setTimeout(() => {
-      setPersonalNotifications((prev) => prev.filter((n) => n.id !== id));
-      setGlobalNotifications((prev) => prev.filter((n) => n.id !== id));
-    }, 300);
+    const target = [...personalNotifications, ...globalNotifications].find((n) => n.id === id);
+    addDismissed([id]);
+    setPersonalNotifications((prev) => prev.filter((n) => n.id !== id));
+    setGlobalNotifications((prev) => prev.filter((n) => n.id !== id));
+    // Try real DB delete if it belongs to the user; otherwise keep only locally hidden
+    if (target && target.user_id === userIdRef.current) {
+      await supabase.from("notifications").delete().eq("id", id);
+    }
   };
 
   const addNotification = async (
