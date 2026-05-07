@@ -125,6 +125,10 @@ const Settings = () => {
     toast({ title: "Kaydedildi", description: "Ayarlarınız başarıyla güncellendi." });
   };
 
+  const [sp, setSp] = useSearchParams();
+  const tab = sp.get("tab") || "profil";
+  const setTab = (v: string) => { sp.set("tab", v); setSp(sp, { replace: true }); };
+
   return (
     <div className="p-4 md:p-8 space-y-6 gradient-mesh">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
@@ -132,15 +136,7 @@ const Settings = () => {
         <p className="text-sm text-muted-foreground mt-1">Uygulama ayarlarını yönetin</p>
       </motion.div>
 
-      <SettingsTabs />
-    </div>
-  );
-
-  function SettingsTabs() {
-    const [sp, setSp] = useSearchParams();
-    const tab = sp.get("tab") || "profil";
-    return (
-      <Tabs value={tab} onValueChange={(v) => { sp.set("tab", v); setSp(sp, { replace: true }); }} className="space-y-6">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
         <div className="-mx-4 md:mx-0 overflow-x-auto scrollbar-none">
           <TabsList className="bg-muted/50 rounded-xl inline-flex w-max min-w-full sm:w-auto mx-4 md:mx-0">
             <TabsTrigger value="profil" className="gap-2 shrink-0"><User className="h-4 w-4" /><span className="text-xs sm:text-sm">Profil</span></TabsTrigger>
