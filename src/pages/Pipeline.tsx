@@ -194,7 +194,7 @@ const CardContent = ({ card, pStyle, t, showPostOp, isArrived }: { card: Pipelin
       </span>
     </div>
     <p className="text-[11px] text-muted-foreground">{card.date}</p>
-    {showPostOp && card.postOpDays !== undefined && <PostOpBadge days={card.postOpDays} patientName={card.name} />}
+    {showPostOp && card.postOpDays !== undefined && <PostOpBadge days={card.postOpDays} patientName={card.name} patientId={card.id} />}
   </>
 );
 
