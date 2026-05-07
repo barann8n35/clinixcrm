@@ -57,6 +57,27 @@ export function PatientOverviewTab({ patient, patientId, onPatientUpdate }: Pati
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [timePickerStep, setTimePickerStep] = useState<"hour" | "minute">("hour");
   const [selectedHour, setSelectedHour] = useState("09");
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
+
+  async function generateSummary() {
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("patient-ai-summary", {
+        body: { patient_id: patientId },
+      });
+      if (error || (data as any)?.error) throw new Error(error?.message || (data as any)?.error);
+      setAiSummary((data as any)?.summary || "");
+    } catch (e: any) {
+      toast.error("AI özeti oluşturulamadı: " + (e?.message || ""));
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    setAiSummary("");
+  }, [patientId]);
 
   // Reset state when patientId or patient data changes
   useEffect(() => {
