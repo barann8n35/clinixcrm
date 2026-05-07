@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TemplatePicker } from "@/components/clinical/TemplatePicker";
+import { VoiceDictateButton } from "@/components/clinical/VoiceDictateButton";
 
 interface Props {
   patientId: string;
@@ -92,7 +93,10 @@ export function PatientClinicalTab({ patientId }: Props) {
             </div>
             <h4 className="text-[12px] font-bold text-foreground tracking-tight">Muayene Notu</h4>
           </div>
-          <TemplatePicker category="examination" onInsert={(t) => insertAtCursor(examRef, examNotes, setExamNotes, t)} />
+          <div className="flex items-center gap-1.5">
+            <VoiceDictateButton onTranscript={(t) => insertAtCursor(examRef, examNotes, setExamNotes, t)} />
+            <TemplatePicker category="examination" onInsert={(t) => insertAtCursor(examRef, examNotes, setExamNotes, t)} />
+          </div>
         </div>
         <textarea
           ref={examRef}
@@ -112,7 +116,10 @@ export function PatientClinicalTab({ patientId }: Props) {
             </div>
             <h4 className="text-[12px] font-bold text-foreground tracking-tight">Epikriz (Ameliyat Sonrası)</h4>
           </div>
-          <TemplatePicker category="epicrisis" onInsert={(t) => insertAtCursor(epiRef, epicrisis, setEpicrisis, t)} />
+          <div className="flex items-center gap-1.5">
+            <VoiceDictateButton onTranscript={(t) => insertAtCursor(epiRef, epicrisis, setEpicrisis, t)} />
+            <TemplatePicker category="epicrisis" onInsert={(t) => insertAtCursor(epiRef, epicrisis, setEpicrisis, t)} />
+          </div>
         </div>
         <textarea
           ref={epiRef}
