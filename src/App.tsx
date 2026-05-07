@@ -27,6 +27,7 @@ import VoiceAgentPage from "./pages/VoiceAgentPage";
 import Pricing from "./pages/Pricing";
 import Widget from "./pages/Widget";
 import SecurityDashboard from "./pages/SecurityDashboard";
+import Scan from "./pages/Scan";
 import "@/i18n";
 import { useEffect } from "react";
 import { initOneSignal } from "@/lib/onesignal";
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="voice-agent" element={<VoiceAgentPage />} />
               <Route path="pricing" element={<Pricing />} />
               <Route path="security" element={<SecurityDashboard />} />
+              <Route path="scan" element={<Scan />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
