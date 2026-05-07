@@ -1,5 +1,8 @@
 // Görselden el yazısı not çıkarımı (Lovable AI Vision — Gemini 2.5 Flash)
-import { corsHeaders } from "@supabase/supabase-js/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const SYSTEM_PROMPT = `Sen bir Türk klinik sekreterinin yardımcısısın. Sana el yazısı veya basılı not fotoğrafları verilir.
 Görüntüdeki Türkçe metni dikkatli oku ve yapılandırılmış JSON olarak çıkar.
