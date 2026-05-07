@@ -27,7 +27,7 @@ function getRemindUrgency(remind_at?: string | null): "overdue" | "soon" | null 
 }
 
 const Notifications = () => {
-  const { personalNotifications, globalNotifications, unreadCount, markAllRead, toggleRead, clearAll } = useNotifications();
+  const { personalNotifications, globalNotifications, unreadCount, markAllRead, toggleRead, clearAll, dismissNotification } = useNotifications();
   const notifications = [...personalNotifications, ...globalNotifications];
 
   const sorted = [...notifications].sort((a, b) => {
@@ -81,11 +81,10 @@ const Notifications = () => {
           const iconBg = urgency === "overdue" ? "bg-destructive/10" : urgency === "soon" ? "bg-warning/10" : config.bg;
 
           return (
-            <button
+            <div
               key={notification.id}
-              onClick={() => toggleRead(notification.id)}
               className={cn(
-                "w-full flex items-start gap-4 p-4 rounded-xl border text-left transition-colors",
+                "w-full flex items-start gap-4 p-4 rounded-xl border text-left transition-colors group",
                 notification.read
                   ? "bg-card border-border hover:bg-muted/50"
                   : "bg-primary/[0.03] border-primary/20 hover:bg-primary/[0.06]",
@@ -93,41 +92,54 @@ const Notifications = () => {
                 urgency === "soon" && "border-l-4 border-l-warning bg-warning/5"
               )}
             >
-              <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", iconBg)}>
-                <Icon className={cn("h-5 w-5", iconColor)} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className={cn("text-sm font-medium text-foreground", !notification.read && "font-semibold")}>
-                    {notification.title}
-                  </p>
-                  {!notification.read && (
-                    <Badge variant="default" className="h-5 text-[10px] px-1.5 bg-primary text-primary-foreground">
-                      Yeni
-                    </Badge>
-                  )}
-                  {urgency === "overdue" && (
-                    <Badge className="h-5 text-[10px] px-1.5 bg-destructive/15 text-destructive border-0">Süresi geçti</Badge>
-                  )}
-                  {urgency === "soon" && (
-                    <Badge className="h-5 text-[10px] px-1.5 bg-warning/15 text-warning border-0">Yaklaşıyor</Badge>
+              <button onClick={() => toggleRead(notification.id)} className="flex items-start gap-4 flex-1 min-w-0 text-left">
+                <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", iconBg)}>
+                  <Icon className={cn("h-5 w-5", iconColor)} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className={cn("text-sm font-medium text-foreground", !notification.read && "font-semibold")}>
+                      {notification.title}
+                    </p>
+                    {!notification.read && (
+                      <Badge variant="default" className="h-5 text-[10px] px-1.5 bg-primary text-primary-foreground">
+                        Yeni
+                      </Badge>
+                    )}
+                    {urgency === "overdue" && (
+                      <Badge className="h-5 text-[10px] px-1.5 bg-destructive/15 text-destructive border-0">Süresi geçti</Badge>
+                    )}
+                    {urgency === "soon" && (
+                      <Badge className="h-5 text-[10px] px-1.5 bg-warning/15 text-warning border-0">Yaklaşıyor</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-0.5 truncate">{notification.description}</p>
+                  {notification.remind_at && (
+                    <p className={cn(
+                      "text-xs mt-1 flex items-center gap-1",
+                      urgency === "overdue" ? "text-destructive" : urgency === "soon" ? "text-warning" : "text-muted-foreground"
+                    )}>
+                      <Clock className="w-3 h-3" />
+                      {format(new Date(notification.remind_at), "dd MMM yyyy HH:mm", { locale: tr })}
+                    </p>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5 truncate">{notification.description}</p>
-                {notification.remind_at && (
-                  <p className={cn(
-                    "text-xs mt-1 flex items-center gap-1",
-                    urgency === "overdue" ? "text-destructive" : urgency === "soon" ? "text-warning" : "text-muted-foreground"
-                  )}>
-                    <Clock className="w-3 h-3" />
-                    {format(new Date(notification.remind_at), "dd MMM yyyy HH:mm", { locale: tr })}
-                  </p>
-                )}
+              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground whitespace-nowrap pt-0.5">
+                  {notification.time}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={(e) => { e.stopPropagation(); dismissNotification(notification.id); }}
+                  aria-label="Sil"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-              <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 pt-0.5">
-                {notification.time}
-              </span>
-            </button>
+            </div>
           );
         })}
       </div>
