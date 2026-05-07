@@ -89,18 +89,7 @@ const PostOpBadge = ({ days, patientName }: { days: number; patientName: string 
   const [saved, setSaved] = useState(false);
 
   const handleSend = async () => {
-    setSending(true);
-    try {
-      const { error } = await supabase.functions.invoke("widget-replies", {
-        body: { patient_name: patientName, message: draft, channel: "post_op" },
-      });
-      if (error) throw error;
-      toast.success("Mesaj gönderildi ✅");
-    } catch (e: any) {
-      toast.error(e?.message || "Mesaj gönderilemedi");
-    } finally {
-      setSending(false);
-    }
+    toast.error("WhatsApp gönderim entegrasyonu henüz yapılandırılmadı.");
   };
 
   const handleSave = () => {
