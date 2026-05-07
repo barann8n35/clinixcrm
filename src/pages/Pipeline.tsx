@@ -172,9 +172,6 @@ const CardContent = ({ card, pStyle, t, showPostOp, isArrived }: { card: Pipelin
       <PlatformIcon platform={card.platform} />
     </div>
     <div className="flex items-center gap-2 mb-2">
-      <span className="text-sm font-extrabold text-primary whitespace-nowrap">
-        {card.value.toLocaleString("tr-TR")} ₺
-      </span>
       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${pStyle.bg} ${pStyle.text}`}>
         {t(`pipeline.${card.priority}`)}
       </span>
