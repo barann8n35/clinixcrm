@@ -1,37 +1,79 @@
-# Klinik Not Şablonları
+# Görselden Otomatik Kayıt (OCR + AI Asistan)
 
-Muayene notu ve epikriz alanlarında sık kullanılan kalıpları tek tıkla ekleyebileceğiniz, kullanıcıya özel ve düzenlenebilir bir şablon sistemi.
+Sekreterlerin elle aldığı notların fotoğrafını çekip sisteme yüklemesi → AI'ın görüntüyü okuyup yapılandırılmış veri çıkarması → tek tıkla **hasta kaydı**, **klinik not** veya **hatırlatıcı** olarak sisteme eklemesi.
 
-## Özellikler
+## Akış
 
-- İki kategori: **Muayene** ve **Epikriz**
-- Şablon listesi: başlık + içerik (çok satırlı)
-- Klinik sekmesinde her textarea üstünde **"Şablonlar"** popover butonu — tıklayınca o kategoriye ait şablonlar listelenir
-- Tıklanan şablon imleç konumuna eklenir (mevcut metni silmez, sonuna/araya ekler)
-- **"+ Yeni şablon"** butonu ile aynı popover içinden hızlı kayıt
-- **"Yönet"** linki ile Ayarlar > Klinik Şablonları sekmesine gider (CRUD: ekle/düzenle/sil)
-- Kullanıcıya özel (RLS ile user_id bazlı), her hekim kendi kalıplarını yönetir
-- İlk açılışta otomatik 6 örnek şablon seed edilir (3 muayene + 3 epikriz: Genel muayene, Baş ağrısı anamnez, Post-op kontrol; Kraniyotomi, Lomber diskektomi, Tümör rezeksiyonu)
+```
+[📷 Fotoğraf Çek/Yükle]
+        ↓
+[Lovable AI Vision (Gemini 2.5 Flash) — handwriting OCR + structured extract]
+        ↓
+[Önizleme paneli: ayrıştırılmış alanlar düzenlenebilir]
+   ├─ Hasta Adı / Telefon / Yaş / Şikayet
+   ├─ Randevu tarihi/saati (varsa)
+   ├─ Notlar (serbest metin)
+   └─ Hatırlatıcılar (tarih + açıklama)
+        ↓
+[Onayla → Supabase'e yaz: patients / appointments / patient_reminders / notes]
+```
+
+## Yeni Özellikler
+
+1. **Yeni sayfa: `/scan` (Hızlı Tarama)** — Sidebar'a "Görselden Kayıt" maddesi.
+2. **`ScanCapture` bileşeni** — Mobil kamera (`<input type="file" accept="image/*" capture="environment">`) + drag-drop yükleme + çoklu sayfa desteği.
+3. **Önizleme/Düzeltme paneli** — AI çıktısı form alanlarına dolar, sekreter doğrular.
+4. **Hızlı erişim noktaları:**
+   - Sidebar'da yeni "Görselden Kayıt" linki
+   - Hasta detay modalında "Klinik Notu" sekmesinde "📷 Fotoğraftan Aktar" butonu (mevcut hastaya not ekleme)
+   - Yeni hasta dialog'unda "📷 Karttan Doldur" butonu
 
 ## Teknik
 
-**Yeni tablo: `clinical_templates`**
+**Yeni edge function: `scan-handwriting`**
+- Input: `image_base64` (data URL) + `mode` ('patient' | 'note' | 'reminder' | 'auto')
+- Lovable AI Gateway: `google/gemini-2.5-flash` (vision destekler, ücretsiz tier)
+- Structured output (`tool_calls`) ile şu şemayı döner:
+```ts
+{
+  patient?: { name, surname?, phone?, age?, gender?, complaint? },
+  appointment?: { date_iso?, time?, doctor?, type? },
+  reminders?: [{ remind_at_iso, note }],
+  notes?: string,           // serbest metin
+  raw_text: string,         // ham OCR çıktısı (referans için)
+  confidence: 'high'|'medium'|'low'
+}
 ```
-id uuid PK
-user_id uuid (auth.uid() default)
-category text ('examination' | 'epicrisis')
-title text
-content text
-sort_order int default 0
-created_at, updated_at timestamptz
-```
-RLS: kullanıcı yalnızca kendi kayıtlarını görür/yönetir (admin tüm).
+- `LOVABLE_API_KEY` zaten mevcut, ek secret gerekmez.
 
-**Frontend:**
-- `src/components/clinical/TemplatePicker.tsx` — Popover+arama+liste+hızlı ekle. Props: `category`, `onInsert(text)`
-- `PatientClinicalTab.tsx` güncellenir: her textarea üstünde küçük "Şablonlar" chip butonu; insert imleç pozisyonuna yapılır (textarea ref + selectionStart)
-- `src/components/settings/ClinicalTemplatesTab.tsx` — Tam CRUD ekranı (kategori sekmeleri, inline düzenle, sürükle-sırala basit ↑↓ butonlarıyla)
-- `Settings.tsx`'e yeni sekme: **"Şablonlar"**
-- İlk yüklemede kullanıcının hiç şablonu yoksa örnek 6 kayıt insert edilir (client-side, sessizce)
+**Yeni bileşenler:**
+- `src/pages/Scan.tsx` — sayfa shell
+- `src/components/scan/ScanCapture.tsx` — kamera/yükleme + tek görsel önizleme + "Tara" butonu
+- `src/components/scan/ScanReviewPanel.tsx` — AI sonucunu düzenlenebilir form olarak gösterir, sekme bazlı (Hasta / Randevu / Hatırlatıcı / Not), her sekmenin kendi "Kaydet" butonu
+- `src/components/scan/ImportFromPhotoButton.tsx` — yeniden kullanılabilir trigger (modal içinde), `onExtracted(data)` callback ile entegre olur
 
-**Veri akışı:** Doğrudan supabase client; basit `useEffect` fetch + local state. Kayıt sonrası listeyi yeniden çek.
+**Yazma mantığı (client-side):**
+- Hasta: `patients` tablosuna insert (mevcut `id` formatı: `patient_<epoch>`)
+- Randevu: `appointments` insert (`scheduled_at`, `doctor`, `patient_id`)
+- Hatırlatıcı: `patient_reminders` insert (`patient_id`, `remind_at`, `note`)
+- Not: mevcut hasta seçilmişse `patients.examination_notes`'a append, yoksa `internal_notes`
+
+**Routing:**
+- `App.tsx` içine `<Route path="scan" element={<Scan />} />` (DashboardLayout altında)
+- `SidebarNav.tsx`'a "📷 Görselden Kayıt" item'i
+
+**RLS:** Yeni tablo yok — mevcut `patients`/`appointments`/`patient_reminders` RLS politikaları (auth.uid() = user_id) zaten kullanıcıyı korur.
+
+## Deneyim Detayları
+
+- **Mobil-öncelikli:** sekreterler tablet/telefondan kullanır → büyük "Fotoğraf Çek" butonu, alt yapışkan kaydet barı
+- **Çoklu görsel:** Tek seferde 3 karta kadar yükleme; AI hepsini tek istekte işler ve birleştirilmiş çıktı verir
+- **Güven göstergesi:** AI `confidence: 'low'` dönerse alanlar sarı uyarıyla işaretlenir
+- **Türkçe odaklı:** prompt Türkçe yazılır, TR isim/tarih kalıpları (DD.MM.YYYY) tanınır
+- **Ham metin görünümü:** "Ham OCR" accordion ile sekreter orijinal okumayı görebilir
+
+## Sınırlar
+
+- Görüntü işleme tamamen Gemini Vision'a bırakılır — ek client-side OCR (Tesseract vb.) yok
+- Çok kötü el yazısında düzenleme şart; "düzenleme yapmadan kaydet" engeli yok ama düşük güvende kullanıcı uyarısı var
+- Resim depolanmaz (privacy) — sadece çıkarım yapılır, base64 işlenir ve atılır
