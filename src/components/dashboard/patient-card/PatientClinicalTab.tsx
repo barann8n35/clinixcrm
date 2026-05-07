@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Stethoscope, FileText, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { TemplatePicker } from "@/components/clinical/TemplatePicker";
 
 interface Props {
   patientId: string;
@@ -15,6 +16,9 @@ export function PatientClinicalTab({ patientId }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  const examRef = useRef<HTMLTextAreaElement>(null);
+  const epiRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,6 +51,33 @@ export function PatientClinicalTab({ patientId }: Props) {
     toast.success("Klinik notlar kaydedildi ✅");
   }
 
+  function insertAtCursor(
+    ref: React.RefObject<HTMLTextAreaElement>,
+    current: string,
+    setter: (v: string) => void,
+    text: string,
+  ) {
+    const el = ref.current;
+    const sep = current && !current.endsWith("\n") ? "\n\n" : "";
+    if (!el) {
+      setter(current + sep + text);
+    } else {
+      const start = el.selectionStart ?? current.length;
+      const end = el.selectionEnd ?? current.length;
+      const before = current.slice(0, start);
+      const after = current.slice(end);
+      const insertSep = before && !before.endsWith("\n") ? "\n\n" : "";
+      const next = before + insertSep + text + after;
+      setter(next);
+      requestAnimationFrame(() => {
+        const pos = (before + insertSep + text).length;
+        el.focus();
+        el.setSelectionRange(pos, pos);
+      });
+    }
+    setDirty(true);
+  }
+
   if (loading) {
     return <div className="p-6 text-sm text-muted-foreground animate-pulse">Yükleniyor...</div>;
   }
@@ -54,13 +85,17 @@ export function PatientClinicalTab({ patientId }: Props) {
   return (
     <div className="space-y-5 p-1">
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Stethoscope className="w-3.5 h-3.5 text-primary" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Stethoscope className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <h4 className="text-[12px] font-bold text-foreground tracking-tight">Muayene Notu</h4>
           </div>
-          <h4 className="text-[12px] font-bold text-foreground tracking-tight">Muayene Notu</h4>
+          <TemplatePicker category="examination" onInsert={(t) => insertAtCursor(examRef, examNotes, setExamNotes, t)} />
         </div>
         <textarea
+          ref={examRef}
           value={examNotes}
           onChange={(e) => { setExamNotes(e.target.value); setDirty(true); }}
           placeholder="Anamnez, fizik muayene bulguları, tanı, plan..."
@@ -70,13 +105,17 @@ export function PatientClinicalTab({ patientId }: Props) {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl border border-border bg-card p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-            <FileText className="w-3.5 h-3.5 text-emerald-600" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <FileText className="w-3.5 h-3.5 text-emerald-600" />
+            </div>
+            <h4 className="text-[12px] font-bold text-foreground tracking-tight">Epikriz (Ameliyat Sonrası)</h4>
           </div>
-          <h4 className="text-[12px] font-bold text-foreground tracking-tight">Epikriz (Ameliyat Sonrası)</h4>
+          <TemplatePicker category="epicrisis" onInsert={(t) => insertAtCursor(epiRef, epicrisis, setEpicrisis, t)} />
         </div>
         <textarea
+          ref={epiRef}
           value={epicrisis}
           onChange={(e) => { setEpicrisis(e.target.value); setDirty(true); }}
           placeholder="Operasyon özeti, kullanılan teknik, komplikasyon, post-op öneriler, ilaç tedavisi..."
