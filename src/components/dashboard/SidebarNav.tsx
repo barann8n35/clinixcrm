@@ -1,4 +1,4 @@
-import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles, Crown, Tag, ShieldCheck, PhoneCall } from "lucide-react";
+import { LayoutDashboard, Inbox, GitBranch, Users, Calendar, BookOpen, Settings, LogOut, Globe, Megaphone, CalendarDays, Package, UsersRound, Video, Sparkles, Crown, Tag, ShieldCheck, PhoneCall, ScanLine } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ const mainNavItems = [
   { icon: Users, labelKey: "sidebar.patients", path: "/patients" },
   { icon: Calendar, labelKey: "sidebar.appointments", path: "/appointments" },
   { icon: CalendarDays, labelKey: "sidebar.calendar", path: "/calendar" },
+  { icon: ScanLine, labelKey: "sidebar.scan", path: "/scan" },
 ];
 
 const managementNavItems = [
