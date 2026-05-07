@@ -27,7 +27,7 @@ function getRemindUrgency(remind_at?: string | null): "overdue" | "soon" | null 
 }
 
 const Notifications = () => {
-  const { personalNotifications, globalNotifications, unreadCount, markAllRead, toggleRead, clearAll } = useNotifications();
+  const { personalNotifications, globalNotifications, unreadCount, markAllRead, toggleRead, clearAll, dismissNotification } = useNotifications();
   const notifications = [...personalNotifications, ...globalNotifications];
 
   const sorted = [...notifications].sort((a, b) => {
