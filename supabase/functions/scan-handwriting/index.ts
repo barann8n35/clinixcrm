@@ -1,19 +1,24 @@
 // Görselden el yazısı not çıkarımı (Lovable AI Vision — Gemini 2.5 Flash)
+// ÇOKLU KAYIT desteği: tek defterden 10+ farklı hasta/randevu çıkarabilir.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const SYSTEM_PROMPT = `Sen bir Türk klinik sekreterinin yardımcısısın. Sana el yazısı veya basılı not fotoğrafları verilir.
-Görüntüdeki Türkçe metni dikkatli oku ve yapılandırılmış JSON olarak çıkar.
+Bir defter sayfasında BİRDEN FAZLA hasta kaydı bulunabilir (10'a kadar). Her satır/blok ayrı bir hasta olabilir.
+
+Görevin: Görüntüdeki TÜM kayıtları tek tek ayır ve "entries" dizisi olarak döndür. Her entry bir hasta kaydıdır.
 
 Kurallar:
+- Her satır farklı bir hasta olabilir — onları ayrı entry yap. Aynı hastaya ait birden fazla bilgi varsa tek entry'de birleştir.
 - TR isim/soyisim, telefon numarası (10-11 haneli, başında 0/+90 olabilir), yaş, cinsiyet (E/K/Erkek/Kadın), şikayet
-- Tarih kalıpları: "12.05.2026", "12/5", "yarın saat 14:30", "Pazartesi 10:00" — hepsini ISO 8601'e çevir (UTC+3)
+- Tarih kalıpları: "12.05.2026", "12/5", "yarın saat 14:30", "Pazartesi 10:00" — ISO 8601'e çevir (UTC+3)
 - Hatırlatıcılar: "X tarihinde ara", "kontrol gönder" gibi maddeler
-- Eğer alan görüntüde yoksa null/boş bırak — uydurma!
-- Birden fazla sayfa varsa hepsini birleştir.
-- Güven düzeyi: yazı net+okunabilirse 'high', kısmen okunduysa 'medium', çok belirsizse 'low'.`;
+- Eğer alan görüntüde yoksa null/boş bırak — UYDURMA!
+- Birden fazla sayfa varsa hepsindeki kayıtları aynı entries dizisine koy.
+- Her entry için güven düzeyi: yazı net+okunabilirse 'high', kısmen okunduysa 'medium', çok belirsizse 'low'.
+- Genel raw_text alanına tüm sayfaların ham metnini koy.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -30,9 +35,47 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY yok");
 
     const userContent: any[] = [
-      { type: "text", text: "Bu fotoğraf(lar)daki sekreter notunu yapılandırılmış olarak çıkar." },
+      { type: "text", text: "Bu fotoğraf(lar)daki TÜM sekreter notlarını ayrı ayrı entries dizisi olarak çıkar. Her satır farklı hasta olabilir." },
       ...images.map((url) => ({ type: "image_url", image_url: { url } })),
     ];
+
+    const entrySchema = {
+      type: "object",
+      properties: {
+        patient: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            surname: { type: "string" },
+            phone: { type: "string" },
+            age: { type: "string" },
+            gender: { type: "string" },
+            complaint: { type: "string" },
+          },
+        },
+        appointment: {
+          type: "object",
+          properties: {
+            date_iso: { type: "string", description: "ISO 8601 datetime, ör: 2026-05-12T14:30:00+03:00" },
+            doctor: { type: "string" },
+            type: { type: "string" },
+          },
+        },
+        reminders: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              remind_at_iso: { type: "string" },
+              note: { type: "string" },
+            },
+            required: ["note"],
+          },
+        },
+        notes: { type: "string", description: "Bu hastaya ait serbest klinik not" },
+        confidence: { type: "string", enum: ["high", "medium", "low"] },
+      },
+    };
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -49,51 +92,24 @@ Deno.serve(async (req) => {
         tools: [{
           type: "function",
           function: {
-            name: "extract_secretary_note",
-            description: "Sekreter notundan yapılandırılmış veri çıkar.",
+            name: "extract_secretary_notes",
+            description: "Sekreter defterinden TÜM hasta kayıtlarını entries dizisi olarak çıkar.",
             parameters: {
               type: "object",
               properties: {
-                patient: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    surname: { type: "string" },
-                    phone: { type: "string" },
-                    age: { type: "string" },
-                    gender: { type: "string" },
-                    complaint: { type: "string" },
-                  },
-                },
-                appointment: {
-                  type: "object",
-                  properties: {
-                    date_iso: { type: "string", description: "ISO 8601 datetime, ör: 2026-05-12T14:30:00+03:00" },
-                    doctor: { type: "string" },
-                    type: { type: "string" },
-                  },
-                },
-                reminders: {
+                entries: {
                   type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      remind_at_iso: { type: "string" },
-                      note: { type: "string" },
-                    },
-                    required: ["note"],
-                  },
+                  description: "Her satır/blok için bir entry. Tek bir hastaya ait tüm bilgiler aynı entry'de.",
+                  items: entrySchema,
                 },
-                notes: { type: "string", description: "Yukarıdaki kategorilere girmeyen serbest klinik not metni" },
-                raw_text: { type: "string", description: "Görüntüden okunan ham metin" },
-                confidence: { type: "string", enum: ["high", "medium", "low"] },
+                raw_text: { type: "string", description: "Tüm sayfalardan okunan ham metin" },
               },
-              required: ["raw_text", "confidence"],
+              required: ["entries", "raw_text"],
               additionalProperties: false,
             },
           },
         }],
-        tool_choice: { type: "function", function: { name: "extract_secretary_note" } },
+        tool_choice: { type: "function", function: { name: "extract_secretary_notes" } },
       }),
     });
 
@@ -107,7 +123,7 @@ Deno.serve(async (req) => {
 
     const data = await resp.json();
     const call = data.choices?.[0]?.message?.tool_calls?.[0];
-    const args = call ? JSON.parse(call.function.arguments) : {};
+    const args = call ? JSON.parse(call.function.arguments) : { entries: [], raw_text: "" };
     return new Response(JSON.stringify(args), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
