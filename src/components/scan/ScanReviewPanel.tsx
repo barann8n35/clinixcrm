@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, CalendarPlus, Bell, FileText, Save, AlertTriangle, ChevronDown, ChevronUp, Trash2, Users } from "lucide-react";
+import { User, CalendarPlus, Bell, FileText, Save, AlertTriangle, ChevronDown, ChevronUp, Trash2, Users, Quote, ImageIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface ScanEntry {
