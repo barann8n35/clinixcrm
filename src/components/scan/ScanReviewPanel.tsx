@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, CalendarPlus, Bell, FileText, Save, AlertTriangle, ChevronDown, ChevronUp, Trash2, Users } from "lucide-react";
+import { User, CalendarPlus, Bell, FileText, Save, AlertTriangle, ChevronDown, ChevronUp, Trash2, Users, Quote, ImageIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface ScanEntry {
@@ -14,6 +14,8 @@ export interface ScanEntry {
   appointment?: { date_iso?: string; doctor?: string; type?: string };
   reminders?: { remind_at_iso?: string; note: string }[];
   notes?: string;
+  source_text?: string;
+  source_image_index?: number;
   confidence?: "high" | "medium" | "low";
 }
 
@@ -30,6 +32,7 @@ export interface ScanResult {
 
 interface Props {
   result: ScanResult;
+  sourceImages?: string[];
   onReset: () => void;
 }
 
@@ -49,7 +52,7 @@ function normalizeEntries(r: ScanResult): ScanEntry[] {
   return [];
 }
 
-export function ScanReviewPanel({ result, onReset }: Props) {
+export function ScanReviewPanel({ result, sourceImages = [], onReset }: Props) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<ScanEntry[]>(() => normalizeEntries(result));
   const [selected, setSelected] = useState<Set<number>>(() => new Set(normalizeEntries(result).map((_, i) => i)));
@@ -149,6 +152,27 @@ export function ScanReviewPanel({ result, onReset }: Props) {
         </button>
       </div>
 
+      {sourceImages.length > 0 && (
+        <div className="rounded-2xl border border-border bg-muted/20 p-2">
+          <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 mb-1.5 px-1">
+            <ImageIcon className="w-3 h-3" /> Kaynak görseller — kayıt numaralarıyla karşılaştırın
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {sourceImages.map((src, idx) => {
+              const count = entries.filter((e) => (e.source_image_index ?? 0) === idx).length;
+              return (
+                <div key={idx} className="relative shrink-0 group">
+                  <img src={src} alt={`source-${idx}`} className="h-32 w-auto rounded-lg border border-border object-cover" />
+                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-bold">
+                    Sayfa {idx + 1} · {count} kayıt
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         {entries.map((e, i) => {
           const isOpen = expanded.has(i);
@@ -181,6 +205,19 @@ export function ScanReviewPanel({ result, onReset }: Props) {
                     className="overflow-hidden"
                   >
                     <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
+                      {e.source_text && (
+                        <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-2.5 flex gap-2">
+                          <Quote className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] font-bold text-amber-700/80 uppercase tracking-wide mb-0.5">
+                              Defterden okunan satır {typeof e.source_image_index === "number" ? `· Sayfa ${e.source_image_index + 1}` : ""}
+                            </div>
+                            <div className="text-[12px] text-foreground/80 italic whitespace-pre-wrap break-words leading-snug">
+                              "{e.source_text}"
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 gap-2">
                         <Field label="Ad" value={e.patient?.name} onChange={(v) => updateEntry(i, { patient: { ...e.patient, name: v } })} />
                         <Field label="Soyad" value={e.patient?.surname} onChange={(v) => updateEntry(i, { patient: { ...e.patient, surname: v } })} />
