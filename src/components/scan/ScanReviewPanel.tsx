@@ -32,6 +32,7 @@ export interface ScanResult {
 
 interface Props {
   result: ScanResult;
+  sourceImages?: string[];
   onReset: () => void;
 }
 
