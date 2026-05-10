@@ -205,6 +205,19 @@ export function ScanReviewPanel({ result, sourceImages = [], onReset }: Props) {
                     className="overflow-hidden"
                   >
                     <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
+                      {e.source_text && (
+                        <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-2.5 flex gap-2">
+                          <Quote className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] font-bold text-amber-700/80 uppercase tracking-wide mb-0.5">
+                              Defterden okunan satır {typeof e.source_image_index === "number" ? `· Sayfa ${e.source_image_index + 1}` : ""}
+                            </div>
+                            <div className="text-[12px] text-foreground/80 italic whitespace-pre-wrap break-words leading-snug">
+                              "{e.source_text}"
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 gap-2">
                         <Field label="Ad" value={e.patient?.name} onChange={(v) => updateEntry(i, { patient: { ...e.patient, name: v } })} />
                         <Field label="Soyad" value={e.patient?.surname} onChange={(v) => updateEntry(i, { patient: { ...e.patient, surname: v } })} />
