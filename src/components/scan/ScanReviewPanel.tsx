@@ -14,6 +14,8 @@ export interface ScanEntry {
   appointment?: { date_iso?: string; doctor?: string; type?: string };
   reminders?: { remind_at_iso?: string; note: string }[];
   notes?: string;
+  source_text?: string;
+  source_image_index?: number;
   confidence?: "high" | "medium" | "low";
 }
 
