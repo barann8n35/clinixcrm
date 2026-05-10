@@ -73,8 +73,11 @@ Deno.serve(async (req) => {
           },
         },
         notes: { type: "string", description: "Bu hastaya ait serbest klinik not" },
+        source_text: { type: "string", description: "Bu kayda karşılık gelen, defterden okunan TAM satır(lar). Verbatim — düzeltme yapma." },
+        source_image_index: { type: "number", description: "Bu kaydın hangi görselden çıktığı (0-tabanlı). Tek görsel varsa 0." },
         confidence: { type: "string", enum: ["high", "medium", "low"] },
       },
+      required: ["source_text"],
     };
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
