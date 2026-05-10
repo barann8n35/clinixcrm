@@ -9,9 +9,11 @@ import { ScanReviewPanel, type ScanResult } from "@/components/scan/ScanReviewPa
 export default function Scan() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [sourceImages, setSourceImages] = useState<string[]>([]);
 
   async function handleScan(images: string[]) {
     setLoading(true);
+    setSourceImages(images);
     try {
       const { data, error } = await supabase.functions.invoke("scan-handwriting", { body: { images } });
       if (error) throw error;
