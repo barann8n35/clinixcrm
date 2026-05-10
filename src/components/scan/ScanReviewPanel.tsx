@@ -52,7 +52,7 @@ function normalizeEntries(r: ScanResult): ScanEntry[] {
   return [];
 }
 
-export function ScanReviewPanel({ result, onReset }: Props) {
+export function ScanReviewPanel({ result, sourceImages = [], onReset }: Props) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<ScanEntry[]>(() => normalizeEntries(result));
   const [selected, setSelected] = useState<Set<number>>(() => new Set(normalizeEntries(result).map((_, i) => i)));
