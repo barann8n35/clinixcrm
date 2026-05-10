@@ -15,9 +15,9 @@ export function ScanCapture({ onScan, loading }: Props) {
 
   async function addFiles(files: FileList | null) {
     if (!files) return;
-    const arr = Array.from(files).slice(0, 3 - images.length);
+    const arr = Array.from(files).slice(0, 5 - images.length);
     const dataUrls = await Promise.all(arr.map(toDataURL));
-    setImages((prev) => [...prev, ...dataUrls].slice(0, 3));
+    setImages((prev) => [...prev, ...dataUrls].slice(0, 5));
   }
 
   function toDataURL(file: File): Promise<string> {
