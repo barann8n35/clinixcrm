@@ -34,21 +34,21 @@ export function ScanCapture({ onScan, loading }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => cameraRef.current?.click()}
-          disabled={loading || images.length >= 3}
+          disabled={loading || images.length >= 5}
           className="rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-all p-6 flex flex-col items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
           <Camera className="w-8 h-8 text-primary" />
           <span className="text-[13px] font-semibold text-foreground">Fotoğraf Çek</span>
-          <span className="text-[10px] text-muted-foreground">Kameradan</span>
+          <span className="text-[10px] text-muted-foreground">Tüm sayfayı çekin</span>
         </button>
         <button
           onClick={() => fileRef.current?.click()}
-          disabled={loading || images.length >= 3}
+          disabled={loading || images.length >= 5}
           className="rounded-2xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-all p-6 flex flex-col items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
           <Upload className="w-8 h-8 text-foreground/70" />
           <span className="text-[13px] font-semibold text-foreground">Galeriden Yükle</span>
-          <span className="text-[10px] text-muted-foreground">En fazla 3 adet</span>
+          <span className="text-[10px] text-muted-foreground">5 sayfaya kadar — 10+ hasta</span>
         </button>
       </div>
 
