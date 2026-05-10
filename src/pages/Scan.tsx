@@ -43,7 +43,7 @@ export default function Scan() {
         {!result ? (
           <ScanCapture onScan={handleScan} loading={loading} />
         ) : (
-          <ScanReviewPanel result={result} onReset={() => setResult(null)} />
+          <ScanReviewPanel result={result} sourceImages={sourceImages} onReset={() => setResult(null)} />
         )}
       </div>
     </div>
