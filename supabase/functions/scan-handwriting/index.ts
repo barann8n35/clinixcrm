@@ -16,7 +16,8 @@ Kurallar:
 - Tarih kalıpları: "12.05.2026", "12/5", "yarın saat 14:30", "Pazartesi 10:00" — ISO 8601'e çevir (UTC+3)
 - Hatırlatıcılar: "X tarihinde ara", "kontrol gönder" gibi maddeler
 - Eğer alan görüntüde yoksa null/boş bırak — UYDURMA!
-- Birden fazla sayfa varsa hepsindeki kayıtları aynı entries dizisine koy.
+- Birden fazla sayfa varsa hepsindeki kayıtları aynı entries dizisine koy. source_image_index ile hangi görselden geldiğini belirt (0-tabanlı).
+- HER entry için, defterden okunan TAM satırı "source_text" alanına AYNEN yaz (düzeltme yapma, ham haliyle). Bu sayede sekreter orijinal yazıyla karşılaştırabilir.
 - Her entry için güven düzeyi: yazı net+okunabilirse 'high', kısmen okunduysa 'medium', çok belirsizse 'low'.
 - Genel raw_text alanına tüm sayfaların ham metnini koy.`;
 
