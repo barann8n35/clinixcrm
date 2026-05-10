@@ -173,6 +173,7 @@ export function ScanReviewPanel({ result, sourceImages = [], onReset }: Props) {
         </div>
       )}
 
+      <div className="space-y-2">
         {entries.map((e, i) => {
           const isOpen = expanded.has(i);
           const isSel = selected.has(i);
