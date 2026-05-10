@@ -152,7 +152,27 @@ export function ScanReviewPanel({ result, sourceImages = [], onReset }: Props) {
         </button>
       </div>
 
-      <div className="space-y-2">
+      {sourceImages.length > 0 && (
+        <div className="rounded-2xl border border-border bg-muted/20 p-2">
+          <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 mb-1.5 px-1">
+            <ImageIcon className="w-3 h-3" /> Kaynak görseller — kayıt numaralarıyla karşılaştırın
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {sourceImages.map((src, idx) => {
+              const count = entries.filter((e) => (e.source_image_index ?? 0) === idx).length;
+              return (
+                <div key={idx} className="relative shrink-0 group">
+                  <img src={src} alt={`source-${idx}`} className="h-32 w-auto rounded-lg border border-border object-cover" />
+                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-bold">
+                    Sayfa {idx + 1} · {count} kayıt
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
         {entries.map((e, i) => {
           const isOpen = expanded.has(i);
           const isSel = selected.has(i);
