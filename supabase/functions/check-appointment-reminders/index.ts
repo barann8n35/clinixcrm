@@ -204,10 +204,22 @@ Deno.serve(async (req) => {
     const patientIds = Array.from(new Set(pending.map((a) => a.patient_id)));
     const { data: patientsData } = await supabase
       .from("patients")
-      .select("id, name, phone, platform")
+      .select("id, name, phone, platform, user_id")
       .in("id", patientIds);
     const patientMap = new Map<string, PatientRow>(
       (patientsData ?? []).map((p: any) => [p.id, p]),
+    );
+
+    // Voice agent settings per clinic — to decide if we should auto-call
+    const clinicUserIds = Array.from(
+      new Set((patientsData ?? []).map((p: any) => p.user_id).filter(Boolean) as string[]),
+    );
+    const { data: voiceSettings } = await supabase
+      .from("voice_agent_settings")
+      .select("user_id, auto_call_appointment_reminders")
+      .in("user_id", clinicUserIds.length ? clinicUserIds : ["__none__"]);
+    const voiceMap = new Map<string, boolean>(
+      (voiceSettings ?? []).map((v: any) => [v.user_id, !!v.auto_call_appointment_reminders]),
     );
 
     // Active staff (only those with role assigned, not 'pending')
