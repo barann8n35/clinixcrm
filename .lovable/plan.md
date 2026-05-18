@@ -1,43 +1,27 @@
-# Ekip Üyelerini Klinik Bazlı Gruplama
+# Klinik Gruplama Mantığını Düzelt
 
-## Amaç
-`Ekip Yönetimi` sayfasındaki düz "Ekip Üyeleri" listesini, her klinik sahibi (doktor) altında kendi sekreteri / asistanı / eş doktoru görünecek şekilde gruplandırmak.
+## Sorun
+`TeamManagement.tsx`'teki gruplama, rolü `admin / doctor / premium / premium_plus` olan herkesi otomatik olarak "klinik sahibi" sayıyor. Ama bu kullanıcılar başka bir kliniğe **üye** olarak bağlandığında (örn. baran'ın asistanı olarak), ikinci kez kendi adlarına boş bir klinik kartı oluşturuyor. Sonuç: tek gerçek klinik varken 3 klinik kartı görünüyor.
 
-## Yapılacaklar
+## Düzeltme
 
-### 1. `src/pages/TeamManagement.tsx`
-- `clinic_members` tablosunu (owner_user_id, member_user_id, member_role) yükle.
-- Aktif üyeleri şu gruplara böl:
-  - **Klinik grupları**: Her klinik sahibi (admin / doctor / premium / premium_plus rolündeki kişiler) için ayrı bir kart.
-    - Başlıkta klinik sahibinin adı + rol badge'i.
-    - Altında o klinik sahibinin `clinic_members` üzerinden bağlı tüm üyeleri (sekreter / doktor / asistan).
-    - Her satırın sağında mevcut rol seçimi + paket atama + sil butonları (bugünkü `activeMembers` satırı aynen taşınır).
-  - **Bağımsız üyeler**: Hiçbir kliniğe bağlı olmayan ve kendisi de klinik sahibi olmayan üyeler için ayrı "Bağımsız" bölümü.
-- Pending (onay bekleyenler) bölümü değişmiyor (üstte aynen kalır).
+`src/pages/TeamManagement.tsx` içindeki klinik sahibi tespitini şu şekilde değiştir:
 
-### 2. Görsel Düzen
-- Her klinik için `rounded-2xl border` kart:
-  ```
-  ┌─────────────────────────────────────────────┐
-  │ [Building2] Dr. Ercan Çetin       [Doktor] │  3 üye
-  │  ercan@klinik.com                           │
-  ├─────────────────────────────────────────────┤
-  │  ▸ Eş Doktor (Doktor)         [rol] [paket]│
-  │  ▸ Sekreter Ayşe (Sekreter)   [rol] [paket]│
-  │  ▸ Asistan Veli (Asistan)     [rol] [paket]│
-  └─────────────────────────────────────────────┘
-  ```
-- Boş klinik için "Henüz üye eklenmemiş" placeholder + `ClinicMembersPanel`'a yönlendirme ipucu.
+**Bir kullanıcı klinik sahibidir ⇔**
+1. Rolü `admin / doctor / premium / premium_plus` arasında, **VE**
+2. `clinic_members` tablosunda **herhangi bir owner'a member olarak bağlı değil** (yani `member_user_id` olarak görünmüyor), **VEYA** zaten kendi adına altında üye(ler) var (`owner_user_id` olarak en az 1 kayıt).
 
-### 3. `ClinicMembersPanel` (alt panel)
-- Mevcut panel sayfanın altında "Klinik Üyelikleri (Yönetim)" başlığıyla kalır — buradan ekleme/kaldırma yapılabilir.
-- Panelde değişiklik yapıldığında üstteki gruplandırmanın da yenilenmesi için `onRefresh` callback'i `fetchMembers + fetchClinicLinks` çağıracak.
+Pratik kural (basit ve net):
+```
+isOwner = OWNER_ROLES.has(role) && !memberOfClinicIds.has(user_id)
+```
 
-## Teknik Notlar
-- Tek bir Supabase çağrısı eklenir: `supabase.from("clinic_members").select("owner_user_id, member_user_id, member_role")`.
-- Gruplama tamamen frontend'de yapılır, DB değişmez.
-- Bir kullanıcı birden çok kliniğe bağlıysa (çoklu sekreter senaryosu) her klinik kartında görünür — bu kasıtlı, mevcut multi-tenant mantığıyla uyumlu.
+Bir kullanıcı başka bir kliniğin üyesi olarak işaretlenmişse, kendi adına ayrı klinik kartı **açılmaz** — sadece bağlı olduğu kliniğin altında görünür. Rol badge'i (örn. "Premium+") kart içinde zaten gösterildiği için bilgi kaybı olmaz.
+
+## Beklenen Sonuç
+Mevcut DB durumuyla:
+- **Baran kliniği** kartı altında 3 üye: dila (Premium+), baran.n8n35 (Premium+), begum (Personel).
+- Dila ve baran.n8n35 için ayrı klinik kartı **açılmaz**.
 
 ## Dosyalar
-- `src/pages/TeamManagement.tsx` (ana değişiklik)
-- DB / migration / `ClinicMembersPanel` iç mantığı **değişmez**.
+- `src/pages/TeamManagement.tsx` — sadece `owners` ve `unassigned` filtre satırları değişecek. DB / RLS / migration değişmez.

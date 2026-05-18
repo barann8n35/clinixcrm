@@ -308,10 +308,16 @@ const TeamManagement = () => {
       {/* Active Members — grouped by clinic */}
       {(() => {
         const OWNER_ROLES = new Set(["admin", "doctor", "premium", "premium_plus"]);
-        const owners = activeMembers.filter((m) => OWNER_ROLES.has(m.role));
         const memberOfClinicIds = new Set(links.map((l) => l.member_user_id));
+        const ownerOfClinicIds = new Set(links.map((l) => l.owner_user_id));
+        // A user is a clinic owner only if their role qualifies AND they are not
+        // a member of someone else's clinic (or they already own one with members).
+        const owners = activeMembers.filter(
+          (m) => OWNER_ROLES.has(m.role) && (!memberOfClinicIds.has(m.user_id) || ownerOfClinicIds.has(m.user_id))
+        );
+        const ownerIds = new Set(owners.map((o) => o.user_id));
         const unassigned = activeMembers.filter(
-          (m) => !OWNER_ROLES.has(m.role) && !memberOfClinicIds.has(m.user_id)
+          (m) => !ownerIds.has(m.user_id) && !memberOfClinicIds.has(m.user_id)
         );
 
         const renderMemberRow = (m: TeamMember, clinicMemberRole?: string) => {
