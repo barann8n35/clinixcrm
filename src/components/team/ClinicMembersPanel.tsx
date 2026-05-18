@@ -150,7 +150,7 @@ export default function ClinicMembersPanel({ members, onRefresh }: Props) {
               <SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="secretary">Sekreter</SelectItem>
-                <SelectItem value="doctor">Doktor (Eş)</SelectItem>
+                <SelectItem value="doctor">Doktor</SelectItem>
                 <SelectItem value="asistan">Asistan</SelectItem>
               </SelectContent>
             </Select>
