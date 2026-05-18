@@ -120,7 +120,16 @@ const TeamManagement = () => {
     setLoading(false);
   }
 
-  useEffect(() => { fetchMembers(); }, []);
+  async function fetchLinks() {
+    const { data } = await supabase.from("clinic_members" as any).select("owner_user_id, member_user_id, member_role");
+    setLinks((Array.isArray(data) ? data : []) as any);
+  }
+
+  async function refreshAll() {
+    await Promise.all([fetchMembers(), fetchLinks()]);
+  }
+
+  useEffect(() => { refreshAll(); }, []);
 
   async function handleRoleChange(member: TeamMember, newRole: string) {
     const normalizedEmail = member.email.trim().toLowerCase();
