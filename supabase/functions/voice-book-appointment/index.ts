@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
         type: "Consultation",
         scheduled_at: scheduled.iso,
         status: "upcoming",
+        user_id: clinicUserId,
       })
       .select("id")
       .single();
