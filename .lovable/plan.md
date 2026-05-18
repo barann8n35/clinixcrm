@@ -1,79 +1,100 @@
-# Görselden Otomatik Kayıt (OCR + AI Asistan)
+# Ercan Hoca Kliniği — Entegrasyon Planı
 
-Sekreterlerin elle aldığı notların fotoğrafını çekip sisteme yüklemesi → AI'ın görüntüyü okuyup yapılandırılmış veri çıkarması → tek tıkla **hasta kaydı**, **klinik not** veya **hatırlatıcı** olarak sisteme eklemesi.
+## Mevcut durum analizi
 
-## Akış
+Sistemin RLS modeli **user_id bazlı tek kiracılı**: her tablo `auth.uid() = user_id` koşuluyla filtreleniyor. Yani bir kullanıcının açtığı hasta/randevu/mesaj sadece ona görünüyor. Admin tüm verileri görebiliyor.
 
+Sen ise şu yapıyı istiyorsun:
+- **Dr. Ercan** (yetişkin)
+- **Eşi** (çocuk kardiyolojisi)
+- **Sekreter** (her ikisini de yönetiyor)
+- İki doktor ayrı çalışır gibi görünmeli ama sekreter ortak
+
+Mevcut şema doğrudan bunu desteklemiyor. İki seçenek var, planda **A** önerisini detaylandırıyorum çünkü en az kod değişikliği ile çalışır.
+
+---
+
+## Seçenek A (önerilen): Tek "klinik sahibi" hesap + `doctor` alanı ile ayrım
+
+Klinikte tek bir `user_id` sahibi olur (örn. `ercan-klinik@…`). Sekreter ve diğer doktor bu hesabın kullanıcı oturumlarını paylaşmaz; bunun yerine her birinin kendi hesabı vardır ve **admin/clinic-member** rolü ile aynı veriye erişir. Hastalar, randevular, mesajlar tek `user_id` altında toplanır. `appointments.doctor` ve `patients.doctor` alanları zaten var — "Ercan" / "Eşi" ayrımı bu alanla yapılır; takvim ve listelerde doktor filtresi gösterilir.
+
+**Avantaj:** Sekreter iki doktoru da tek ekranda görür, raporlama doğal, kod değişikliği minimum.
+**Dezavantaj:** İki doktorun verilerinin tam izolasyonu yok (gerek de yok çünkü aynı klinik).
+
+### Yapılacaklar
+
+1. **Klinik üyelik altyapısı** (yeni tablo `clinic_members`)
+   - `owner_user_id` (klinik sahibi) + `member_user_id` + `role` (`doctor` / `secretary`)
+   - RLS politikalarına `OR is_clinic_member(auth.uid(), user_id)` koşulu eklenir (security definer fonksiyon).
+   - `patients`, `appointments`, `messages`, `patient_reminders`, `learning_logs`, `voice_calls`, `clinical_templates`, `clinic_schedule` tablolarının SELECT/INSERT/UPDATE/DELETE politikalarına bu OR eklenir.
+   - INSERT politikalarında `user_id = klinik_sahibi_user_id` olarak yazılmasını sağlamak için trigger: üye bir kayıt eklediğinde `user_id` otomatik klinik sahibine çevrilir.
+
+2. **Yeni hesapların açılması**
+   - Önce klinik sahibi e-postasıyla kayıt → sen admin olarak `doctor` rolü ver.
+   - Sekreter ve eş doktor kayıt → admin paneline düşer → `clinic_members` tablosuna `ercan-klinik` sahibi altında eklenir.
+   - `useRole` ve `ProtectedRoute` üye kontrolü için `useClinic()` benzeri bir hook alır.
+
+3. **Klinik bilgileri**
+   - `voice_agent_settings.clinic_name = "Ercan Hoca Kliniği"`, `doctor_name = "Dr. Ercan …"`, ikinci doktor için ek alan ya da settings'te `secondary_doctor_name`.
+   - `clinic_schedule` Ercan ve eşi için ayrı satır gerekiyorsa şemaya `doctor` alanı eklenir (şu an user başına tek satır).
+   - `widget_settings` klinik için ayarlanır (logo, renk, karşılama).
+   - `quick_replies` global olduğu için Ercan hoca için ön tanımlı 8-10 cevap eklenir.
+
+4. **WhatsApp + n8n bağlantısı**
+   - n8n'de mevcut "Clinix WhatsApp" workflow'unu klone et: yeni WhatsApp Business numarası → `handle_omnichannel_message` RPC'sine `p_clinic_user_id = ercan-klinik-uuid` parametresi ile bağla (RPC bu parametreyi zaten destekliyor).
+   - n8n credential: Ercan klinikinin Meta WABA token'ı.
+   - Sekreterin telefonuna OneSignal push subscription kaydı için tarayıcıdan ilk girişte izin → otomatik kaydolur.
+
+5. **MedicaSimple veri göçü**
+   MedicaSimple'ın dışa aktarma seçeneği var mı önce onu kontrol etmemiz lazım. Üç olası senaryo:
+   - **a) CSV/Excel export var:** Hasta listesi (ad, telefon, doğum, notlar) ve randevu listesi (tarih, doktor, tip) CSV olarak alınır → biz `/scan` modülüne benzer bir **Bulk Import** sayfası açarız (yeni `src/pages/Import.tsx`), CSV yükleme + alan eşleme + tek seferde `patients` + `appointments` insert.
+   - **b) API var:** Edge function ile çekip aynı insert mantığıyla aktarırız.
+   - **c) Hiçbir export yoksa:** MedicaSimple ekranlarının ekran görüntüleri zaten **Görselden Kayıt** modülünden geçirilebilir; ama 100+ hasta için yorucu. Bu durumda sekreterle bir gün ayırıp manuel + Görselden Kayıt karması yaparız.
+
+   **Senin yapman gereken:** MedicaSimple'a girip "Dışa Aktar / Export / Yedek Al" menülerine bak ve hangisinin mümkün olduğunu söyle — planı buna göre netleştirelim.
+
+6. **Doğrulama & test**
+   - Test hastası ekle (Ercan), test randevu (Eşi), sekreter hesabıyla giriş → her ikisini de görebildiğini doğrula.
+   - WhatsApp test mesajı → patient otomatik oluşmalı, doğru `user_id` ile.
+   - Push bildirim test (randevu hatırlatıcı).
+   - Realtime: iki tarayıcıda aynı anda sekreter + doktor girişi, mesaj geldiğinde ikisinde de düşmeli.
+
+---
+
+## Teknik detaylar (geliştirici için)
+
+**Yeni migration özeti:**
+```text
+- create table clinic_members (id, owner_user_id, member_user_id, role, created_at)
+- create function is_clinic_member(_user uuid, _owner uuid) returns boolean security definer
+- her tabloda RLS USING ((auth.uid() = user_id) OR is_clinic_member(auth.uid(), user_id) OR has_role('admin'))
+- trigger before insert: NEW.user_id := coalesce(owner of auth.uid(), auth.uid())
 ```
-[📷 Fotoğraf Çek/Yükle]
-        ↓
-[Lovable AI Vision (Gemini 2.5 Flash) — handwriting OCR + structured extract]
-        ↓
-[Önizleme paneli: ayrıştırılmış alanlar düzenlenebilir]
-   ├─ Hasta Adı / Telefon / Yaş / Şikayet
-   ├─ Randevu tarihi/saati (varsa)
-   ├─ Notlar (serbest metin)
-   └─ Hatırlatıcılar (tarih + açıklama)
-        ↓
-[Onayla → Supabase'e yaz: patients / appointments / patient_reminders / notes]
-```
 
-## Yeni Özellikler
+**Yeni sayfalar/komponentler:**
+- `src/pages/Import.tsx` — CSV upload + mapping wizard (papaparse)
+- `src/components/team/ClinicMembersTab.tsx` — Team Management'a ek: klinik üyesi atama
+- `src/hooks/useClinic.ts` — aktif klinik sahibi user_id'yi döner
 
-1. **Yeni sayfa: `/scan` (Hızlı Tarama)** — Sidebar'a "Görselden Kayıt" maddesi.
-2. **`ScanCapture` bileşeni** — Mobil kamera (`<input type="file" accept="image/*" capture="environment">`) + drag-drop yükleme + çoklu sayfa desteği.
-3. **Önizleme/Düzeltme paneli** — AI çıktısı form alanlarına dolar, sekreter doğrular.
-4. **Hızlı erişim noktaları:**
-   - Sidebar'da yeni "Görselden Kayıt" linki
-   - Hasta detay modalında "Klinik Notu" sekmesinde "📷 Fotoğraftan Aktar" butonu (mevcut hastaya not ekleme)
-   - Yeni hasta dialog'unda "📷 Karttan Doldur" butonu
+**Etkilenen mevcut dosyalar:**
+- `src/hooks/useRole.ts` — `clinicOwnerId`, `isClinicSecretary` eklenir
+- `src/components/appointments/NewAppointmentDialog.tsx` — doktor seçici (Ercan / Eşi) varsayılan olarak gelir
+- `src/components/dashboard/SidebarNav.tsx` — gerekirse doktor filtresi
+- `supabase/functions/widget-message/index.ts` — clinic_user_id parametre yönetimi (zaten kısmen var)
 
-## Teknik
+---
 
-**Yeni edge function: `scan-handwriting`**
-- Input: `image_base64` (data URL) + `mode` ('patient' | 'note' | 'reminder' | 'auto')
-- Lovable AI Gateway: `google/gemini-2.5-flash` (vision destekler, ücretsiz tier)
-- Structured output (`tool_calls`) ile şu şemayı döner:
-```ts
-{
-  patient?: { name, surname?, phone?, age?, gender?, complaint? },
-  appointment?: { date_iso?, time?, doctor?, type? },
-  reminders?: [{ remind_at_iso, note }],
-  notes?: string,           // serbest metin
-  raw_text: string,         // ham OCR çıktısı (referans için)
-  confidence: 'high'|'medium'|'low'
-}
-```
-- `LOVABLE_API_KEY` zaten mevcut, ek secret gerekmez.
+## Sıralama (uygulama günü için checklist)
 
-**Yeni bileşenler:**
-- `src/pages/Scan.tsx` — sayfa shell
-- `src/components/scan/ScanCapture.tsx` — kamera/yükleme + tek görsel önizleme + "Tara" butonu
-- `src/components/scan/ScanReviewPanel.tsx` — AI sonucunu düzenlenebilir form olarak gösterir, sekme bazlı (Hasta / Randevu / Hatırlatıcı / Not), her sekmenin kendi "Kaydet" butonu
-- `src/components/scan/ImportFromPhotoButton.tsx` — yeniden kullanılabilir trigger (modal içinde), `onExtracted(data)` callback ile entegre olur
+1. ☐ MedicaSimple export imkânını kontrol et, bana söyle
+2. ☐ Klinik sahibi e-posta + sekreter e-posta + eş doktor e-posta hazırla
+3. ☐ Migration: `clinic_members` + RLS güncellemeleri (onayını alıp uygularım)
+4. ☐ 3 hesabı kaydet, admin panelinden onayla ve klinik üyesi olarak ekle
+5. ☐ Klinik ayarları: çalışma saatleri, klinik adı, widget, voice agent persona
+6. ☐ WhatsApp numarası + n8n workflow bağlantısı
+7. ☐ Veri göçü (yöntem seçildikten sonra)
+8. ☐ Sekreter ve doktorlarla 30 dk eğitim turu
 
-**Yazma mantığı (client-side):**
-- Hasta: `patients` tablosuna insert (mevcut `id` formatı: `patient_<epoch>`)
-- Randevu: `appointments` insert (`scheduled_at`, `doctor`, `patient_id`)
-- Hatırlatıcı: `patient_reminders` insert (`patient_id`, `remind_at`, `note`)
-- Not: mevcut hasta seçilmişse `patients.examination_notes`'a append, yoksa `internal_notes`
+---
 
-**Routing:**
-- `App.tsx` içine `<Route path="scan" element={<Scan />} />` (DashboardLayout altında)
-- `SidebarNav.tsx`'a "📷 Görselden Kayıt" item'i
-
-**RLS:** Yeni tablo yok — mevcut `patients`/`appointments`/`patient_reminders` RLS politikaları (auth.uid() = user_id) zaten kullanıcıyı korur.
-
-## Deneyim Detayları
-
-- **Mobil-öncelikli:** sekreterler tablet/telefondan kullanır → büyük "Fotoğraf Çek" butonu, alt yapışkan kaydet barı
-- **Çoklu görsel:** Tek seferde 3 karta kadar yükleme; AI hepsini tek istekte işler ve birleştirilmiş çıktı verir
-- **Güven göstergesi:** AI `confidence: 'low'` dönerse alanlar sarı uyarıyla işaretlenir
-- **Türkçe odaklı:** prompt Türkçe yazılır, TR isim/tarih kalıpları (DD.MM.YYYY) tanınır
-- **Ham metin görünümü:** "Ham OCR" accordion ile sekreter orijinal okumayı görebilir
-
-## Sınırlar
-
-- Görüntü işleme tamamen Gemini Vision'a bırakılır — ek client-side OCR (Tesseract vb.) yok
-- Çok kötü el yazısında düzenleme şart; "düzenleme yapmadan kaydet" engeli yok ama düşük güvende kullanıcı uyarısı var
-- Resim depolanmaz (privacy) — sadece çıkarım yapılır, base64 işlenir ve atılır
+Planı onaylarsan **3. adımdan** başlayıp migration'ı yazarım; MedicaSimple cevabını verince **7. adımı** detaylandırırım.
