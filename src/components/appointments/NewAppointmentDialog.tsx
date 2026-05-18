@@ -4,6 +4,7 @@ import { tr } from "date-fns/locale";
 import { CalendarIcon, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveClinic } from "@/contexts/ActiveClinicContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,13 +56,17 @@ const DEFAULT_DOCTOR = "Dr. İlhan Elmacı";
 const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { activeClinicUserId, options, hasMultiple } = useActiveClinic();
+  const activeClinic = options.find((o) => o.ownerUserId === activeClinicUserId);
+  const defaultDoctorName = activeClinic?.ownerName || DEFAULT_DOCTOR;
+
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [patientName, setPatientName] = useState("");
   const [phone, setPhone] = useState("");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState("");
-  const [doctor, setDoctor] = useState(DEFAULT_DOCTOR);
+  const [doctor, setDoctor] = useState(defaultDoctorName);
   const [type, setType] = useState("Muayene");
   const [complaint, setComplaint] = useState("");
   const [location, setLocation] = useState("");
@@ -72,7 +77,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
     setPhone("");
     setDate(new Date());
     setTime("");
-    setDoctor(DEFAULT_DOCTOR);
+    setDoctor(defaultDoctorName);
     setType("Muayene");
     setComplaint("");
     setLocation("");
@@ -97,6 +102,10 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
     setSaving(true);
 
     try {
+      // For multi-clinic users, frontend MUST set user_id to the active clinic owner.
+      // For single-clinic users, the DB trigger sets it; falling back to auth user id is safe.
+      const targetUserId = activeClinicUserId || user?.id;
+
       let patientId = selectedPatientId;
       if (!patientId) {
         patientId = `patient_${Date.now()}`;
@@ -107,7 +116,7 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
           complaint: complaint.trim() || null,
           location: location.trim() || null,
           status: "pending",
-          user_id: user?.id,
+          user_id: targetUserId,
         });
         if (patientError) throw patientError;
       }
@@ -122,12 +131,16 @@ const NewAppointmentDialog = ({ onCreated }: NewAppointmentDialogProps) => {
         type,
         scheduled_at: scheduledAt.toISOString(),
         status: "upcoming",
-        user_id: user?.id,
+        user_id: targetUserId,
       });
 
       if (aptError) throw aptError;
 
-      toast.success("Randevu başarıyla oluşturuldu!");
+      toast.success(
+        hasMultiple
+          ? `Randevu ${activeClinic?.ownerName || "kliniğe"} eklendi ✓`
+          : "Randevu başarıyla oluşturuldu!"
+      );
       resetForm();
       setOpen(false);
       onCreated();
