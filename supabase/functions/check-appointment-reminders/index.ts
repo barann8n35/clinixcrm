@@ -314,6 +314,15 @@ Deno.serve(async (req) => {
         });
       }
 
+      // 5) Voice call via ElevenLabs (only if clinic enabled auto_call_appointment_reminders)
+      if (
+        patient.phone &&
+        patient.user_id &&
+        voiceMap.get(patient.user_id) === true
+      ) {
+        await triggerVoiceCall(appt.id, patient.id, patient.phone, patient.user_id);
+      }
+
       processed++;
     }
 
