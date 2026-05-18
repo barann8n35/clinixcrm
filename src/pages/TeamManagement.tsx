@@ -73,6 +73,7 @@ function rolePackage(role: string): "standard" | "premium" | "premium_plus" | nu
 const TeamManagement = () => {
   const { isAdmin, loading: roleLoading } = useRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [links, setLinks] = useState<Array<{ owner_user_id: string; member_user_id: string; member_role: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
