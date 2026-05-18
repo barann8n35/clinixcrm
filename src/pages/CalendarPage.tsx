@@ -430,9 +430,15 @@ const CalendarPage = () => {
             eventContent={(arg) => {
               const eventType = arg.event.extendedProps.type || "";
               const eventStatus = arg.event.extendedProps.status || "";
+              const eventDoctor = arg.event.extendedProps.doctor || "";
               const isArrived = eventStatus === "arrived";
-              const borderColor = isArrived ? "#10b981" : (typeColors[eventType] || "hsl(var(--primary))");
-              const bgColor = isArrived ? "rgba(16,185,129,0.1)" : (typeBgColors[eventType] || "transparent");
+              const doctorC = colorByDoctor ? doctorColor(eventDoctor) : null;
+              const borderColor = isArrived
+                ? "#10b981"
+                : (doctorC?.border || typeColors[eventType] || "hsl(var(--primary))");
+              const bgColor = isArrived
+                ? "rgba(16,185,129,0.1)"
+                : (doctorC?.bg || typeBgColors[eventType] || "transparent");
               const shortName = abbreviateName(arg.event.title);
               const timeText = arg.timeText;
               const viewType = calendarRef.current?.getApi()?.view?.type || currentView;
