@@ -327,8 +327,22 @@ const CalendarPage = () => {
             </p>
           </div>
 
-          {/* Today summary chips */}
-          <div className="flex items-center gap-2">
+          {/* Today summary chips + doctor legend */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {colorByDoctor && (
+              <div className="flex items-center gap-2 rounded-full bg-card border border-border/60 px-3 py-1.5 shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Doktorlar</span>
+                {distinctDoctors.map((d) => {
+                  const c = doctorColor(d);
+                  return (
+                    <div key={d} className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: c?.border }} />
+                      <span className="text-[10px] font-semibold text-foreground truncate max-w-[110px]">{d}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex items-center gap-2 rounded-full bg-card border border-border/60 px-3 py-1.5 shadow-sm">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Bugün</span>
               <span className="text-xs font-bold text-foreground tabular-nums">{todayStats.total}</span>
