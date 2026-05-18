@@ -80,6 +80,25 @@ const typeBgColors: Record<string, string> = {
   "Operasyon": "rgba(239,68,68,0.08)",
 };
 
+// Stable doctor color palette (HSL)
+const DOCTOR_PALETTE = [
+  { border: "hsl(210, 90%, 50%)", bg: "hsla(210, 90%, 50%, 0.08)" },   // blue
+  { border: "hsl(280, 70%, 55%)", bg: "hsla(280, 70%, 55%, 0.08)" },   // purple
+  { border: "hsl(160, 70%, 40%)", bg: "hsla(160, 70%, 40%, 0.08)" },   // teal
+  { border: "hsl(25, 90%, 55%)",  bg: "hsla(25, 90%, 55%, 0.08)"  },   // orange
+  { border: "hsl(340, 75%, 55%)", bg: "hsla(340, 75%, 55%, 0.08)" },   // pink
+  { border: "hsl(60, 70%, 45%)",  bg: "hsla(60, 70%, 45%, 0.08)"  },   // yellow-green
+];
+function hashString(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+function doctorColor(name: string) {
+  if (!name || name === "—") return null;
+  return DOCTOR_PALETTE[hashString(name) % DOCTOR_PALETTE.length];
+}
+
 const VIEWS = [
   { key: "dayGridMonth", label: "Ay" },
   { key: "timeGridWeek", label: "Hafta" },
@@ -270,6 +289,17 @@ const CalendarPage = () => {
     };
   }, [events]);
 
+  // Detect distinct doctors → if more than 1, color events by doctor for clarity
+  const distinctDoctors = useMemo(() => {
+    const set = new Set<string>();
+    events.forEach((e) => {
+      const d = e.extendedProps.doctor;
+      if (d && d !== "—") set.add(d);
+    });
+    return Array.from(set);
+  }, [events]);
+  const colorByDoctor = distinctDoctors.length > 1;
+
   const goPrev = () => { calendarRef.current?.getApi().prev(); updateTitle(); };
   const goNext = () => { calendarRef.current?.getApi().next(); updateTitle(); };
   const goToday = () => { calendarRef.current?.getApi().today(); updateTitle(); };
@@ -297,8 +327,22 @@ const CalendarPage = () => {
             </p>
           </div>
 
-          {/* Today summary chips */}
-          <div className="flex items-center gap-2">
+          {/* Today summary chips + doctor legend */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {colorByDoctor && (
+              <div className="flex items-center gap-2 rounded-full bg-card border border-border/60 px-3 py-1.5 shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Doktorlar</span>
+                {distinctDoctors.map((d) => {
+                  const c = doctorColor(d);
+                  return (
+                    <div key={d} className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: c?.border }} />
+                      <span className="text-[10px] font-semibold text-foreground truncate max-w-[110px]">{d}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex items-center gap-2 rounded-full bg-card border border-border/60 px-3 py-1.5 shadow-sm">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Bugün</span>
               <span className="text-xs font-bold text-foreground tabular-nums">{todayStats.total}</span>
@@ -400,9 +444,15 @@ const CalendarPage = () => {
             eventContent={(arg) => {
               const eventType = arg.event.extendedProps.type || "";
               const eventStatus = arg.event.extendedProps.status || "";
+              const eventDoctor = arg.event.extendedProps.doctor || "";
               const isArrived = eventStatus === "arrived";
-              const borderColor = isArrived ? "#10b981" : (typeColors[eventType] || "hsl(var(--primary))");
-              const bgColor = isArrived ? "rgba(16,185,129,0.1)" : (typeBgColors[eventType] || "transparent");
+              const doctorC = colorByDoctor ? doctorColor(eventDoctor) : null;
+              const borderColor = isArrived
+                ? "#10b981"
+                : (doctorC?.border || typeColors[eventType] || "hsl(var(--primary))");
+              const bgColor = isArrived
+                ? "rgba(16,185,129,0.1)"
+                : (doctorC?.bg || typeBgColors[eventType] || "transparent");
               const shortName = abbreviateName(arg.event.title);
               const timeText = arg.timeText;
               const viewType = calendarRef.current?.getApi()?.view?.type || currentView;

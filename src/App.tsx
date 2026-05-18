@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { ActiveClinicProvider } from "@/contexts/ActiveClinicContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import Auth from "./pages/Auth";
@@ -48,6 +49,7 @@ const App = () => (
   <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
+      <ActiveClinicProvider>
       <NotificationProvider>
       <OneSignalInit />
       <TooltipProvider>
@@ -84,6 +86,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
       </NotificationProvider>
+      </ActiveClinicProvider>
     </AuthProvider>
   </QueryClientProvider>
   </ErrorBoundary>

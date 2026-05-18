@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveClinic } from "@/contexts/ActiveClinicContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,10 +57,14 @@ const timeSlots = Array.from({ length: 28 }, (_, i) => {
 const QuickAppointmentDialog = ({ open, onOpenChange, date: initialDate, time: initialTime, onCreated }: QuickAppointmentDialogProps) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { activeClinicUserId, options, hasMultiple } = useActiveClinic();
+  const activeClinic = options.find((o) => o.ownerUserId === activeClinicUserId);
+  const defaultDoctor = activeClinic?.ownerName || DEFAULT_DOCTOR;
+
   const [saving, setSaving] = useState(false);
   const [patientName, setPatientName] = useState("");
   const [phone, setPhone] = useState("");
-  const [doctor, setDoctor] = useState(DEFAULT_DOCTOR);
+  const [doctor, setDoctor] = useState(defaultDoctor);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [date, setDate] = useState<Date>(initialDate);
   const [time, setTime] = useState(initialTime);
@@ -68,7 +73,7 @@ const QuickAppointmentDialog = ({ open, onOpenChange, date: initialDate, time: i
   const resetForm = () => {
     setPatientName("");
     setPhone("");
-    setDoctor(DEFAULT_DOCTOR);
+    setDoctor(defaultDoctor);
     setSelectedPatientId(null);
     setDate(initialDate);
     setTime(initialTime);
@@ -88,6 +93,8 @@ const QuickAppointmentDialog = ({ open, onOpenChange, date: initialDate, time: i
     }
     setSaving(true);
     try {
+      const targetUserId = activeClinicUserId || user?.id;
+
       let patientId = selectedPatientId;
       if (!patientId) {
         patientId = `patient_${Date.now()}`;
@@ -96,7 +103,7 @@ const QuickAppointmentDialog = ({ open, onOpenChange, date: initialDate, time: i
           name: patientName.trim(),
           phone: phone.trim() || null,
           status: "pending",
-          user_id: user?.id,
+          user_id: targetUserId,
         });
         if (pErr) throw pErr;
       }
@@ -111,11 +118,15 @@ const QuickAppointmentDialog = ({ open, onOpenChange, date: initialDate, time: i
         type,
         scheduled_at: scheduledAt.toISOString(),
         status: "upcoming",
-        user_id: user?.id,
+        user_id: targetUserId,
       });
       if (aErr) throw aErr;
 
-      toast.success("Randevu oluşturuldu!");
+      toast.success(
+        hasMultiple
+          ? `Randevu ${activeClinic?.ownerName || "kliniğe"} eklendi ✓`
+          : "Randevu oluşturuldu!"
+      );
       resetForm();
       onOpenChange(false);
       onCreated();
