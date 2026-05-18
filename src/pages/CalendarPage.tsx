@@ -289,6 +289,17 @@ const CalendarPage = () => {
     };
   }, [events]);
 
+  // Detect distinct doctors → if more than 1, color events by doctor for clarity
+  const distinctDoctors = useMemo(() => {
+    const set = new Set<string>();
+    events.forEach((e) => {
+      const d = e.extendedProps.doctor;
+      if (d && d !== "—") set.add(d);
+    });
+    return Array.from(set);
+  }, [events]);
+  const colorByDoctor = distinctDoctors.length > 1;
+
   const goPrev = () => { calendarRef.current?.getApi().prev(); updateTitle(); };
   const goNext = () => { calendarRef.current?.getApi().next(); updateTitle(); };
   const goToday = () => { calendarRef.current?.getApi().today(); updateTitle(); };
