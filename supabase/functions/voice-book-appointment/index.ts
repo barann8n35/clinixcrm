@@ -106,6 +106,18 @@ Deno.serve(async (req) => {
     const phone = normalizePhone(body.phone);
     const name = body.name.trim();
     const surname = body.surname?.trim() ?? "";
+
+    // Resolve clinic owner (primary admin) for user_id ownership
+    const { data: ownerRow } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle();
+    const clinicUserId = ownerRow?.user_id as string | undefined;
+    if (!clinicUserId) {
+      return json({ success: false, error: "Klinik sahibi bulunamadı." }, 500);
+    }
     const fullName = surname ? `${name} ${surname}` : name;
     const complaint = body.complaint.trim();
 
