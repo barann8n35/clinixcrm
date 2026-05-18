@@ -80,6 +80,25 @@ const typeBgColors: Record<string, string> = {
   "Operasyon": "rgba(239,68,68,0.08)",
 };
 
+// Stable doctor color palette (HSL)
+const DOCTOR_PALETTE = [
+  { border: "hsl(210, 90%, 50%)", bg: "hsla(210, 90%, 50%, 0.08)" },   // blue
+  { border: "hsl(280, 70%, 55%)", bg: "hsla(280, 70%, 55%, 0.08)" },   // purple
+  { border: "hsl(160, 70%, 40%)", bg: "hsla(160, 70%, 40%, 0.08)" },   // teal
+  { border: "hsl(25, 90%, 55%)",  bg: "hsla(25, 90%, 55%, 0.08)"  },   // orange
+  { border: "hsl(340, 75%, 55%)", bg: "hsla(340, 75%, 55%, 0.08)" },   // pink
+  { border: "hsl(60, 70%, 45%)",  bg: "hsla(60, 70%, 45%, 0.08)"  },   // yellow-green
+];
+function hashString(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+function doctorColor(name: string) {
+  if (!name || name === "—") return null;
+  return DOCTOR_PALETTE[hashString(name) % DOCTOR_PALETTE.length];
+}
+
 const VIEWS = [
   { key: "dayGridMonth", label: "Ay" },
   { key: "timeGridWeek", label: "Hafta" },
