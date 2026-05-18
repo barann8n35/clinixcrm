@@ -1,27 +1,53 @@
-# Klinik Gruplama Mantığını Düzelt
+# ElevenLabs Agent'a Tam Kontrol
 
 ## Sorun
-`TeamManagement.tsx`'teki gruplama, rolü `admin / doctor / premium / premium_plus` olan herkesi otomatik olarak "klinik sahibi" sayıyor. Ama bu kullanıcılar başka bir kliniğe **üye** olarak bağlandığında (örn. baran'ın asistanı olarak), ikinci kez kendi adlarına boş bir klinik kartı oluşturuyor. Sonuç: tek gerçek klinik varken 3 klinik kartı görünüyor.
 
-## Düzeltme
+Şu an `voice-twiml-handler` edge function:
+1. Önce Twilio'nun robotik `<Say>` sesiyle Clinix'teki `greeting_message`'ı okutuyor
+2. Sonra ElevenLabs agent'a `<Stream>` ile bağlanırken `voice_id`, `language`, `first_message`, `prompt` parametrelerini **override** olarak gönderiyor
 
-`src/pages/TeamManagement.tsx` içindeki klinik sahibi tespitini şu şekilde değiştir:
+Sonuç: ElevenLabs dashboard'unda yazdığın prompt/ses/karşılama devre dışı kalıyor, Clinix'tekiler kullanılıyor. Demoda da bu yüzden "Clinix'in default karşılaması okundu ama agent'ın kendi promptu çalışmadı" durumu oluştu.
 
-**Bir kullanıcı klinik sahibidir ⇔**
-1. Rolü `admin / doctor / premium / premium_plus` arasında, **VE**
-2. `clinic_members` tablosunda **herhangi bir owner'a member olarak bağlı değil** (yani `member_user_id` olarak görünmüyor), **VEYA** zaten kendi adına altında üye(ler) var (`owner_user_id` olarak en az 1 kayıt).
+## Çözüm
 
-Pratik kural (basit ve net):
+Sen her doktor için ElevenLabs dashboard'undan ayrı agent (veya prompt) yöneteceksin. Clinix'in bu işe karışmaması gerekiyor.
+
+### `supabase/functions/voice-twiml-handler/index.ts` — Sadeleştir
+
+**Kaldırılacak:**
+- `voice_agent_settings` tablosundan okuma (greeting, voice_id, language, persona, clinic_name, doctor_name)
+- `<Say>` ile ön karşılama (ElevenLabs agent'ın `first_message`'ı zaten karşılayacak)
+- `<Stream>` içindeki `voice_id`, `language`, `first_message`, `prompt` Parameter'leri
+
+**Kalacak / korunacak:**
+- `ELEVENLABS_AGENT_ID` env kontrolü
+- `call_id` ve `patient_name` Parameter'leri (agent loglarda hangi hasta olduğunu görebilsin — opsiyonel ama faydalı)
+- `<Connect><Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=...">` ana yapısı
+- Hata durumu için fallback TwiML
+
+### Yeni minimal TwiML şeması
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Connect>
+    <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id={AGENT_ID}">
+      <Parameter name="call_id" value="{call_id}" />
+      <Parameter name="patient_name" value="{patient_name}" />
+    </Stream>
+  </Connect>
+</Response>
 ```
-isOwner = OWNER_ROLES.has(role) && !memberOfClinicIds.has(user_id)
-```
 
-Bir kullanıcı başka bir kliniğin üyesi olarak işaretlenmişse, kendi adına ayrı klinik kartı **açılmaz** — sadece bağlı olduğu kliniğin altında görünür. Rol badge'i (örn. "Premium+") kart içinde zaten gösterildiği için bilgi kaybı olmaz.
+### Clinix UI tarafı — DOKUNULMAYACAK
 
-## Beklenen Sonuç
-Mevcut DB durumuyla:
-- **Baran kliniği** kartı altında 3 üye: dila (Premium+), baran.n8n35 (Premium+), begum (Personel).
-- Dila ve baran.n8n35 için ayrı klinik kartı **açılmaz**.
+`/voice-agent` sayfası ve `VoiceAgentTab.tsx` aynen kalsın. İstersen ileride tekrar Clinix'ten yönetmek istersen UI hazır. Sadece backend artık o ayarları okumayacak. Sayfayı tamamen gizlemek istersen ayrı bir adım açarız.
 
-## Dosyalar
-- `src/pages/TeamManagement.tsx` — sadece `owners` ve `unassigned` filtre satırları değişecek. DB / RLS / migration değişmez.
+## Doğrulama (deploy sonrası)
+
+1. `/voice-agent` → Test Araması → `+905537725206` ara
+2. Agent senin ElevenLabs dashboard'unda yazdığın `first_message` ile karşılıyor mu?
+3. Konuşmaya devam ettiğinde dashboard'daki prompt'u kullanıyor mu?
+4. ElevenLabs dashboard → Conversations sekmesinde transcript görünüyor mu?
+
+Onaylarsan tek dosya değişikliği yapıp deploy edeceğim.
