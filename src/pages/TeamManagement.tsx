@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Users, ShieldAlert, ShieldCheck, Clock, UserCheck, UserX, Loader2, Sparkles, Zap, Package, Trash2 } from "lucide-react";
+import { Users, ShieldAlert, ShieldCheck, Clock, UserCheck, UserX, Loader2, Sparkles, Zap, Package, Trash2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -73,6 +73,7 @@ function rolePackage(role: string): "standard" | "premium" | "premium_plus" | nu
 const TeamManagement = () => {
   const { isAdmin, loading: roleLoading } = useRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [links, setLinks] = useState<Array<{ owner_user_id: string; member_user_id: string; member_role: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -119,7 +120,16 @@ const TeamManagement = () => {
     setLoading(false);
   }
 
-  useEffect(() => { fetchMembers(); }, []);
+  async function fetchLinks() {
+    const { data } = await supabase.from("clinic_members" as any).select("owner_user_id, member_user_id, member_role");
+    setLinks((Array.isArray(data) ? data : []) as any);
+  }
+
+  async function refreshAll() {
+    await Promise.all([fetchMembers(), fetchLinks()]);
+  }
+
+  useEffect(() => { refreshAll(); }, []);
 
   async function handleRoleChange(member: TeamMember, newRole: string) {
     const normalizedEmail = member.email.trim().toLowerCase();
@@ -295,128 +305,211 @@ const TeamManagement = () => {
         </motion.div>
       )}
 
-      {/* Active Members */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
-          <h2 className="text-sm font-display font-bold text-foreground">Ekip Üyeleri</h2>
-          <span className="text-[11px] text-muted-foreground bg-muted px-2.5 py-1 rounded-full font-medium">{activeMembers.length} üye</span>
-        </div>
-        {loading ? (
-          <div className="p-4 space-y-3">
-            {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
-          </div>
-        ) : activeMembers.length === 0 ? (
-          <div className="p-8 text-center">
-            <Users className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Henüz aktif ekip üyesi yok</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/40">
-            {activeMembers.map((m) => {
-              const roleInfo = ROLE_LABELS[m.role] || ROLE_LABELS.pending;
-              const isPrimaryAdmin = m.email.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL;
-              const isAdminMember = m.role === "admin";
-              const lockRoleChange = isPrimaryAdmin && isAdminMember;
-              const currentPackage = rolePackage(m.role);
-              const pkgMeta = currentPackage ? PACKAGE_META[currentPackage] : null;
-              const PkgIcon = pkgMeta?.icon ?? Package;
-              const isUpdating = updating === m.user_id;
+      {/* Active Members — grouped by clinic */}
+      {(() => {
+        const OWNER_ROLES = new Set(["admin", "doctor", "premium", "premium_plus"]);
+        const owners = activeMembers.filter((m) => OWNER_ROLES.has(m.role));
+        const memberOfClinicIds = new Set(links.map((l) => l.member_user_id));
+        const unassigned = activeMembers.filter(
+          (m) => !OWNER_ROLES.has(m.role) && !memberOfClinicIds.has(m.user_id)
+        );
 
-              return (
-                <div key={m.user_id} className="px-5 py-4 hover:bg-accent/30 transition-colors">
-                  <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
-                    {/* Avatar + Identity */}
-                    <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-sm font-bold text-primary">{((m.full_name || m.email || "?")[0] || "?").toUpperCase()}</span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{m.full_name || m.email || "—"}</p>
-                        <p className="text-xs text-muted-foreground truncate">{m.email}{m.username ? ` · @${m.username}` : ""}</p>
-                      </div>
-                    </div>
+        const renderMemberRow = (m: TeamMember, clinicMemberRole?: string) => {
+          const roleInfo = ROLE_LABELS[m.role] || ROLE_LABELS.pending;
+          const isPrimaryAdmin = m.email.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL;
+          const isAdminMember = m.role === "admin";
+          const lockRoleChange = isPrimaryAdmin && isAdminMember;
+          const currentPackage = rolePackage(m.role);
+          const pkgMeta = currentPackage ? PACKAGE_META[currentPackage] : null;
+          const PkgIcon = pkgMeta?.icon ?? Package;
+          const isUpdating = updating === m.user_id;
 
-                    {/* Role Badge */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline" className={`text-[10px] border ${roleInfo.color}`}>{roleInfo.label}</Badge>
-                    </div>
-
-                    {/* Package indicator + quick assign */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {pkgMeta && (
-                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${pkgMeta.color}`}>
-                          <PkgIcon className="w-3 h-3" />
-                          {pkgMeta.short}
-                        </div>
-                      )}
-
-                      {!isAdminMember && (
-                        <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
-                          {(["standard", "premium", "premium_plus"] as const).map((pkg) => {
-                            const meta = PACKAGE_META[pkg];
-                            const isActive = currentPackage === pkg;
-                            return (
-                              <button
-                                key={pkg}
-                                disabled={isUpdating || lockRoleChange}
-                                onClick={() => assignPackage(m, pkg)}
-                                title={`${meta.label} paketine ata`}
-                                className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
-                                  isActive
-                                    ? `${meta.color} shadow-sm scale-105`
-                                    : "text-muted-foreground hover:bg-background hover:text-foreground"
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                              >
-                                {meta.short}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Detail role select */}
-                    <Select value={m.role} onValueChange={(v) => handleRoleChange(m, v)} disabled={lockRoleChange || isUpdating}>
-                      <SelectTrigger className="w-[130px] h-8 text-xs rounded-lg shrink-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="doctor">Doktor</SelectItem>
-                        <SelectItem value="staff">Personel</SelectItem>
-                        <SelectItem value="asistan">Asistan</SelectItem>
-                        {!isAdminMember && <SelectItem value="premium">Premium</SelectItem>}
-                        {!isAdminMember && <SelectItem value="premium_plus">Premium+</SelectItem>}
-                        <SelectItem value="pending">Beklemede</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {isUpdating && <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />}
-                    {lockRoleChange && (
-                      <span className="text-[10px] font-medium text-muted-foreground shrink-0">Ana admin</span>
-                    )}
-                    {!lockRoleChange && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
-                        disabled={deleting === m.user_id}
-                        onClick={() => handleDeleteUser(m)}
-                        title="Kullanıcıyı sil"
-                      >
-                        {deleting === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </Button>
-                    )}
+          return (
+            <div key={m.user_id + (clinicMemberRole || "")} className="px-5 py-4 hover:bg-accent/30 transition-colors">
+              <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
+                <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-bold text-primary">{((m.full_name || m.email || "?")[0] || "?").toUpperCase()}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{m.full_name || m.email || "—"}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {m.email}{m.username ? ` · @${m.username}` : ""}
+                      {clinicMemberRole && <span className="ml-1 text-primary">· {clinicMemberRole}</span>}
+                    </p>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant="outline" className={`text-[10px] border ${roleInfo.color}`}>{roleInfo.label}</Badge>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {pkgMeta && (
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${pkgMeta.color}`}>
+                      <PkgIcon className="w-3 h-3" />
+                      {pkgMeta.short}
+                    </div>
+                  )}
+
+                  {!isAdminMember && (
+                    <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+                      {(["standard", "premium", "premium_plus"] as const).map((pkg) => {
+                        const meta = PACKAGE_META[pkg];
+                        const isActive = currentPackage === pkg;
+                        return (
+                          <button
+                            key={pkg}
+                            disabled={isUpdating || lockRoleChange}
+                            onClick={() => assignPackage(m, pkg)}
+                            title={`${meta.label} paketine ata`}
+                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+                              isActive
+                                ? `${meta.color} shadow-sm scale-105`
+                                : "text-muted-foreground hover:bg-background hover:text-foreground"
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {meta.short}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <Select value={m.role} onValueChange={(v) => handleRoleChange(m, v)} disabled={lockRoleChange || isUpdating}>
+                  <SelectTrigger className="w-[130px] h-8 text-xs rounded-lg shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="doctor">Doktor</SelectItem>
+                    <SelectItem value="staff">Personel</SelectItem>
+                    <SelectItem value="asistan">Asistan</SelectItem>
+                    {!isAdminMember && <SelectItem value="premium">Premium</SelectItem>}
+                    {!isAdminMember && <SelectItem value="premium_plus">Premium+</SelectItem>}
+                    <SelectItem value="pending">Beklemede</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {isUpdating && <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />}
+                {lockRoleChange && (
+                  <span className="text-[10px] font-medium text-muted-foreground shrink-0">Ana admin</span>
+                )}
+                {!lockRoleChange && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
+                    disabled={deleting === m.user_id}
+                    onClick={() => handleDeleteUser(m)}
+                    title="Kullanıcıyı sil"
+                  >
+                    {deleting === m.user_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        if (loading) {
+          return (
+            <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-4">
+            {owners.length === 0 && unassigned.length === 0 && (
+              <div className="rounded-2xl border border-border/60 bg-card p-8 text-center">
+                <Users className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Henüz aktif ekip üyesi yok</p>
+              </div>
+            )}
+
+            {owners.map((owner) => {
+              const clinicLinks = links.filter((l) => l.owner_user_id === owner.user_id);
+              const memberRows = clinicLinks
+                .map((l) => {
+                  const mm = members.find((x) => x.user_id === l.member_user_id);
+                  return mm ? { member: mm, role: l.member_role } : null;
+                })
+                .filter(Boolean) as { member: TeamMember; role: string }[];
+
+              const ownerRoleInfo = ROLE_LABELS[owner.role] || ROLE_LABELS.pending;
+
+              return (
+                <motion.div
+                  key={owner.user_id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden"
+                >
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/30">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Building2 className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="text-sm font-display font-bold text-foreground truncate">
+                          {owner.full_name || owner.email} Kliniği
+                        </h2>
+                        <p className="text-[11px] text-muted-foreground truncate">{owner.email}</p>
+                      </div>
+                      <Badge variant="outline" className={`text-[10px] border ${ownerRoleInfo.color} ml-1`}>
+                        {ownerRoleInfo.label}
+                      </Badge>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground bg-background px-2.5 py-1 rounded-full font-medium shrink-0">
+                      {memberRows.length} üye
+                    </span>
+                  </div>
+
+                  <div className="divide-y divide-border/40">
+                    {renderMemberRow(owner, "Klinik Sahibi")}
+                    {memberRows.length === 0 ? (
+                      <div className="px-5 py-6 text-center text-xs text-muted-foreground">
+                        Bu kliniğe henüz üye eklenmemiş. Aşağıdaki "Klinik Üyelikleri" panelinden ekleyebilirsiniz.
+                      </div>
+                    ) : (
+                      memberRows.map(({ member, role }) => renderMemberRow(member, role))
+                    )}
+                  </div>
+                </motion.div>
               );
             })}
-          </div>
-        )}
-      </motion.div>
 
-      <ClinicMembersPanel members={members} onRefresh={fetchMembers} />
+            {unassigned.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden"
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <h2 className="text-sm font-display font-bold text-foreground">Bağımsız Üyeler</h2>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground bg-background px-2.5 py-1 rounded-full font-medium">
+                    {unassigned.length}
+                  </span>
+                </div>
+                <div className="divide-y divide-border/40">
+                  {unassigned.map((m) => renderMemberRow(m))}
+                </div>
+              </motion.div>
+            )}
+          </div>
+        );
+      })()}
+
+      <ClinicMembersPanel members={members} onRefresh={refreshAll} />
+
     </div>
   );
 };
