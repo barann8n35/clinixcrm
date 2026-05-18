@@ -42,3 +42,8 @@ verify_jwt = false
 [functions.instagram-webhook]
 verify_jwt = false
 
+[functions.voice-book-appointment]
+verify_jwt = false
+
+
+
