@@ -24,6 +24,40 @@ interface PatientRow {
   name: string;
   phone: string | null;
   platform: string | null;
+  user_id: string | null;
+}
+
+async function triggerVoiceCall(
+  appointmentId: string,
+  patientId: string,
+  toPhone: string,
+  clinicUserId: string,
+) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/place-outbound-call`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        internal: true,
+        target_user_id: clinicUserId,
+        appointment_id: appointmentId,
+        patient_id: patientId,
+        to_number: toPhone,
+        call_type: "appointment_reminder",
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    console.log("[voice-call] appt", appointmentId, "→", res.status, body);
+    return body;
+  } catch (err) {
+    console.error("[voice-call] error", err);
+    return null;
+  }
 }
 
 function formatTr(dateStr: string): string {
@@ -170,10 +204,22 @@ Deno.serve(async (req) => {
     const patientIds = Array.from(new Set(pending.map((a) => a.patient_id)));
     const { data: patientsData } = await supabase
       .from("patients")
-      .select("id, name, phone, platform")
+      .select("id, name, phone, platform, user_id")
       .in("id", patientIds);
     const patientMap = new Map<string, PatientRow>(
       (patientsData ?? []).map((p: any) => [p.id, p]),
+    );
+
+    // Voice agent settings per clinic — to decide if we should auto-call
+    const clinicUserIds = Array.from(
+      new Set((patientsData ?? []).map((p: any) => p.user_id).filter(Boolean) as string[]),
+    );
+    const { data: voiceSettings } = await supabase
+      .from("voice_agent_settings")
+      .select("user_id, auto_call_appointment_reminders")
+      .in("user_id", clinicUserIds.length ? clinicUserIds : ["__none__"]);
+    const voiceMap = new Map<string, boolean>(
+      (voiceSettings ?? []).map((v: any) => [v.user_id, !!v.auto_call_appointment_reminders]),
     );
 
     // Active staff (only those with role assigned, not 'pending')
@@ -266,6 +312,15 @@ Deno.serve(async (req) => {
             platform: patient.platform,
           },
         });
+      }
+
+      // 5) Voice call via ElevenLabs (only if clinic enabled auto_call_appointment_reminders)
+      if (
+        patient.phone &&
+        patient.user_id &&
+        voiceMap.get(patient.user_id) === true
+      ) {
+        await triggerVoiceCall(appt.id, patient.id, patient.phone, patient.user_id);
       }
 
       processed++;
