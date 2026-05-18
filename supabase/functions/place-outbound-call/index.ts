@@ -166,6 +166,39 @@ Deno.serve(async (req) => {
     if (insertErr) throw insertErr;
     const callId = callRow.id as string;
 
+    // Resolve patient name for dynamic variables (helps agent open the call faster)
+    let patientName = "";
+    if (body.patient_id) {
+      const { data: p } = await admin
+        .from("patients")
+        .select("name")
+        .eq("id", body.patient_id)
+        .maybeSingle();
+      patientName = p?.name ?? "";
+    }
+
+    const callType = body.call_type ?? "manual";
+    const defaultGreeting =
+      callType === "appointment_reminder"
+        ? `Merhaba${patientName ? " " + patientName : ""}, Clinix kliniğinden arıyorum. Yaklaşan randevunuzla ilgili kısa bir hatırlatma için aradım.`
+        : `Merhaba${patientName ? " " + patientName : ""}, Clinix asistanı ile görüşüyorsunuz. Size nasıl yardımcı olabilirim?`;
+    const firstMessage = (body.initial_message?.trim() || defaultGreeting).slice(0, 500);
+
+    const initiationData: Record<string, unknown> = {
+      conversation_config_override: {
+        agent: {
+          first_message: firstMessage,
+          language: "tr",
+        },
+      },
+      dynamic_variables: {
+        patient_name: patientName || "Misafir",
+        call_type: callType,
+        appointment_id: body.appointment_id ?? "",
+        patient_id: body.patient_id ?? "",
+      },
+    };
+
     // Place call via ElevenLabs native Twilio outbound
     const elevenRes = await fetch(
       "https://api.elevenlabs.io/v1/convai/twilio/outbound-call",
@@ -179,10 +212,14 @@ Deno.serve(async (req) => {
           agent_id: ELEVENLABS_AGENT_ID,
           agent_phone_number_id: ELEVENLABS_PHONE_NUMBER_ID,
           to_number: toPhone,
+          call_recording_enabled: true,
+          telephony_call_config: { ringing_timeout_secs: 30 },
+          conversation_initiation_client_data: initiationData,
         }),
       },
     );
     const elevenJson = await elevenRes.json().catch(() => ({}));
+    console.log("[place-outbound-call] eleven response", elevenRes.status, JSON.stringify(elevenJson));
 
     if (!elevenRes.ok || elevenJson?.success === false) {
       await admin
