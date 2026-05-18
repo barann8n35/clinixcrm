@@ -24,6 +24,40 @@ interface PatientRow {
   name: string;
   phone: string | null;
   platform: string | null;
+  user_id: string | null;
+}
+
+async function triggerVoiceCall(
+  appointmentId: string,
+  patientId: string,
+  toPhone: string,
+  clinicUserId: string,
+) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/place-outbound-call`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        internal: true,
+        target_user_id: clinicUserId,
+        appointment_id: appointmentId,
+        patient_id: patientId,
+        to_number: toPhone,
+        call_type: "appointment_reminder",
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    console.log("[voice-call] appt", appointmentId, "→", res.status, body);
+    return body;
+  } catch (err) {
+    console.error("[voice-call] error", err);
+    return null;
+  }
 }
 
 function formatTr(dateStr: string): string {
