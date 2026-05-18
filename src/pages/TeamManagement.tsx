@@ -415,6 +415,8 @@ const TeamManagement = () => {
           </div>
         )}
       </motion.div>
+
+      <ClinicMembersPanel members={members} onRefresh={fetchMembers} />
     </div>
   );
 };
