@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import ClinicMembersPanel from "@/components/team/ClinicMembersPanel";
 
 interface TeamMember {
   user_id: string;
@@ -414,6 +415,8 @@ const TeamManagement = () => {
           </div>
         )}
       </motion.div>
+
+      <ClinicMembersPanel members={members} onRefresh={fetchMembers} />
     </div>
   );
 };
