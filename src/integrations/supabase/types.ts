@@ -76,6 +76,30 @@ export type Database = {
           },
         ]
       }
+      clinic_members: {
+        Row: {
+          created_at: string
+          id: string
+          member_role: string
+          member_user_id: string
+          owner_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_role?: string
+          member_user_id: string
+          owner_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_role?: string
+          member_user_id?: string
+          owner_user_id?: string
+        }
+        Relationships: []
+      }
       clinic_schedule: {
         Row: {
           buffer_minutes: number
@@ -899,6 +923,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      clinic_owner_for: { Args: { _user: string }; Returns: string }
       get_available_slots: {
         Args: { p_date: string; p_doctor: string }
         Returns: {
@@ -931,6 +956,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_clinic_member: {
+        Args: { _owner: string; _user: string }
         Returns: boolean
       }
     }
