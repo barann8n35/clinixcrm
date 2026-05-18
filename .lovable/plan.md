@@ -1,100 +1,100 @@
-# Ercan Hoca Kliniği — Entegrasyon Planı
+# Çoklu Klinik Sekreter Desteği — Plan
 
-## Mevcut durum analizi
+## Senin sorularının kısa cevapları
 
-Sistemin RLS modeli **user_id bazlı tek kiracılı**: her tablo `auth.uid() = user_id` koşuluyla filtreleniyor. Yani bir kullanıcının açtığı hasta/randevu/mesaj sadece ona görünüyor. Admin tüm verileri görebiliyor.
+**"Bilgiler karışır mı?"** → Hayır, karışmaz. RLS her satırı `user_id`'ye göre filtreler. Ercan'ın hastası `user_id = ercan_uuid`, eşin hastası `user_id = es_uuid`. Sekreter ikisinin de üyesi olduğu için ikisini de görür ama Ercan giriş yaptığında eşin hastalarını **göremez** (üyeliği yok). Tam izolasyon.
 
-Sen ise şu yapıyı istiyorsun:
-- **Dr. Ercan** (yetişkin)
-- **Eşi** (çocuk kardiyolojisi)
-- **Sekreter** (her ikisini de yönetiyor)
-- İki doktor ayrı çalışır gibi görünmeli ama sekreter ortak
-
-Mevcut şema doğrudan bunu desteklemiyor. İki seçenek var, planda **A** önerisini detaylandırıyorum çünkü en az kod değişikliği ile çalışır.
+**"Benim ne yapmam gerekiyor?"** → Aşağıda 4 adım.
 
 ---
 
-## Seçenek A (önerilen): Tek "klinik sahibi" hesap + `doctor` alanı ile ayrım
+## Mevcut sorun (kritik)
 
-Klinikte tek bir `user_id` sahibi olur (örn. `ercan-klinik@…`). Sekreter ve diğer doktor bu hesabın kullanıcı oturumlarını paylaşmaz; bunun yerine her birinin kendi hesabı vardır ve **admin/clinic-member** rolü ile aynı veriye erişir. Hastalar, randevular, mesajlar tek `user_id` altında toplanır. `appointments.doctor` ve `patients.doctor` alanları zaten var — "Ercan" / "Eşi" ayrımı bu alanla yapılır; takvim ve listelerde doktor filtresi gösterilir.
-
-**Avantaj:** Sekreter iki doktoru da tek ekranda görür, raporlama doğal, kod değişikliği minimum.
-**Dezavantaj:** İki doktorun verilerinin tam izolasyonu yok (gerek de yok çünkü aynı klinik).
-
-### Yapılacaklar
-
-1. **Klinik üyelik altyapısı** (yeni tablo `clinic_members`)
-   - `owner_user_id` (klinik sahibi) + `member_user_id` + `role` (`doctor` / `secretary`)
-   - RLS politikalarına `OR is_clinic_member(auth.uid(), user_id)` koşulu eklenir (security definer fonksiyon).
-   - `patients`, `appointments`, `messages`, `patient_reminders`, `learning_logs`, `voice_calls`, `clinical_templates`, `clinic_schedule` tablolarının SELECT/INSERT/UPDATE/DELETE politikalarına bu OR eklenir.
-   - INSERT politikalarında `user_id = klinik_sahibi_user_id` olarak yazılmasını sağlamak için trigger: üye bir kayıt eklediğinde `user_id` otomatik klinik sahibine çevrilir.
-
-2. **Yeni hesapların açılması**
-   - Önce klinik sahibi e-postasıyla kayıt → sen admin olarak `doctor` rolü ver.
-   - Sekreter ve eş doktor kayıt → admin paneline düşer → `clinic_members` tablosuna `ercan-klinik` sahibi altında eklenir.
-   - `useRole` ve `ProtectedRoute` üye kontrolü için `useClinic()` benzeri bir hook alır.
-
-3. **Klinik bilgileri**
-   - `voice_agent_settings.clinic_name = "Ercan Hoca Kliniği"`, `doctor_name = "Dr. Ercan …"`, ikinci doktor için ek alan ya da settings'te `secondary_doctor_name`.
-   - `clinic_schedule` Ercan ve eşi için ayrı satır gerekiyorsa şemaya `doctor` alanı eklenir (şu an user başına tek satır).
-   - `widget_settings` klinik için ayarlanır (logo, renk, karşılama).
-   - `quick_replies` global olduğu için Ercan hoca için ön tanımlı 8-10 cevap eklenir.
-
-4. **WhatsApp + n8n bağlantısı**
-   - n8n'de mevcut "Clinix WhatsApp" workflow'unu klone et: yeni WhatsApp Business numarası → `handle_omnichannel_message` RPC'sine `p_clinic_user_id = ercan-klinik-uuid` parametresi ile bağla (RPC bu parametreyi zaten destekliyor).
-   - n8n credential: Ercan klinikinin Meta WABA token'ı.
-   - Sekreterin telefonuna OneSignal push subscription kaydı için tarayıcıdan ilk girişte izin → otomatik kaydolur.
-
-5. **MedicaSimple veri göçü**
-   MedicaSimple'ın dışa aktarma seçeneği var mı önce onu kontrol etmemiz lazım. Üç olası senaryo:
-   - **a) CSV/Excel export var:** Hasta listesi (ad, telefon, doğum, notlar) ve randevu listesi (tarih, doktor, tip) CSV olarak alınır → biz `/scan` modülüne benzer bir **Bulk Import** sayfası açarız (yeni `src/pages/Import.tsx`), CSV yükleme + alan eşleme + tek seferde `patients` + `appointments` insert.
-   - **b) API var:** Edge function ile çekip aynı insert mantığıyla aktarırız.
-   - **c) Hiçbir export yoksa:** MedicaSimple ekranlarının ekran görüntüleri zaten **Görselden Kayıt** modülünden geçirilebilir; ama 100+ hasta için yorucu. Bu durumda sekreterle bir gün ayırıp manuel + Görselden Kayıt karması yaparız.
-
-   **Senin yapman gereken:** MedicaSimple'a girip "Dışa Aktar / Export / Yedek Al" menülerine bak ve hangisinin mümkün olduğunu söyle — planı buna göre netleştirelim.
-
-6. **Doğrulama & test**
-   - Test hastası ekle (Ercan), test randevu (Eşi), sekreter hesabıyla giriş → her ikisini de görebildiğini doğrula.
-   - WhatsApp test mesajı → patient otomatik oluşmalı, doğru `user_id` ile.
-   - Push bildirim test (randevu hatırlatıcı).
-   - Realtime: iki tarayıcıda aynı anda sekreter + doktor girişi, mesaj geldiğinde ikisinde de düşmeli.
+Şu anki trigger `set_clinic_owner_on_insert()` şöyle çalışıyor: sekreter bir hasta eklediğinde `clinic_owner_for(auth.uid())` çağrılıyor, bu da `LIMIT 1` ile **sadece ilk bulduğu kliniği** atıyor. Yani sekreter iki doktora atanırsa, eklediği her hasta hep aynı doktora yazılır → diğer doktor görmez. Bunu çözmemiz lazım.
 
 ---
 
-## Teknik detaylar (geliştirici için)
+## Çözüm: "Aktif Klinik" seçici
 
-**Yeni migration özeti:**
-```text
-- create table clinic_members (id, owner_user_id, member_user_id, role, created_at)
-- create function is_clinic_member(_user uuid, _owner uuid) returns boolean security definer
-- her tabloda RLS USING ((auth.uid() = user_id) OR is_clinic_member(auth.uid(), user_id) OR has_role('admin'))
-- trigger before insert: NEW.user_id := coalesce(owner of auth.uid(), auth.uid())
+Sekreter giriş yaptığında üst barda küçük bir dropdown olacak: **"Aktif Klinik: Dr. Ercan ▼"**. Seçimi `localStorage` + React Context'te tutarız. Yeni hasta/randevu/mesaj eklediğinde:
+
+- Trigger artık `auth.uid()`'nin tek kliniği varsa otomatik atar (eskisi gibi).
+- Birden fazla kliniği varsa, **frontend `user_id`'yi manuel set eder** (aktif klinik seçimine göre). Trigger bu durumda dokunmaz.
+- Doktorların (Ercan, eş) kendi girişlerinde seçici görünmez — kendileri zaten owner.
+
+### Trigger güncellemesi
+```sql
+-- Sekreter tek kliniğe atanmışsa otomatik ata, çoklu ise frontend'in verdiği user_id'ye dokunma
+CREATE OR REPLACE FUNCTION set_clinic_owner_on_insert() ...
+  -- Eğer NEW.user_id zaten geçerli bir owner ise (frontend explicit verdi) dokunma
+  -- Yoksa clinic_owner_for() ile tek üyelik varsa onu kullan
 ```
 
-**Yeni sayfalar/komponentler:**
-- `src/pages/Import.tsx` — CSV upload + mapping wizard (papaparse)
-- `src/components/team/ClinicMembersTab.tsx` — Team Management'a ek: klinik üyesi atama
-- `src/hooks/useClinic.ts` — aktif klinik sahibi user_id'yi döner
+---
 
-**Etkilenen mevcut dosyalar:**
-- `src/hooks/useRole.ts` — `clinicOwnerId`, `isClinicSecretary` eklenir
-- `src/components/appointments/NewAppointmentDialog.tsx` — doktor seçici (Ercan / Eşi) varsayılan olarak gelir
-- `src/components/dashboard/SidebarNav.tsx` — gerekirse doktor filtresi
-- `supabase/functions/widget-message/index.ts` — clinic_user_id parametre yönetimi (zaten kısmen var)
+## Randevuda doktor rengi
+
+`CalendarPage.tsx` (FullCalendar) ve `Appointments.tsx` listesinde her randevu `appointment.doctor` alanını taşıyor. Doktor adı bazlı renk haritası ekleyeceğiz:
+
+- **Dr. Ercan** → mavi (`hsl(210 90% 50%)`)
+- **Dr. (eş)** → mor (`hsl(280 70% 55%)`)
+- Diğer → mevcut tip-bazlı renk
+
+`Settings → Profile`'da doktorun kendi rengini seçebileceği bir `doctor_color` alanı `voice_agent_settings`'a (veya yeni `doctor_profiles` tablosuna) eklenebilir. İlk versiyonda **sabit harita** ile gidelim, sonra dinamik yaparız.
 
 ---
 
-## Sıralama (uygulama günü için checklist)
+## Rol etiketi sadeleştirme
 
-1. ☐ MedicaSimple export imkânını kontrol et, bana söyle
-2. ☐ Klinik sahibi e-posta + sekreter e-posta + eş doktor e-posta hazırla
-3. ☐ Migration: `clinic_members` + RLS güncellemeleri (onayını alıp uygularım)
-4. ☐ 3 hesabı kaydet, admin panelinden onayla ve klinik üyesi olarak ekle
-5. ☐ Klinik ayarları: çalışma saatleri, klinik adı, widget, voice agent persona
-6. ☐ WhatsApp numarası + n8n workflow bağlantısı
-7. ☐ Veri göçü (yöntem seçildikten sonra)
-8. ☐ Sekreter ve doktorlarla 30 dk eğitim turu
+`ClinicMembersPanel.tsx` dropdown'u:
+- ~~Sekreter / Doktor (Eş) / Asistan~~
+- ✅ **Sekreter / Doktor / Asistan**
+
+Veritabanı değeri (`secretary` / `doctor` / `asistan`) değişmiyor, sadece UI label.
 
 ---
 
-Planı onaylarsan **3. adımdan** başlayıp migration'ı yazarım; MedicaSimple cevabını verince **7. adımı** detaylandırırım.
+## Senin yapacakların (sırayla)
+
+1. **3 hesap aç** `/auth` sayfasından:
+   - `ercan@klinik.com` (Dr. Ercan)
+   - `es@klinik.com` (eş doktor)
+   - `sekreter@klinik.com` (sekreter)
+
+2. **Admin panelinde** (Takım Yönetimi) her birinin rolünü ata:
+   - Ercan → **Doktor**
+   - Eş → **Doktor**
+   - Sekreter → **Asistan** veya **Sekreter** (rol tanımına göre)
+
+3. **Klinik Üyelikleri** panelinde 2 eşleştirme ekle:
+   - Sahip: Ercan → Üye: Sekreter (rol: Sekreter)
+   - Sahip: Eş → Üye: Sekreter (rol: Sekreter)
+
+4. Sekreter giriş yapınca üst barda klinik seçici göreceği için, hasta/randevu eklerken hangi doktora ait olduğunu seçer.
+
+---
+
+## Uygulama planı (kod tarafında)
+
+### Yeni migration
+- `set_clinic_owner_on_insert()` fonksiyonunu güncelle: frontend explicit `user_id` verdiyse dokunma; tek üyelik varsa otomatik ata; çoklu üyelikte `NEW.user_id` zaten doğru olmalı.
+
+### Yeni dosyalar
+- `src/contexts/ActiveClinicContext.tsx` — sekreterin aktif klinik seçimini tutar, `clinic_members`'tan kullanıcının üyeliklerini çeker.
+- `src/components/dashboard/ActiveClinicSwitcher.tsx` — üst bara takılan dropdown, sadece üyeliği ≥2 olan kullanıcılarda görünür.
+
+### Düzenlenecek dosyalar
+- `src/components/team/ClinicMembersPanel.tsx` — "Doktor (Eş)" → "Doktor".
+- `src/components/layouts/DashboardLayout.tsx` — `ActiveClinicSwitcher` mount.
+- `src/components/appointments/NewAppointmentDialog.tsx`, `src/components/patients/PatientDetailModal.tsx` (yeni hasta), `src/pages/Patients.tsx` (insert noktaları) — insert yaparken aktif klinik `user_id`'sini ekle.
+- `src/pages/CalendarPage.tsx`, `src/pages/Appointments.tsx`, `src/components/dashboard/MiniSchedule.tsx` — doktor bazlı renk haritası.
+- `src/index.css` — `--doctor-ercan` / `--doctor-secondary` HSL token'ları.
+
+### Test
+- Sekreter girişi → aktif klinik "Ercan" seç → hasta ekle → Ercan girişinde görünmeli, eş girişinde görünmemeli.
+- Aktif klinik "Eş" seç → randevu ekle → takvimde mor renkte, eş girişinde görünmeli, Ercan görmemeli.
+- Admin (sen) her ikisini de görmelisin.
+
+---
+
+Onaylarsan migration + kod değişikliklerini sırayla yapacağım.
