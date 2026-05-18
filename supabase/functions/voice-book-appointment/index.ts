@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
         status: "active",
         platform: "voice",
         is_ai_active: true,
+        user_id: clinicUserId,
       });
       if (insertPatientErr) {
         console.error("[voice-book-appointment] insert patient error", insertPatientErr);
