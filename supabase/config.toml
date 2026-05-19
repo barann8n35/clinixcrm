@@ -45,5 +45,12 @@ verify_jwt = false
 [functions.voice-book-appointment]
 verify_jwt = false
 
+[functions.voice-reschedule-appointment]
+verify_jwt = false
+
+[functions.voice-inbound-webhook]
+verify_jwt = false
+
+
 
 
