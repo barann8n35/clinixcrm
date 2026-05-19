@@ -178,18 +178,17 @@ Deno.serve(async (req) => {
     }
 
     const callType = body.call_type ?? "manual";
-    const defaultGreeting =
-      callType === "appointment_reminder"
-        ? `Merhaba${patientName ? " " + patientName : ""}, Clinix kliniğinden arıyorum. Yaklaşan randevunuzla ilgili kısa bir hatırlatma için aradım.`
-        : `Merhaba${patientName ? " " + patientName : ""}, Clinix asistanı ile görüşüyorsunuz. Size nasıl yardımcı olabilirim?`;
-    const firstMessage = (body.initial_message?.trim() || defaultGreeting).slice(0, 500);
+    // Only override first_message when caller explicitly provided one.
+    // Otherwise let the ElevenLabs dashboard agent's "First message" be used.
+    const explicitFirstMessage = body.initial_message?.trim();
+    const agentOverride: Record<string, unknown> = { language: "tr" };
+    if (explicitFirstMessage) {
+      agentOverride.first_message = explicitFirstMessage.slice(0, 500);
+    }
 
     const initiationData: Record<string, unknown> = {
       conversation_config_override: {
-        agent: {
-          first_message: firstMessage,
-          language: "tr",
-        },
+        agent: agentOverride,
       },
       dynamic_variables: {
         patient_name: patientName || "Misafir",

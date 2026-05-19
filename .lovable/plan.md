@@ -1,32 +1,28 @@
-## Plan
+## Sorun
 
-Arama kaydı Clinix tarafında başarıyla oluşuyor (`conversation_id` ve Twilio SID geliyor), yani sorun aramayı başlatma değil; konuşmanın başlatılma/veri aktarım aşamasında stabil olmaması. Bunu Clinix tarafında daha deterministik hale getireceğim.
+`supabase/functions/place-outbound-call/index.ts` içinde, her aramaya Clinix tarafından bir `first_message` override gönderiliyor. Manuel arama için varsayılan metin:
 
-## Yapılacaklar
+> "Merhaba {isim}, Clinix asistanı ile görüşüyorsunuz. Size nasıl yardımcı olabilirim?"
 
-1. **Outbound çağrı payload’unu güçlendirme**
-   - `place-outbound-call` içinde ElevenLabs `outbound-call` isteğine `conversation_initiation_client_data` eklenecek.
-   - Her çağrı için sabit, kısa ve Türkçe bir `first_message` override gönderilecek.
-   - `language: "tr"` açıkça gönderilecek.
-   - Gerekirse `initial_message` varsa onu ilk mesaj olarak kullanacak, yoksa güvenli varsayılan karşılama dönecek.
+Randevu hatırlatma için:
 
-2. **Telefon görüşmesi davranışını daha stabil yapma**
-   - `call_recording_enabled: true` eklenecek; böylece ElevenLabs/Twilio tarafında sessiz kalan çağrıları sonradan incelemek kolaylaşacak.
-   - `telephony_call_config.ringing_timeout_secs` net tanımlanacak.
-   - ElevenLabs cevabındaki tüm önemli alanlar loglanacak, fakat API key/secret loglanmayacak.
+> "Merhaba {isim}, Clinix kliniğinden arıyorum. ..."
 
-3. **Hasta/randevu bağlamı gönderme**
-   - Mümkün olduğunda `dynamic_variables` içine hasta adı, çağrı tipi, randevu ID gibi güvenli bağlam bilgileri eklenecek.
-   - Böylece agent ilk cümlede boşta kalmayacak ve konuşmayı başlatmak için bekleme ihtimali azalacak.
+Yani ElevenLabs dashboard'da agent için ayarladığın ilk mesaj kullanılmıyor — Clinix kendi metnini zorluyor. Bu yüzden arama "Clinix asistanı" diye başlıyor.
 
-4. **UI test aramasını daha kontrollü hale getirme**
-   - Test aramasından `initial_message` gönderilecek: kısa, net Türkçe karşılama.
-   - Başarılı toast aynı kalacak; hata mesajları daha açıklayıcı gösterilecek.
+## Çözüm
 
-5. **Doğrulama**
-   - Edge Function deploy/test sonrası son kayıtların `initiated + conversation_id` olarak oluştuğu kontrol edilecek.
-   - Sessiz kalma tekrar ederse, artık `conversation_id` + kayıt açık olduğundan ElevenLabs Conversation History üzerinde hangi aşamanın boş kaldığı net görülebilecek.
+`place-outbound-call` içinde first_message override mantığını şu şekilde değiştir:
 
-## Teknik not
+1. **Varsayılan Clinix greeting'lerini kaldır.** `defaultGreeting` değişkenini sil.
+2. **Sadece çağrıyı yapan açıkça `initial_message` gönderirse** `first_message` override eklensin. Aksi halde `conversation_config_override.agent.first_message` payload'a hiç konmasın → ElevenLabs dashboard'daki agent ilk mesajı kullanılır.
+3. `language: "tr"` ve `dynamic_variables` (patient_name, call_type, vb.) aynen kalsın — bunlar agent'ın bağlamı için gerekli, ilk mesajı override etmiyor.
+4. `check-appointment-reminders` ve `VoiceAgentTab` (test araması) tarafından `initial_message` gönderiliyor mu kontrol et:
+   - Hatırlatma cron'u şu an `initial_message` göndermiyor → dashboard mesajı kullanılır. ✓
+   - UI test araması da `initial_message` göndermiyorsa → dashboard mesajı kullanılır. ✓
 
-ElevenLabs native Twilio API’si `conversation_initiation_client_data` destekliyor. Bu, dashboard ayarlarını tamamen değiştirmeden sadece bu çağrı için ilk mesaj/dil/dinamik değişken göndermemizi sağlar. Bu değişiklik aramanın “bazen konuşmuyor” davranışını azaltmak için en doğru Clinix tarafı müdahaledir.
+## Sonuç
+
+Bu değişiklikten sonra ElevenLabs dashboard'da agent için tanımladığın "First message" alanı (örn. doktor ismiyle özelleştirdiğin karşılama) her aramada kullanılacak. Clinix artık ilk cümleyi zorlamayacak; sadece arka planda `dynamic_variables` ile hasta adı ve bağlamı gönderecek (agent prompt'unda `{{patient_name}}` gibi placeholder kullanabilirsin).
+
+Onaylarsan uygulayayım.
