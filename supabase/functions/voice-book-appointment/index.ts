@@ -157,7 +157,33 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2) Insert appointment
+    // 2a) Mükerrer kontrol: aynı hasta için ±2 saat içinde aktif randevu var mı?
+    const windowMs = 2 * 60 * 60 * 1000;
+    const scheduledMs = new Date(scheduled.iso).getTime();
+    const windowStart = new Date(scheduledMs - windowMs).toISOString();
+    const windowEnd = new Date(scheduledMs + windowMs).toISOString();
+    const { data: dup } = await admin
+      .from("appointments")
+      .select("id, scheduled_at")
+      .eq("patient_id", patientId)
+      .in("status", ["upcoming", "rescheduled", "pending"])
+      .gte("scheduled_at", windowStart)
+      .lte("scheduled_at", windowEnd)
+      .limit(1)
+      .maybeSingle();
+    if (dup?.id) {
+      const d = new Date(dup.scheduled_at as string);
+      const pretty = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      return json({
+        success: false,
+        duplicate: true,
+        appointment_id: dup.id,
+        scheduled_at: pretty,
+        message: `Bu hastanın zaten ${pretty} tarihli aktif bir randevusu var. Değiştirmek isterseniz randevu güncelleme aracını kullanın.`,
+      });
+    }
+
+    // 2b) Insert appointment
     const { data: appt, error: apptErr } = await admin
       .from("appointments")
       .insert({
@@ -173,8 +199,17 @@ Deno.serve(async (req) => {
 
     if (apptErr) {
       console.error("[voice-book-appointment] insert appointment error", apptErr);
-      return json({ success: false, error: `Randevu oluşturulamadı: ${apptErr.message}` }, 500);
+      const msg = apptErr.message || "";
+      if (msg.includes("Bu saat dolu") || (apptErr as any).code === "P0001") {
+        return json({
+          success: false,
+          slot_taken: true,
+          message: "Bu saat dolu. Lütfen başka bir saat önerin.",
+        });
+      }
+      return json({ success: false, error: `Randevu oluşturulamadı: ${msg}` }, 500);
     }
+
 
     return json({
       success: true,
