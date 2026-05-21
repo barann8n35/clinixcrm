@@ -106,18 +106,32 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
     setLoading(true);
     const { data } = await supabase
       .from("patients")
-      .select("id, name, surname, phone, complaint, location, status, platform, created_at, internal_notes, reminder_date, reminder_active, tags, age, gender, notes")
+      .select("id, name, surname, phone, complaint, location, status, platform, created_at, internal_notes, reminder_date, reminder_active, tags, age, gender, notes, doctor")
       .eq("id", id)
       .maybeSingle();
 
     // Fetch latest appointment for this patient
     const { data: apptData } = await supabase
       .from("appointments")
-      .select("id, scheduled_at, type")
+      .select("id, scheduled_at, type, doctor")
       .eq("patient_id", id)
       .order("scheduled_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // Fetch distinct doctor list from existing appointments to populate the selector
+    const { data: docRows } = await supabase
+      .from("appointments")
+      .select("doctor")
+      .not("doctor", "is", null)
+      .limit(200);
+    const distinct = Array.from(
+      new Set([
+        ...DEFAULT_DOCTORS,
+        ...((docRows || []).map((r: any) => (r.doctor as string)?.trim()).filter(Boolean) as string[]),
+      ])
+    );
+    setDoctorOptions(distinct);
 
     if (data) {
       setPatient(data as unknown as PatientFull);
@@ -132,15 +146,18 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
       setApptDate(d);
       setApptTime(format(d, "HH:mm"));
       setApptType(apptData.type || "Muayene");
+      setApptDoctor((apptData as any).doctor || (data as any)?.doctor || DEFAULT_DOCTORS[0]);
     } else {
       setApptId(null);
       setApptDate(undefined);
       setApptTime("09:00");
       setApptType("Muayene");
+      setApptDoctor((data as any)?.doctor || DEFAULT_DOCTORS[0]);
     }
 
     setLoading(false);
   }, [onClose]);
+
 
   useEffect(() => {
     if (patientId) {
