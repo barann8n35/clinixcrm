@@ -375,6 +375,7 @@ export type Database = {
         Row: {
           age: string | null
           appointment_date: string | null
+          campaign_name: string | null
           complaint: string | null
           created_at: string
           doctor: string | null
@@ -387,6 +388,7 @@ export type Database = {
           instagram_id: string | null
           internal_notes: string | null
           is_ai_active: boolean | null
+          lead_source: string | null
           location: string | null
           name: string
           notes: string | null
@@ -406,6 +408,7 @@ export type Database = {
         Insert: {
           age?: string | null
           appointment_date?: string | null
+          campaign_name?: string | null
           complaint?: string | null
           created_at?: string
           doctor?: string | null
@@ -418,6 +421,7 @@ export type Database = {
           instagram_id?: string | null
           internal_notes?: string | null
           is_ai_active?: boolean | null
+          lead_source?: string | null
           location?: string | null
           name: string
           notes?: string | null
@@ -437,6 +441,7 @@ export type Database = {
         Update: {
           age?: string | null
           appointment_date?: string | null
+          campaign_name?: string | null
           complaint?: string | null
           created_at?: string
           doctor?: string | null
@@ -449,6 +454,7 @@ export type Database = {
           instagram_id?: string | null
           internal_notes?: string | null
           is_ai_active?: boolean | null
+          lead_source?: string | null
           location?: string | null
           name?: string
           notes?: string | null
