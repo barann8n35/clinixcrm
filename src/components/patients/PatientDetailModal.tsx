@@ -356,9 +356,26 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
                 <Input value={editForm.location || ""} onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} className="h-9 text-sm rounded-xl" />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-[11px] font-medium text-muted-foreground">Doktor</label>
+                <Select
+                  value={editForm.doctor || ""}
+                  onValueChange={(v) => setEditForm(f => ({ ...f, doctor: v }))}
+                >
+                  <SelectTrigger className="h-9 text-sm rounded-xl">
+                    <SelectValue placeholder="Doktor seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctorOptions.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
                 <label className="text-[11px] font-medium text-muted-foreground">Şikayet</label>
                 <Input value={editForm.complaint || ""} onChange={e => setEditForm(f => ({ ...f, complaint: e.target.value }))} className="h-9 text-sm rounded-xl" />
               </div>
+
               <div className="space-y-1.5 sm:col-span-2">
                 <label className="text-[11px] font-medium text-muted-foreground">Notlar</label>
                 <textarea
