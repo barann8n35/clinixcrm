@@ -41,7 +41,14 @@ export interface PatientFull {
   age: string | null;
   gender: string | null;
   notes: string | null;
+  doctor: string | null;
 }
+
+const DEFAULT_DOCTORS = [
+  "Dr. İlhan Elmacı",
+  "Prof. Dr. Ercan Lütfi Gürses",
+];
+
 
 interface PatientDetailModalProps {
   patientId: string | null;
