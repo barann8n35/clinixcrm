@@ -50,6 +50,8 @@ const Patients = () => {
     }
   }, [setSearchParams]);
 
+  const handleCloseModal = useCallback(() => selectPatient(null), [selectPatient]);
+
   useEffect(() => {
     const fetchPatients = async () => {
       const { data } = await supabase
