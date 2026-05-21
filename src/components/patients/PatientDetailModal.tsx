@@ -443,6 +443,20 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5 sm:col-span-3">
+                      <label className="text-[11px] font-medium text-muted-foreground">Randevu Doktoru</label>
+                      <Select value={apptDoctor} onValueChange={setApptDoctor}>
+                        <SelectTrigger className="h-9 text-sm rounded-xl">
+                          <SelectValue placeholder="Doktor seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {doctorOptions.map((d) => (
+                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                   </div>
                 </div>
               </>
