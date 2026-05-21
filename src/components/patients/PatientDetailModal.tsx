@@ -179,12 +179,32 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
       age: patient.age,
       gender: patient.gender,
       notes: patient.notes,
+      doctor: patient.doctor,
     });
     setEditing(true);
   };
 
   const handleSave = async () => {
     if (!patient) return;
+    setSaving(true);
+    try {
+      // Update patient
+      const { error } = await supabase
+        .from("patients")
+        .update({
+          name: editForm.name || patient.name,
+          surname: editForm.surname ?? patient.surname,
+          phone: editForm.phone ?? patient.phone,
+          complaint: editForm.complaint ?? patient.complaint,
+          location: editForm.location ?? patient.location,
+          age: editForm.age ?? patient.age,
+          gender: editForm.gender ?? patient.gender,
+          notes: editForm.notes ?? patient.notes,
+          doctor: editForm.doctor ?? patient.doctor,
+        })
+        .eq("id", patient.id);
+      if (error) throw error;
+
     setSaving(true);
     try {
       // Update patient
