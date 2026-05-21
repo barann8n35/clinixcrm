@@ -80,7 +80,10 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
   const [apptDate, setApptDate] = useState<Date | undefined>(undefined);
   const [apptTime, setApptTime] = useState("09:00");
   const [apptType, setApptType] = useState("Muayene");
+  const [apptDoctor, setApptDoctor] = useState<string>(DEFAULT_DOCTORS[0]);
+  const [doctorOptions, setDoctorOptions] = useState<string[]>(DEFAULT_DOCTORS);
   const [calling, setCalling] = useState(false);
+
 
   const handleCallPatient = async () => {
     if (!patient?.phone) {
