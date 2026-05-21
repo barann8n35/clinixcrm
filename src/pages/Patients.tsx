@@ -50,6 +50,8 @@ const Patients = () => {
     }
   }, [setSearchParams]);
 
+  const handleCloseModal = useCallback(() => selectPatient(null), [selectPatient]);
+
   useEffect(() => {
     const fetchPatients = async () => {
       const { data } = await supabase
@@ -153,7 +155,7 @@ const Patients = () => {
       {/* Universal Patient Detail Modal */}
       <PatientDetailModal
         patientId={selectedId}
-        onClose={() => selectPatient(null)}
+        onClose={handleCloseModal}
       />
     </div>
   );

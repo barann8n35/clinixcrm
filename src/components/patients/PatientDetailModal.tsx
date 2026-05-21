@@ -166,7 +166,10 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
     } else {
       setPatient(null);
     }
-  }, [patientId, fetchPatient]);
+    // Intentionally only depend on patientId to avoid duplicate fetches
+    // when parent re-renders and recreates the onClose callback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId]);
 
   const startEdit = () => {
     if (!patient) return;
