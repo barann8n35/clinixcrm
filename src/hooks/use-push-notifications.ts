@@ -130,7 +130,7 @@ export function usePushNotifications() {
         .order("created_at", { ascending: false });
 
       const matched = existing?.find((s) => s.endpoint === subId);
-      const recordId = matched?.id ?? existing?.[0]?.id ?? crypto.randomUUID();
+      const recordId = matched?.id ?? crypto.randomUUID();
 
       const { error: dbError } = await supabase.from("push_subscriptions").upsert(
         {
