@@ -41,7 +41,14 @@ export interface PatientFull {
   age: string | null;
   gender: string | null;
   notes: string | null;
+  doctor: string | null;
 }
+
+const DEFAULT_DOCTORS = [
+  "Dr. İlhan Elmacı",
+  "Prof. Dr. Ercan Lütfi Gürses",
+];
+
 
 interface PatientDetailModalProps {
   patientId: string | null;
@@ -73,7 +80,10 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
   const [apptDate, setApptDate] = useState<Date | undefined>(undefined);
   const [apptTime, setApptTime] = useState("09:00");
   const [apptType, setApptType] = useState("Muayene");
+  const [apptDoctor, setApptDoctor] = useState<string>(DEFAULT_DOCTORS[0]);
+  const [doctorOptions, setDoctorOptions] = useState<string[]>(DEFAULT_DOCTORS);
   const [calling, setCalling] = useState(false);
+
 
   const handleCallPatient = async () => {
     if (!patient?.phone) {
@@ -96,18 +106,32 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
     setLoading(true);
     const { data } = await supabase
       .from("patients")
-      .select("id, name, surname, phone, complaint, location, status, platform, created_at, internal_notes, reminder_date, reminder_active, tags, age, gender, notes")
+      .select("id, name, surname, phone, complaint, location, status, platform, created_at, internal_notes, reminder_date, reminder_active, tags, age, gender, notes, doctor")
       .eq("id", id)
       .maybeSingle();
 
     // Fetch latest appointment for this patient
     const { data: apptData } = await supabase
       .from("appointments")
-      .select("id, scheduled_at, type")
+      .select("id, scheduled_at, type, doctor")
       .eq("patient_id", id)
       .order("scheduled_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // Fetch distinct doctor list from existing appointments to populate the selector
+    const { data: docRows } = await supabase
+      .from("appointments")
+      .select("doctor")
+      .not("doctor", "is", null)
+      .limit(200);
+    const distinct = Array.from(
+      new Set([
+        ...DEFAULT_DOCTORS,
+        ...((docRows || []).map((r: any) => (r.doctor as string)?.trim()).filter(Boolean) as string[]),
+      ])
+    );
+    setDoctorOptions(distinct);
 
     if (data) {
       setPatient(data as unknown as PatientFull);
@@ -122,15 +146,18 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
       setApptDate(d);
       setApptTime(format(d, "HH:mm"));
       setApptType(apptData.type || "Muayene");
+      setApptDoctor((apptData as any).doctor || (data as any)?.doctor || DEFAULT_DOCTORS[0]);
     } else {
       setApptId(null);
       setApptDate(undefined);
       setApptTime("09:00");
       setApptType("Muayene");
+      setApptDoctor((data as any)?.doctor || DEFAULT_DOCTORS[0]);
     }
 
     setLoading(false);
   }, [onClose]);
+
 
   useEffect(() => {
     if (patientId) {
@@ -152,6 +179,7 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
       age: patient.age,
       gender: patient.gender,
       notes: patient.notes,
+      doctor: patient.doctor,
     });
     setEditing(true);
   };
@@ -160,6 +188,7 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
     if (!patient) return;
     setSaving(true);
     try {
+      const doctorVal = (editForm.doctor ?? patient.doctor) || null;
       // Update patient
       const { error } = await supabase
         .from("patients")
@@ -172,6 +201,7 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
           age: editForm.age ?? patient.age,
           gender: editForm.gender ?? patient.gender,
           notes: editForm.notes ?? patient.notes,
+          doctor: doctorVal,
         })
         .eq("id", patient.id);
       if (error) throw error;
@@ -187,10 +217,12 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
           .update({
             scheduled_at: scheduledAt.toISOString(),
             type: apptType,
+            doctor: apptDoctor || doctorVal || DEFAULT_DOCTORS[0],
           })
           .eq("id", apptId);
         if (apptError) throw apptError;
       }
+
 
       setPatient(prev => prev ? { ...prev, ...editForm } : null);
       setEditing(false);
@@ -324,9 +356,26 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
                 <Input value={editForm.location || ""} onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} className="h-9 text-sm rounded-xl" />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-[11px] font-medium text-muted-foreground">Doktor</label>
+                <Select
+                  value={editForm.doctor || ""}
+                  onValueChange={(v) => setEditForm(f => ({ ...f, doctor: v }))}
+                >
+                  <SelectTrigger className="h-9 text-sm rounded-xl">
+                    <SelectValue placeholder="Doktor seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctorOptions.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
                 <label className="text-[11px] font-medium text-muted-foreground">Şikayet</label>
                 <Input value={editForm.complaint || ""} onChange={e => setEditForm(f => ({ ...f, complaint: e.target.value }))} className="h-9 text-sm rounded-xl" />
               </div>
+
               <div className="space-y-1.5 sm:col-span-2">
                 <label className="text-[11px] font-medium text-muted-foreground">Notlar</label>
                 <textarea
@@ -394,6 +443,20 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5 sm:col-span-3">
+                      <label className="text-[11px] font-medium text-muted-foreground">Randevu Doktoru</label>
+                      <Select value={apptDoctor} onValueChange={setApptDoctor}>
+                        <SelectTrigger className="h-9 text-sm rounded-xl">
+                          <SelectValue placeholder="Doktor seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {doctorOptions.map((d) => (
+                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                   </div>
                 </div>
               </>
