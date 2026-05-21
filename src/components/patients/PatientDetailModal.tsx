@@ -203,10 +203,11 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
           doctor: editForm.doctor ?? patient.doctor,
         })
         .eq("id", patient.id);
-      if (error) throw error;
-
+  const handleSave = async () => {
+    if (!patient) return;
     setSaving(true);
     try {
+      const doctorVal = (editForm.doctor ?? patient.doctor) || null;
       // Update patient
       const { error } = await supabase
         .from("patients")
@@ -219,6 +220,7 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
           age: editForm.age ?? patient.age,
           gender: editForm.gender ?? patient.gender,
           notes: editForm.notes ?? patient.notes,
+          doctor: doctorVal,
         })
         .eq("id", patient.id);
       if (error) throw error;
@@ -234,10 +236,12 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
           .update({
             scheduled_at: scheduledAt.toISOString(),
             type: apptType,
+            doctor: apptDoctor || doctorVal || DEFAULT_DOCTORS[0],
           })
           .eq("id", apptId);
         if (apptError) throw apptError;
       }
+
 
       setPatient(prev => prev ? { ...prev, ...editForm } : null);
       setEditing(false);
