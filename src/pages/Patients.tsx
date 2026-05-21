@@ -153,7 +153,7 @@ const Patients = () => {
       {/* Universal Patient Detail Modal */}
       <PatientDetailModal
         patientId={selectedId}
-        onClose={useCallback(() => selectPatient(null), [selectPatient])}
+        onClose={handleCloseModal}
       />
     </div>
   );
