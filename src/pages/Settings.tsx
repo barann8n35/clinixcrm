@@ -235,23 +235,19 @@ const Settings = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Ad</Label>
-                  <Input id="firstName" placeholder="Adınız" defaultValue="Dr. Ayşe" />
+                  <Input id="firstName" placeholder="Adınız" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Soyad</Label>
-                  <Input id="lastName" placeholder="Soyadınız" defaultValue="Yılmaz" />
+                  <Input id="lastName" placeholder="Soyadınız" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">E-posta</Label>
-                <Input id="email" type="email" placeholder="E-posta adresiniz" defaultValue="ayse@clinix.com" />
+                <Input id="email" type="email" value={userEmail} readOnly />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefon</Label>
-                <Input id="phone" placeholder="+90 5XX XXX XX XX" defaultValue="+90 532 123 4567" />
-              </div>
-              <Button onClick={handleSave} className="gap-2">
-                <Save className="h-4 w-4" />
+              <Button onClick={handleSaveProfile} disabled={savingProfile || !userId} className="gap-2">
+                {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Kaydet
               </Button>
             </CardContent>
@@ -268,24 +264,10 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="clinicName">Klinik Adı</Label>
-                <Input id="clinicName" placeholder="Klinik adını girin" defaultValue="Clinix Diş Kliniği" />
+                <Input id="clinicName" placeholder="Klinik adını girin" value={clinicName} onChange={(e) => setClinicName(e.target.value)} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clinicPhone">Klinik Telefon</Label>
-                  <Input id="clinicPhone" placeholder="+90 2XX XXX XXXX" defaultValue="+90 212 555 0000" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="clinicEmail">Klinik E-posta</Label>
-                  <Input id="clinicEmail" type="email" placeholder="info@klinik.com" defaultValue="info@clinix.com" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Adres</Label>
-                <Textarea id="address" placeholder="Klinik adresi" defaultValue="Levent Mah. Büyükdere Cad. No:123, Beşiktaş / İstanbul" rows={3} />
-              </div>
-              <Button onClick={handleSave} className="gap-2">
-                <Save className="h-4 w-4" />
+              <Button onClick={handleSaveClinic} disabled={savingClinic || !widgetRowId} className="gap-2">
+                {savingClinic ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Kaydet
               </Button>
             </CardContent>
@@ -294,6 +276,7 @@ const Settings = () => {
             <ClinicScheduleTab />
           </div>
         </TabsContent>
+
 
         {/* Entegrasyonlar Tab */}
         <TabsContent value="entegrasyonlar">
