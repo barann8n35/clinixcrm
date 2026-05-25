@@ -937,26 +937,16 @@ export type Database = {
           slot_time: string
         }[]
       }
-      handle_omnichannel_message:
-        | {
-            Args: {
-              p_external_id: string
-              p_message: string
-              p_name: string
-              p_platform: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_clinic_user_id?: string
-              p_external_id: string
-              p_message: string
-              p_name: string
-              p_platform: string
-            }
-            Returns: string
-          }
+      handle_omnichannel_message: {
+        Args: {
+          p_clinic_user_id?: string
+          p_external_id: string
+          p_message: string
+          p_name: string
+          p_platform: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
