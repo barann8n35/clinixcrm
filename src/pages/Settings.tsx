@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { User, Building2, Plug, MessageCircle, Instagram, Save, Zap, Plus, Pencil, Trash2, Loader2, Bell, BellRing, Smartphone, Download, CheckCircle2, Clock, Mic, Globe } from "lucide-react";
@@ -29,8 +28,6 @@ interface QuickReply {
 }
 
 const Settings = () => {
-  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
-  const [instagramEnabled, setInstagramEnabled] = useState(false);
   const { canInstall, isInstalled, install } = usePWA();
   const { loading: notifLoading, connectionStatus, requestPermission } = usePushNotifications();
 
@@ -297,43 +294,33 @@ const Settings = () => {
           <div className="space-y-4">
             <Card className="border-border/60 shadow-card rounded-2xl">
               <CardContent className="p-4 md:p-6">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
-                      <MessageCircle className="h-6 w-6 text-success" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-foreground">WhatsApp Business</h3>
-                        <Badge variant={whatsappEnabled ? "default" : "secondary"} className={whatsappEnabled ? "bg-success text-success-foreground" : ""}>
-                          {whatsappEnabled ? "Bağlı" : "Bağlı Değil"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">WhatsApp üzerinden hasta mesajlarını alın ve yanıtlayın.</p>
-                    </div>
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
+                    <MessageCircle className="h-6 w-6 text-success" />
                   </div>
-                  <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">WhatsApp Business</h3>
+                      <Badge variant="secondary">Onay Bekleniyor</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">WhatsApp Business API (WABA) onayı tamamlandığında aktif olacak.</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
             <Card className="border-border/60 shadow-card rounded-2xl">
               <CardContent className="p-4 md:p-6">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center shrink-0">
-                      <Instagram className="h-6 w-6 text-accent-foreground" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-foreground">Instagram DM</h3>
-                        <Badge variant={instagramEnabled ? "default" : "secondary"} className={instagramEnabled ? "bg-success text-success-foreground" : ""}>
-                          {instagramEnabled ? "Bağlı" : "Bağlı Değil"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">Instagram DM mesajlarını CRM üzerinden yönetin.</p>
-                    </div>
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center shrink-0">
+                    <Instagram className="h-6 w-6 text-accent-foreground" />
                   </div>
-                  <Switch checked={instagramEnabled} onCheckedChange={setInstagramEnabled} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">Instagram DM</h3>
+                      <Badge variant="secondary">Token Yenilenmesi Gerekiyor</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">Meta Page Access Token süresi dolmuş. Meta Developer Console'dan yenileyin.</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

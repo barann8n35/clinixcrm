@@ -44,10 +44,6 @@ export interface PatientFull {
   doctor: string | null;
 }
 
-const DEFAULT_DOCTORS = [
-  "Dr. İlhan Elmacı",
-  "Prof. Dr. Ercan Lütfi Gürses",
-];
 
 
 interface PatientDetailModalProps {
@@ -80,8 +76,8 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
   const [apptDate, setApptDate] = useState<Date | undefined>(undefined);
   const [apptTime, setApptTime] = useState("09:00");
   const [apptType, setApptType] = useState("Muayene");
-  const [apptDoctor, setApptDoctor] = useState<string>(DEFAULT_DOCTORS[0]);
-  const [doctorOptions, setDoctorOptions] = useState<string[]>(DEFAULT_DOCTORS);
+  const [apptDoctor, setApptDoctor] = useState<string>("");
+  const [doctorOptions, setDoctorOptions] = useState<string[]>([]);
   const [calling, setCalling] = useState(false);
 
 
@@ -126,10 +122,9 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
       .not("doctor", "is", null)
       .limit(200);
     const distinct = Array.from(
-      new Set([
-        ...DEFAULT_DOCTORS,
-        ...((docRows || []).map((r: any) => (r.doctor as string)?.trim()).filter(Boolean) as string[]),
-      ])
+      new Set(
+        (docRows || []).map((r: any) => (r.doctor as string)?.trim()).filter(Boolean) as string[]
+      )
     );
     setDoctorOptions(distinct);
 
@@ -146,13 +141,13 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
       setApptDate(d);
       setApptTime(format(d, "HH:mm"));
       setApptType(apptData.type || "Muayene");
-      setApptDoctor((apptData as any).doctor || (data as any)?.doctor || DEFAULT_DOCTORS[0]);
+      setApptDoctor((apptData as any).doctor || (data as any)?.doctor || "");
     } else {
       setApptId(null);
       setApptDate(undefined);
       setApptTime("09:00");
       setApptType("Muayene");
-      setApptDoctor((data as any)?.doctor || DEFAULT_DOCTORS[0]);
+      setApptDoctor((data as any)?.doctor || "");
     }
 
     setLoading(false);
@@ -220,7 +215,7 @@ export function PatientDetailModal({ patientId, onClose }: PatientDetailModalPro
           .update({
             scheduled_at: scheduledAt.toISOString(),
             type: apptType,
-            doctor: apptDoctor || doctorVal || DEFAULT_DOCTORS[0],
+            doctor: apptDoctor || doctorVal || "",
           })
           .eq("id", apptId);
         if (apptError) throw apptError;
