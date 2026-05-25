@@ -29,11 +29,6 @@ const platformConfig: Record<string, { icon: IconType | React.FC<any>; color: st
   telegram: { icon: FaTelegramPlane, color: "#0088cc" },
 };
 
-const priorityStyles: Record<string, { bg: string; text: string }> = {
-  urgent: { bg: "bg-destructive/10", text: "text-destructive" },
-  medium: { bg: "bg-warning/10", text: "text-warning" },
-  low: { bg: "bg-primary/10", text: "text-primary" },
-};
 
 const columnKeys = ["incoming", "aiScan", "awaitingApproval", "arrived", "appointmentBooked", "postOp"] as const;
 type ColumnKey = (typeof columnKeys)[number];
@@ -179,7 +174,7 @@ const PostOpBadge = ({ days, patientName, patientId }: { days: number; patientNa
 };
 
 /* ── Reusable card inner ── */
-const CardContent = ({ card, pStyle, t, showPostOp, isArrived }: { card: PipelineCard; pStyle: { bg: string; text: string }; t: (k: string) => string; showPostOp?: boolean; isArrived?: boolean }) => (
+const CardContent = ({ card, t, showPostOp, isArrived }: { card: PipelineCard; t: (k: string) => string; showPostOp?: boolean; isArrived?: boolean }) => (
   <>
     <div className="flex items-center justify-between mb-2 min-w-0">
       <div className="flex items-center gap-1.5 min-w-0">
@@ -187,11 +182,6 @@ const CardContent = ({ card, pStyle, t, showPostOp, isArrived }: { card: Pipelin
         <span className="text-sm font-semibold text-foreground truncate mr-2">{card.name}</span>
       </div>
       <PlatformIcon platform={card.platform} />
-    </div>
-    <div className="flex items-center gap-2 mb-2">
-      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${pStyle.bg} ${pStyle.text}`}>
-        {t(`pipeline.${card.priority}`)}
-      </span>
     </div>
     <p className="text-[11px] text-muted-foreground">{card.date}</p>
     {showPostOp && card.postOpDays !== undefined && <PostOpBadge days={card.postOpDays} patientName={card.name} patientId={card.id} />}
@@ -218,6 +208,7 @@ const Pipeline = () => {
       .order("updated_at", { ascending: false });
     if (!data) return;
 
+    const now = Date.now();
     const stages: Record<ColumnKey, PipelineCard[]> = {
       incoming: [],
       aiScan: [],
@@ -227,7 +218,6 @@ const Pipeline = () => {
       postOp: [],
     };
 
-    const now = Date.now();
     data.forEach((p) => {
       const col = columnForStatus(p.status);
       const ageDays = Math.floor((now - new Date(p.created_at).getTime()) / 86400000);
@@ -323,7 +313,6 @@ const Pipeline = () => {
     { key: "postOp", labelKey: "pipeline.postOp" },
   ];
 
-
   return (
     <div className="p-6 md:p-8 space-y-6 h-full overflow-auto gradient-mesh">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
@@ -403,7 +392,6 @@ const Pipeline = () => {
                         </div>
                       )}
                       {cards.map((card, index) => {
-                        const pStyle = priorityStyles[card.priority];
                         const isCelebrating = celebrateId === card.id;
                         return (
                           <Draggable key={card.id} draggableId={card.id} index={index}>
@@ -453,7 +441,7 @@ const Pipeline = () => {
                                   )}
                                 </AnimatePresence>
 
-                                <CardContent card={card} pStyle={pStyle} t={t} showPostOp={isPostOp} isArrived={isArrivedCol} />
+                                <CardContent card={card} t={t} showPostOp={isPostOp} isArrived={isArrivedCol} />
                               </div>
                             )}
                           </Draggable>

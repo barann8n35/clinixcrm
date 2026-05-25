@@ -75,44 +75,17 @@ const Settings = () => {
         setLastName(parts.slice(1).join(" "));
       }
     })();
+  }, []);
+
+  useEffect(() => {
     (async () => {
-      const { data: w } = await supabase
-        .from("widget_settings")
-        .select("id, clinic_name")
-        .limit(1)
-        .maybeSingle();
-      if (w) {
-        setWidgetRowId(w.id);
-        setClinicName(w.clinic_name || "");
+      const { data } = await supabase.from("widget_settings").select("id, clinic_name").limit(1).maybeSingle();
+      if (data) {
+        setWidgetRowId(data.id);
+        setClinicName(data.clinic_name ?? "");
       }
     })();
   }, []);
-
-  const handleSaveProfile = async () => {
-    if (!userId) return;
-    setSavingProfile(true);
-    const full_name = `${firstName.trim()} ${lastName.trim()}`.trim();
-    let error;
-    if (profileRowId) {
-      ({ error } = await supabase.from("profiles").update({ full_name }).eq("id", profileRowId));
-    } else {
-      const res = await supabase.from("profiles").insert({ user_id: userId, full_name }).select("id").maybeSingle();
-      error = res.error;
-      if (res.data) setProfileRowId(res.data.id);
-    }
-    setSavingProfile(false);
-    if (error) toast({ title: "Hata", description: error.message, variant: "destructive" });
-    else toast({ title: "Kaydedildi", description: "Profil güncellendi." });
-  };
-
-  const handleSaveClinic = async () => {
-    if (!widgetRowId) return;
-    setSavingClinic(true);
-    const { error } = await supabase.from("widget_settings").update({ clinic_name: clinicName }).eq("id", widgetRowId);
-    setSavingClinic(false);
-    if (error) toast({ title: "Hata", description: error.message, variant: "destructive" });
-    else toast({ title: "Kaydedildi", description: "Klinik bilgileri güncellendi." });
-  };
 
   const fetchReplies = useCallback(async () => {
     setLoadingReplies(true);
@@ -191,8 +164,49 @@ const Settings = () => {
     setDeletingId(null);
   };
 
-  const handleSave = () => {
-    toast({ title: "Kaydedildi", description: "Ayarlarınız başarıyla güncellendi." });
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+      if (profileRowId) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ full_name: fullName, updated_at: new Date().toISOString() })
+          .eq("id", profileRowId);
+        if (error) toast({ title: "Hata", description: error.message, variant: "destructive" });
+        else toast({ title: "Kaydedildi", description: "Profil bilgileri güncellendi." });
+      } else {
+        const { data: inserted, error } = await supabase
+          .from("profiles")
+          .insert({ user_id: user.id, full_name: fullName })
+          .select("id")
+          .single();
+        if (error) toast({ title: "Hata", description: error.message, variant: "destructive" });
+        else {
+          setProfileRowId(inserted.id);
+          toast({ title: "Kaydedildi", description: "Profil bilgileri güncellendi." });
+        }
+      }
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSaveClinic = async () => {
+    if (!widgetRowId) return;
+    setSavingClinic(true);
+    try {
+      const { error } = await supabase
+        .from("widget_settings")
+        .update({ clinic_name: clinicName.trim(), updated_at: new Date().toISOString() })
+        .eq("id", widgetRowId);
+      if (error) toast({ title: "Hata", description: error.message, variant: "destructive" });
+      else toast({ title: "Kaydedildi", description: "Klinik bilgileri güncellendi." });
+    } finally {
+      setSavingClinic(false);
+    }
   };
 
   const [sp, setSp] = useSearchParams();
@@ -244,7 +258,7 @@ const Settings = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">E-posta</Label>
-                <Input id="email" type="email" value={userEmail} readOnly />
+                <Input id="email" type="email" value={userEmail} readOnly className="bg-muted/50 cursor-not-allowed" />
               </div>
               <Button onClick={handleSaveProfile} disabled={savingProfile || !userId} className="gap-2">
                 {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

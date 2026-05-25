@@ -69,7 +69,7 @@ function formatDateLabel(date: Date, t: (k: string) => string): string {
   return date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string) => string; patientName?: string }) {
+function MessageBubble({ msg, t, patientName, senderName }: { msg: Message; t: (key: string) => string; patientName?: string; senderName?: string }) {
   const msgDate = new Date(msg.created_at);
   const time = format(msgDate, "HH:mm");
   const fullDateTime = msgDate.toLocaleString("tr-TR", {
@@ -110,7 +110,7 @@ function MessageBubble({ msg, t, patientName }: { msg: Message; t: (key: string)
         return {
           bg: "bg-chat-secretary",
           border: "border-chat-secretary-border",
-          label: "Siz (Dr. Ercan)",
+          label: senderName ? `Siz (${senderName})` : "Siz",
           icon: <User className="w-3.5 h-3.5 text-success" />,
           align: "items-end",
           rounded: "rounded-br-md",
@@ -176,6 +176,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
   const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [profileName, setProfileName] = useState<string>("");
   const [aiPaused, setAiPaused] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -189,6 +190,13 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
 
   const sortMessages = (msgs: Message[]) =>
     [...msgs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data?.full_name) setProfileName(data.full_name);
+    });
+  }, [user?.id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -354,7 +362,7 @@ export function ChatInterface({ patientId, onBack, onInfoClick, showBackButton }
                     <div className="flex-1 h-px bg-border" />
                   </div>
                 )}
-                <MessageBubble msg={msg} t={t} patientName={patient?.name} />
+                <MessageBubble msg={msg} t={t} patientName={patient?.name} senderName={profileName} />
               </div>
             );
           })}

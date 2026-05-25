@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Users, CalendarCheck, MessageSquare, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Users, CalendarCheck, MessageSquare, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import {
@@ -11,6 +11,8 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 
+const DAY_LABELS = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+
 const barChartConfig: ChartConfig = {
   appointments: { label: "Randevular", color: "hsl(var(--primary))" },
 };
@@ -20,14 +22,11 @@ const lineChartConfig: ChartConfig = {
   appointments: { label: "Randevular", color: "hsl(var(--success))" },
 };
 
-const DAY_LABELS = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
-
 const Analytics = () => {
   const [loading, setLoading] = useState(true);
   const [totalPatients, setTotalPatients] = useState(0);
   const [weekAppointments, setWeekAppointments] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [conversion, setConversion] = useState(0);
   const [weeklyData, setWeeklyData] = useState<{ day: string; appointments: number }[]>([]);
   const [monthlyData, setMonthlyData] = useState<{ week: string; patients: number; appointments: number }[]>([]);
 
@@ -41,36 +40,24 @@ const Analytics = () => {
       startOfMonth.setDate(now.getDate() - 27);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const [patientsRes, weekAptsRes, monthAptsRes, monthPatientsRes, unreadRes, totalAptsRes] = await Promise.all([
+      const [patientsRes, weekAptsRes, monthAptsRes, monthPatientsRes, unreadRes] = await Promise.all([
         supabase.from("patients").select("id", { count: "exact", head: true }),
-        supabase
-          .from("appointments")
-          .select("scheduled_at")
+        supabase.from("appointments").select("scheduled_at")
           .gte("scheduled_at", startOfWeek.toISOString())
           .lte("scheduled_at", now.toISOString()),
-        supabase
-          .from("appointments")
-          .select("scheduled_at")
+        supabase.from("appointments").select("scheduled_at")
           .gte("scheduled_at", startOfMonth.toISOString())
           .lte("scheduled_at", now.toISOString()),
-        supabase
-          .from("patients")
-          .select("created_at")
+        supabase.from("patients").select("created_at")
           .gte("created_at", startOfMonth.toISOString())
           .lte("created_at", now.toISOString()),
-        supabase
-          .from("messages")
-          .select("id", { count: "exact", head: true })
+        supabase.from("messages").select("id", { count: "exact", head: true })
           .eq("sender_type", "patient")
           .eq("is_processed", false),
-        supabase.from("appointments").select("id", { count: "exact", head: true }),
       ]);
 
-      const totalP = patientsRes.count ?? 0;
-      const totalA = totalAptsRes.count ?? 0;
-      setTotalPatients(totalP);
+      setTotalPatients(patientsRes.count ?? 0);
       setUnreadMessages(unreadRes.count ?? 0);
-      setConversion(totalP > 0 ? Math.round((totalA / totalP) * 100) : 0);
 
       const weekly: Record<string, number> = {};
       for (let i = 0; i < 7; i++) {
@@ -89,7 +76,6 @@ const Analytics = () => {
       setWeeklyData(weeklyArr);
       setWeekAppointments(weeklyArr.reduce((s, x) => s + x.appointments, 0));
 
-      // Build 4 weekly buckets for last 28 days
       const buckets = [0, 1, 2, 3].map((i) => {
         const start = new Date(startOfMonth);
         start.setDate(startOfMonth.getDate() + i * 7);
@@ -117,7 +103,6 @@ const Analytics = () => {
     { title: "Toplam Hasta", value: totalPatients.toLocaleString("tr-TR"), icon: Users, color: "text-primary", gradient: "gradient-primary" },
     { title: "Bu Hafta Randevu", value: weekAppointments.toLocaleString("tr-TR"), icon: CalendarCheck, color: "text-success", gradient: "gradient-success" },
     { title: "Okunmamış Mesaj", value: unreadMessages.toLocaleString("tr-TR"), icon: MessageSquare, color: "text-warning", gradient: "gradient-warning" },
-    { title: "Dönüşüm Oranı", value: `%${conversion}`, icon: TrendingUp, color: "text-primary", gradient: "gradient-primary" },
   ];
 
   return (
@@ -127,7 +112,7 @@ const Analytics = () => {
         <p className="text-sm text-muted-foreground mt-1">Performans ve istatistikler</p>
       </motion.div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {summaryCards.map((card, i) => (
           <motion.div key={card.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
             <Card className={`border-border/60 shadow-card card-interactive rounded-2xl overflow-hidden ${card.gradient}`}>
@@ -137,7 +122,9 @@ const Analytics = () => {
                     <card.icon className={`h-5 w-5 ${card.color}`} />
                   </div>
                 </div>
-                <p className="metric-value !text-2xl">{loading ? "—" : card.value}</p>
+                <div className="metric-value !text-2xl">
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : card.value}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">{card.title}</p>
               </CardContent>
             </Card>
@@ -152,15 +139,21 @@ const Analytics = () => {
               <CardTitle className="text-base font-display font-bold text-foreground">Son 7 Gün — Randevular</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={barChartConfig} className="h-[280px] w-full">
-                <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" vertical={false} />
-                  <XAxis dataKey="day" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="appointments" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
+              {loading ? (
+                <div className="h-[280px] flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <ChartContainer config={barChartConfig} className="h-[280px] w-full">
+                  <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" vertical={false} />
+                    <XAxis dataKey="day" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="appointments" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -171,16 +164,22 @@ const Analytics = () => {
               <CardTitle className="text-base font-display font-bold text-foreground">Aylık Trend</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={lineChartConfig} className="h-[280px] w-full">
-                <LineChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" vertical={false} />
-                  <XAxis dataKey="week" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="patients" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2 }} />
-                  <Line type="monotone" dataKey="appointments" stroke="hsl(var(--success))" strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2 }} />
-                </LineChart>
-              </ChartContainer>
+              {loading ? (
+                <div className="h-[280px] flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <ChartContainer config={lineChartConfig} className="h-[280px] w-full">
+                  <LineChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" vertical={false} />
+                    <XAxis dataKey="week" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line type="monotone" dataKey="patients" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2 }} />
+                    <Line type="monotone" dataKey="appointments" stroke="hsl(var(--success))" strokeWidth={2.5} dot={{ r: 4, strokeWidth: 2 }} />
+                  </LineChart>
+                </ChartContainer>
+              )}
             </CardContent>
           </Card>
         </motion.div>

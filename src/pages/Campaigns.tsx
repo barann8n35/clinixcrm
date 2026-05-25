@@ -82,7 +82,6 @@ const Campaigns = () => {
 
     setSending(true);
     try {
-      // Persist outbound messages so the n8n / WhatsApp pipeline can pick them up.
       const rows = filtered
         .filter(p => p.phone)
         .map(p => ({
@@ -315,29 +314,21 @@ const Campaigns = () => {
               >
                 <Button
                   onClick={handleSendCampaign}
-                  disabled={sending || !message.trim() || filtered.length === 0}
-                  className="w-full h-14 rounded-2xl text-[14px] font-bold bg-success hover:bg-success/90 text-success-foreground shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+                  disabled
+                  className="w-full h-14 rounded-2xl text-[14px] font-bold bg-muted text-muted-foreground shadow-sm cursor-not-allowed opacity-70"
                 >
-                  {sending ? (
-                    <span className="flex items-center gap-2.5">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Gönderiliyor...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2.5">
-                      <Send className="w-5 h-5" />
-                      Kampanyayı Başlat ({filtered.length} Kişiye Gönder)
-                    </span>
-                  )}
+                  <span className="flex items-center gap-2.5">
+                    <Send className="w-5 h-5" />
+                    Kampanyayı Başlat — WhatsApp API Onayı Bekleniyor
+                  </span>
                 </Button>
               </motion.div>
             </AnimatePresence>
 
             {/* Info */}
-            <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+            <div className="rounded-2xl border border-warning/30 bg-warning/5 p-4">
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">💡 Bilgi:</strong> Kampanya mesajları WhatsApp Business API üzerinden sıraya alınır. 
-                Gönderim süresi hasta sayısına bağlı olarak değişebilir. Mesajlar ortalama 1-5 dakika içinde tüm alıcılara ulaşır.
+                <strong className="text-foreground">⏳ Yakında:</strong> Kampanya gönderimi, WhatsApp Business API onayı tamamlandıktan sonra aktif olacak. Şu an hasta listesi oluşturabilir ve mesaj taslağı hazırlayabilirsiniz.
               </p>
             </div>
           </motion.div>

@@ -21,14 +21,13 @@ interface DashboardStats {
   todayAppointments: number;
   pendingCount: number;
   totalPatients: number;
-  totalValue: number;
+  monthAppointments: number;
   criticalCount: number;
 }
 
 interface CriticalPatient {
   id: string;
   name: string;
-  score: number;
   platform: string | null;
 }
 
@@ -79,7 +78,7 @@ const Dashboard = () => {
     todayAppointments: 0,
     pendingCount: 0,
     totalPatients: 0,
-    totalValue: 0,
+    monthAppointments: 0,
     criticalCount: 0,
   });
   const [criticalPatients, setCriticalPatients] = useState<CriticalPatient[]>([]);
@@ -92,10 +91,12 @@ const Dashboard = () => {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
 
-      const [patientsRes, aptsRes, todayAptsRes] = await Promise.all([
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+      const [patientsRes, aptsRes, todayAptsRes, monthAptsRes] = await Promise.all([
         supabase.from("patients").select("id, name, platform, status", { count: "exact" }),
         supabase.from("appointments").select("id, status").gte("scheduled_at", startOfDay).lt("scheduled_at", endOfDay),
         supabase.from("appointments").select("id, patient_id, doctor, type, scheduled_at, status, patients(name)").gte("scheduled_at", startOfDay).lt("scheduled_at", endOfDay).order("scheduled_at", { ascending: true }),
+        supabase.from("appointments").select("id", { count: "exact" }).gte("scheduled_at", monthStart),
       ]);
 
       const patients = patientsRes.data || [];
@@ -108,7 +109,6 @@ const Dashboard = () => {
         .map((p) => ({
           id: p.id,
           name: p.name,
-          score: 0,
           platform: p.platform,
         }));
 
@@ -141,7 +141,7 @@ const Dashboard = () => {
         todayAppointments: apts.length,
         pendingCount,
         totalPatients: patients.length,
-        totalValue: 0,
+        monthAppointments: monthAptsRes.count ?? 0,
         criticalCount: critical.length,
       });
   }, []);
@@ -181,13 +181,13 @@ const Dashboard = () => {
       route: "/patients",
     },
     {
-      label: t("dashboard.totalValue"),
-      value: `₺${stats.totalValue.toLocaleString("tr-TR")}`,
+      label: "Bu Ay Randevu",
+      value: stats.monthAppointments,
       icon: TrendingUp,
       gradient: "gradient-success",
       iconBg: "bg-success/10",
       iconColor: "text-success",
-      route: null,
+      route: "/appointments",
     },
     {
       label: t("dashboard.criticalCandidates"),
@@ -327,8 +327,8 @@ const Dashboard = () => {
                       )}
                       <span className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">{p.name}</span>
                     </div>
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-warning/10 text-warning flex-shrink-0 ml-3">
-                      Bekliyor
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-destructive/10 text-destructive flex-shrink-0 ml-3">
+                      Yanıt bekleniyor
                     </span>
                   </div>
                 );
