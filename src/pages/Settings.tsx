@@ -34,6 +34,19 @@ const Settings = () => {
   const { canInstall, isInstalled, install } = usePWA();
   const { loading: notifLoading, connectionStatus, requestPermission } = usePushNotifications();
 
+  // Profile state
+  const [userEmail, setUserEmail] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [profileRowId, setProfileRowId] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Clinic state
+  const [widgetRowId, setWidgetRowId] = useState<string | null>(null);
+  const [clinicName, setClinicName] = useState("");
+  const [savingClinic, setSavingClinic] = useState(false);
+
   // Quick replies state
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
@@ -43,6 +56,63 @@ const Settings = () => {
   const [formContent, setFormContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
+      setUserEmail(user.email || "");
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (prof) {
+        setProfileRowId(prof.id);
+        const parts = (prof.full_name || "").trim().split(/\s+/);
+        setFirstName(parts[0] || "");
+        setLastName(parts.slice(1).join(" "));
+      }
+    })();
+    (async () => {
+      const { data: w } = await supabase
+        .from("widget_settings")
+        .select("id, clinic_name")
+        .limit(1)
+        .maybeSingle();
+      if (w) {
+        setWidgetRowId(w.id);
+        setClinicName(w.clinic_name || "");
+      }
+    })();
+  }, []);
+
+  const handleSaveProfile = async () => {
+    if (!userId) return;
+    setSavingProfile(true);
+    const full_name = `${firstName.trim()} ${lastName.trim()}`.trim();
+    let error;
+    if (profileRowId) {
+      ({ error } = await supabase.from("profiles").update({ full_name }).eq("id", profileRowId));
+    } else {
+      const res = await supabase.from("profiles").insert({ user_id: userId, full_name }).select("id").maybeSingle();
+      error = res.error;
+      if (res.data) setProfileRowId(res.data.id);
+    }
+    setSavingProfile(false);
+    if (error) toast({ title: "Hata", description: error.message, variant: "destructive" });
+    else toast({ title: "Kaydedildi", description: "Profil güncellendi." });
+  };
+
+  const handleSaveClinic = async () => {
+    if (!widgetRowId) return;
+    setSavingClinic(true);
+    const { error } = await supabase.from("widget_settings").update({ clinic_name: clinicName }).eq("id", widgetRowId);
+    setSavingClinic(false);
+    if (error) toast({ title: "Hata", description: error.message, variant: "destructive" });
+    else toast({ title: "Kaydedildi", description: "Klinik bilgileri güncellendi." });
+  };
 
   const fetchReplies = useCallback(async () => {
     setLoadingReplies(true);
