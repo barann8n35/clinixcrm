@@ -49,17 +49,17 @@ const platformConfig: Record<string, { icon: IconType; color: string }> = {
 };
 
 const pieColorMap: Record<string, { color: string; label: string }> = {
-  whatsapp: { color: "hsl(142 71% 45%)", label: "WhatsApp" },
-  instagram: { color: "hsl(330 80% 60%)", label: "Instagram" },
-  telegram: { color: "hsl(200 80% 50%)", label: "Telegram" },
-  web: { color: "hsl(38 92% 50%)", label: "Web" },
+  whatsapp: { color: "hsl(142 76% 36%)", label: "WhatsApp" },
+  instagram: { color: "hsl(340 82% 52%)", label: "Instagram" },
+  telegram: { color: "hsl(199 100% 42%)", label: "Telegram" },
+  web: { color: "hsl(270 67% 59%)", label: "Web" },
 };
 
 const pieConfig: ChartConfig = {
-  whatsapp: { label: "WhatsApp", color: "hsl(142 71% 45%)" },
-  instagram: { label: "Instagram", color: "hsl(330 80% 60%)" },
-  telegram: { label: "Telegram", color: "hsl(200 80% 50%)" },
-  web: { label: "Web", color: "hsl(38 92% 50%)" },
+  whatsapp: { label: "WhatsApp", color: "hsl(142 76% 36%)" },
+  instagram: { label: "Instagram", color: "hsl(340 82% 52%)" },
+  telegram: { label: "Telegram", color: "hsl(199 100% 42%)" },
+  web: { label: "Web", color: "hsl(270 67% 59%)" },
 };
 
 const cardVariants = {
