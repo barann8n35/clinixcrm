@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-const SALES_WHATSAPP = "905555555555"; // TODO: gerçek satış hattı
-const buildWaUrl = (planName: string) =>
-  `https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(
-    `Merhaba, Clinix ${planName} paketi hakkında bilgi almak istiyorum.`
-  )}`;
+const IYZICO_LINKS: Record<string, string> = {
+  standard: "",    // iyzico dashboard'dan oluşturulacak ödeme linki
+  premium: "",
+  premium_plus: "",
+};
 
 interface Plan {
   id: "standard" | "premium" | "premium_plus";
@@ -192,7 +192,8 @@ const Pricing = () => {
               </div>
 
               <Button
-                onClick={() => window.open(buildWaUrl(plan.name), "_blank", "noopener")}
+                onClick={() => IYZICO_LINKS[plan.id] ? window.open(IYZICO_LINKS[plan.id], "_blank", "noopener") : undefined}
+                disabled={!IYZICO_LINKS[plan.id]}
                 className={`rounded-xl gap-2 mb-6 ${
                   plan.highlight
                     ? ""
@@ -202,7 +203,7 @@ const Pricing = () => {
                 }`}
                 variant={plan.highlight || plan.id === "premium_plus" ? "default" : "outline"}
               >
-                {plan.cta}
+                {IYZICO_LINKS[plan.id] ? plan.cta : "Yakında"}
                 <ArrowRight className="w-4 h-4" />
               </Button>
 

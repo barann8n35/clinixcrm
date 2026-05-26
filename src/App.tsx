@@ -26,6 +26,8 @@ import TeamManagement from "./pages/TeamManagement";
 import VideoStudio from "./pages/VideoStudio";
 import VoiceAgentPage from "./pages/VoiceAgentPage";
 import Pricing from "./pages/Pricing";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Widget from "./pages/Widget";
 import SecurityDashboard from "./pages/SecurityDashboard";
 import Scan from "./pages/Scan";
@@ -60,6 +62,8 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/widget" element={<Widget />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
